@@ -6,7 +6,8 @@
   "refmap": "tracky.refmap.json",
   "plugin": "com.tracky.MixinPlugin",
   "mixins": [
-    "WorldMixin"
+    "WorldMixin",
+    "TrackyAccessorMixin"
   ],
   "client": [
   ],
