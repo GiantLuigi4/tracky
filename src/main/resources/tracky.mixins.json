@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.tracky.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "tracky.refmap.json",
+  "plugin": "com.tracky.MixinPlugin",
+  "mixins": [
+    "WorldMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
