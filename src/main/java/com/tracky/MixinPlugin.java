@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -43,8 +44,11 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	
 	private static final String chunkPosClass = "net/minecraft/util/math/ChunkPos";
 	private static final String worldClass = "net/minecraft/world/World";
+	private static final String playerClass = "net/minecraft/entity/Player";
 	
 	FieldNode targetField;
+	
+	private static final String type = "java/util/Function<L" + playerClass + ";L" + chunkPosClass + ";>";
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
@@ -60,13 +64,35 @@ public class MixinPlugin implements IMixinConfigPlugin {
 				}
 			}
 			
-			targetClass.fields.add(new FieldNode(
+			targetClass.fields.add(targetField = new FieldNode(
 					Opcodes.ACC_PUBLIC,
 					fieldName,
-					"Ljava/util/ArrayList;",
-					"Ljava/util/ArrayList<L" + chunkPosClass + ";>;",
+					"Ljava/util/Map;",
+					"Ljava/util/Map<Ljava/util/UUID;L" + type + ";>;",
 					null
 			));
+			isMainTracky = true;
+			for (MethodNode method : targetClass.methods) {
+				if (method.name.equals("<init>")) {
+					ArrayList<AbstractInsnNode> targets = new ArrayList<>();
+					for (AbstractInsnNode instruction : method.instructions) {
+						if (instruction.getOpcode() == Opcodes.RETURN) {
+							targets.add(instruction);
+						}
+					}
+					for (AbstractInsnNode target : targets) {
+						InsnList list = new InsnList();
+						String des = targetField.desc.substring(1, targetField.desc.length() - 1);
+						list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+						list.add(new TypeInsnNode(Opcodes.NEW, des.replace("Map", "HashMap")));
+						list.add(new InsnNode(Opcodes.DUP));
+						list.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, des.replace("Map", "HashMap"), "<init>", "()V"));
+						AbstractInsnNode insn = new FieldInsnNode(Opcodes.PUTFIELD, targetClassName.replace(".", "/"), targetField.name, targetField.desc);
+						list.add(insn);
+						method.instructions.insertBefore(target, list);
+					}
+				}
+			}
 			
 			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 			targetClass.accept(writer);

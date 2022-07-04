@@ -1,9 +1,13 @@
 package com.tracky;
 
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.function.Function;
 
 public class TrackyAccessor {
 	/**
@@ -13,7 +17,7 @@ public class TrackyAccessor {
 	 * @param world the world to get the force loaded chunks of
 	 * @return the list of force loaded chunks
 	 */
-	public static ArrayList<ChunkPos> getForcedChunks(World world) {
+	public static HashMap<UUID, Function<PlayerEntity, ChunkPos>> getForcedChunks(World world) {
 		return null;
 	}
 }
