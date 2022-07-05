@@ -65,7 +65,8 @@ public class MixinPlugin implements IMixinConfigPlugin {
 			}
 			
 			targetClass.fields.add(targetField = new FieldNode(
-					Opcodes.ACC_PUBLIC,
+					// synthetic hides it from the decompiler
+					Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
 					fieldName,
 					"Ljava/util/Map;",
 					"Ljava/util/Map<Ljava/util/UUID;L" + type + ";>;",
@@ -94,45 +95,41 @@ public class MixinPlugin implements IMixinConfigPlugin {
 				}
 			}
 			
-			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-			targetClass.accept(writer);
-			try {
-				File f = new File("dmp/" + targetClass.name + ".class");
-				if (!f.exists()) f.getParentFile().mkdirs();
-				FileOutputStream outputStream = new FileOutputStream(f);
-				byte[] bytes = writer.toByteArray();
-				outputStream.write(bytes);
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			dump(targetClass);
 		} else {
 			for (MethodNode method : targetClass.methods) {
 				if (method.name.equals("getForcedChunks")) {
 					String sig = method.signature.substring(method.signature.indexOf(")") + 1);
-					System.out.println(sig);
 					method.instructions.clear();
 					method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+					String desc = sig.substring(0, sig.indexOf("<")) + ";";
 					method.instructions.add(new FieldInsnNode(
 							Opcodes.GETFIELD, worldClass,
-							fieldName, sig.substring(0, sig.indexOf("<")) + ";"
+							fieldName, desc
 					));
 					method.instructions.add(new InsnNode(Opcodes.ARETURN));
+					method.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC;
+				} else if (method.name.equals("<init>")) {
+					method.access = method.access | Opcodes.ACC_SYNTHETIC;
 				}
 			}
 			
-			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-			targetClass.accept(writer);
-			try {
-				File f = new File("dmp/" + targetClass.name + ".class");
-				if (!f.exists()) f.getParentFile().mkdirs();
-				FileOutputStream outputStream = new FileOutputStream(f);
-				byte[] bytes = writer.toByteArray();
-				outputStream.write(bytes);
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			dump(targetClass);
+		}
+	}
+	
+	public void dump(ClassNode clazz) {
+		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+		clazz.accept(writer);
+		try {
+			File f = new File("dmp/" + clazz.name + ".class");
+			if (!f.exists()) f.getParentFile().mkdirs();
+			FileOutputStream outputStream = new FileOutputStream(f);
+			byte[] bytes = writer.toByteArray();
+			outputStream.write(bytes);
+			outputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
