@@ -18,5 +18,5 @@ public class TrackyAccessor {
 	 * @return the list of force loaded chunks
 	 */
 	// also it's native so that it doesn't have a method body
-	public static native Map<UUID, Function<PlayerEntity, ChunkPos>> getForcedChunks(World world);
+	public static native Map<UUID, Function<PlayerEntity, Iterable<ChunkPos>>> getForcedChunks(World world);
 }

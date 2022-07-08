@@ -48,7 +48,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	
 	FieldNode targetField;
 	
-	private static final String type = "java/util/Function<L" + playerClass + ";L" + chunkPosClass + ";>";
+	private static final String type = "java/util/Function<L" + playerClass + ";Ljava/lang/Iterable<L"+ chunkPosClass+";>;";
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
