@@ -7,6 +7,7 @@ import net.minecraft.world.World;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class TrackyAccessor {
 	/**
@@ -19,4 +20,18 @@ public class TrackyAccessor {
 	 */
 	// also it's native so that it doesn't have a method body
 	public static native Map<UUID, Function<PlayerEntity, Iterable<ChunkPos>>> getForcedChunks(World world);
+
+
+	/**
+	 * client only
+	 * is a function as QOL
+	 *
+	 * having it be a supplier allows it to change multiple times per frame without
+	 * having the dev need to change any variables for every render
+	 */
+	public static native Supplier<Iterable<ChunkPos>> getRenderedChunks(World world);
+
+	public static boolean isMainTracky() {
+		return MixinPlugin.isMainTracky;
+	}
 }
