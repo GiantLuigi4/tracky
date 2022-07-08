@@ -7,6 +7,7 @@
   "plugin": "com.tracky.MixinPlugin",
   "mixins": [
     "WorldMixin",
+    "ClientWorldMixin",
     "TrackyAccessorMixin"
   ],
   "client": [
