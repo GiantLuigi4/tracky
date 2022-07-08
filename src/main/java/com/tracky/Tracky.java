@@ -17,6 +17,8 @@ public class Tracky {
 				Tracky.class.toString().hashCode() * 9383064L,
 				new Random(TrackyAccessor.class.toString().hashCode() + 32874).nextLong() * 10623261L
 		);
+		
+		System.out.println("Tracky@" + Tracky.class + " is " + (MixinPlugin.isMainTracky ? "" : "not ") + " the main tracky instance.");
 	}
 	
 	// a default UUID dependent upon the name which the class is shaded under

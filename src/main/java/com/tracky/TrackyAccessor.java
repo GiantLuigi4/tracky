@@ -29,4 +29,8 @@ public class TrackyAccessor {
 	 * having the dev need to change any variables for every render
 	 */
 	public static native Supplier<Iterable<ChunkPos>> getRenderedChunks(World world);
+	
+	public static boolean isMainTracky() {
+		return MixinPlugin.isMainTracky;
+	}
 }
