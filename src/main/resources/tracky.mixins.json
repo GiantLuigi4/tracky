@@ -11,6 +11,8 @@
     "TrackyAccessorMixin"
   ],
   "client": [
+    "client.ClientChunkProviderMixin",
+    "client.AbstractChunkProviderMixin"
   ],
   "injectors": {
     "defaultRequire": 1
