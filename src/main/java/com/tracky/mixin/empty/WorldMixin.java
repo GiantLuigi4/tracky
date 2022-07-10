@@ -1,4 +1,4 @@
-package com.tracky.mixin;
+package com.tracky.mixin.empty;
 
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;

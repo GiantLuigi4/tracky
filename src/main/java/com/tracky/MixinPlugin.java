@@ -9,61 +9,60 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 public class MixinPlugin implements IMixinConfigPlugin {
 	protected static boolean isMainTracky = false;
-
+	
 	UUID trackyUUID = new UUID("tracky".hashCode() * 3427843L, "tracker".hashCode() * 4782347L);
-
+	
 	@Override
 	public void onLoad(String mixinPackage) {
 	}
-
+	
 	@Override
 	public String getRefMapperConfig() {
 		return null;
 	}
-
+	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
 		return true;
 	}
-
+	
 	@Override
 	public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
 	}
-
+	
 	@Override
 	public List<String> getMixins() {
 		return null;
 	}
-
+	
 	private static final String chunkPosClass = "net/minecraft/util/math/ChunkPos";
 	private static final String worldClass = "net/minecraft/world/World";
 	private static final String clientWorldClass = "net/minecraft/client/world/ClientWorld";
 	private static final String playerClass = "net/minecraft/entity/Player";
-
+	private static final String sharedConstantsClass = "net/minecraft/util/SharedConstants";
+	
 	FieldNode targetField;
 	FieldNode renderField;
-
-	private static final String type = "java/util/Function<L" + playerClass + ";Ljava/lang/Iterable<L"+ chunkPosClass+";>;";
+	FieldNode versionsField;
+	
+	private static final String type = "java/util/Function<L" + playerClass + ";Ljava/lang/Iterable<L" + chunkPosClass + ";>;";
 	private static final String typeClient = "java/util/Supplier<L" + chunkPosClass + ";>";
 	private static final String typeServer = "java/util/Map<Ljava/util/UUID;L" + type + ";>";
-
-	public FieldNode injectField(ClassNode targetClass, String fieldName, boolean isMainCheck, boolean isMap) {
+	private static final String typeVersion = "java/util/Map<Ljava/lang/String;Ljava/lang/String;>";
+	
+	public FieldNode injectField(ClassNode targetClass, String fieldName, boolean isMap) {
 		for (FieldNode field : targetClass.fields) {
 			if (field.name.equals(fieldName)) {
-				if (isMainCheck)
-					isMainTracky = false;
 				targetField = field;
 				return field;
 			}
 		}
-
+		
 		FieldNode nd;
 		targetClass.fields.add(nd = new FieldNode(
 				// synthetic hides it from the decompiler
@@ -73,7 +72,6 @@ public class MixinPlugin implements IMixinConfigPlugin {
 				isMap ? "L" + typeServer + ";" : "L" + typeClient + ";",
 				null
 		));
-		isMainTracky = true;
 		for (MethodNode method : targetClass.methods) {
 			if (method.name.equals("<init>")) {
 				ArrayList<AbstractInsnNode> targets = new ArrayList<>();
@@ -95,12 +93,35 @@ public class MixinPlugin implements IMixinConfigPlugin {
 				}
 			}
 		}
-
+		
 		dump(targetClass);
-
+		
 		return nd;
 	}
-
+	
+	protected static final String VERSION = "0.0.1";
+	
+	private void injectVersionInjection(ClassNode clazz) {
+		for (MethodNode method : clazz.methods) {
+			if (method.name.equals("<clinit>")) {
+				ArrayList<AbstractInsnNode> targets = new ArrayList<>();
+				for (AbstractInsnNode instruction : method.instructions) {
+					if (instruction.getOpcode() == Opcodes.RETURN) {
+						targets.add(instruction);
+					}
+				}
+				for (AbstractInsnNode target : targets) {
+					InsnList list = new InsnList();
+					list.add(new FieldInsnNode(Opcodes.GETSTATIC, clazz.name, versionsField.name, versionsField.desc));
+					list.add(new LdcInsnNode(MixinPlugin.class.toString()));
+					list.add(new LdcInsnNode(VERSION));
+					list.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
+					method.instructions.insertBefore(target, list);
+				}
+			}
+		}
+	}
+	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
 		// so, the jvm really does not care about the name of a field
@@ -110,48 +131,110 @@ public class MixinPlugin implements IMixinConfigPlugin {
 		String fieldName = trackyUUID.toString() + " Tracky Forced";
 		// idk why intelliJ complained about the "toString" on the one below but not the one above, but ok
 		String renderFieldName = trackyUUID + " Tracky Rendered";
+		String versionFieldName = trackyUUID + " Tracky Versions";
 		if (targetClassName.equals(clientWorldClass.replace("/", "."))) {
-			renderField = injectField(targetClass, renderFieldName, false, false);
+			renderField = injectField(targetClass, renderFieldName, false);
 		} else if (targetClassName.equals(worldClass.replace("/", "."))) {
-			targetField = injectField(targetClass, fieldName, true, true);
+			targetField = injectField(targetClass, fieldName, true);
 		} else {
-			for (MethodNode method : targetClass.methods) {
-				FieldNode targ = null;
-				String owner = null;
-				switch (method.name) {
-					case "getForcedChunks": {
-						targ = targetField;
-						owner = worldClass;
+			if (targetClassName.equals(sharedConstantsClass.replace("/", "."))) {
+				for (FieldNode field : targetClass.fields) {
+					if (field.name.equals(versionFieldName)) {
+						versionsField = field;
+						injectVersionInjection(targetClass);
 						break;
 					}
-					case "getRenderedChunks": {
-						targ = renderField;
-						owner = clientWorldClass;
-						break;
+				}
+				FieldNode nd;
+				targetClass.fields.add(nd = new FieldNode(
+						// synthetic hides it from the decompiler
+						Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_STATIC,
+						versionFieldName,
+						"Ljava/util/Map;",
+						"L" + typeVersion + ";",
+						null
+				));
+				versionsField = nd;
+				
+				for (MethodNode method : targetClass.methods) {
+					if (method.name.equals("<clinit>")) {
+						ArrayList<AbstractInsnNode> targets = new ArrayList<>();
+						for (AbstractInsnNode instruction : method.instructions) {
+							if (instruction.getOpcode() == Opcodes.RETURN) {
+								targets.add(instruction);
+							}
+						}
+						for (AbstractInsnNode target : targets) {
+							InsnList list = new InsnList();
+							String des = nd.desc.substring(1, nd.desc.length() - 1);
+							list.add(new TypeInsnNode(Opcodes.NEW, des.replace("Map", "HashMap")));
+							list.add(new InsnNode(Opcodes.DUP));
+							list.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, des.replace("Map", "HashMap"), "<init>", "()V"));
+							AbstractInsnNode insn = new FieldInsnNode(Opcodes.PUTSTATIC, targetClass.name.replace(".", "/"), nd.name, nd.desc);
+							list.add(insn);
+							method.instructions.insertBefore(target, list);
+						}
 					}
-					case "<init>":
-						method.access = method.access | Opcodes.ACC_SYNTHETIC;
-						break;
 				}
-				if (targ != null) {
-					String sig = method.signature.substring(method.signature.indexOf(")") + 1);
-					method.instructions.clear();
-					method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-					String desc = sig.substring(0, sig.indexOf("<")) + ";";
-					method.instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, owner));
-					method.instructions.add(new FieldInsnNode(
-							Opcodes.GETFIELD, owner,
-							targ.name, desc
-					));
-					method.instructions.add(new InsnNode(Opcodes.ARETURN));
-					method.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC;
+				injectVersionInjection(targetClass);
+				
+				dump(targetClass);
+			} else {
+				for (MethodNode method : targetClass.methods) {
+					FieldNode targ = null;
+					String owner = null;
+					switch (method.name) {
+						case "getForcedChunks": {
+							targ = targetField;
+							owner = worldClass;
+							break;
+						}
+						case "getTrackyVersions": {
+							targ = versionsField;
+							owner = sharedConstantsClass;
+							break;
+						}
+						case "getRenderedChunks": {
+							targ = renderField;
+							owner = clientWorldClass;
+							break;
+						}
+						case "<init>":
+							method.access = method.access | Opcodes.ACC_SYNTHETIC;
+							break;
+					}
+					if (targ != null) {
+						if (Modifier.isStatic(targ.access)) {
+							String sig = method.signature.substring(method.signature.indexOf(")") + 1);
+							method.instructions.clear();
+							String desc = sig.substring(0, sig.indexOf("<")) + ";";
+							method.instructions.add(new FieldInsnNode(
+									Opcodes.GETSTATIC, owner,
+									targ.name, desc
+							));
+							method.instructions.add(new InsnNode(Opcodes.ARETURN));
+							method.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC;
+						} else {
+							String sig = method.signature.substring(method.signature.indexOf(")") + 1);
+							method.instructions.clear();
+							method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+							String desc = sig.substring(0, sig.indexOf("<")) + ";";
+							method.instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, owner));
+							method.instructions.add(new FieldInsnNode(
+									Opcodes.GETFIELD, owner,
+									targ.name, desc
+							));
+							method.instructions.add(new InsnNode(Opcodes.ARETURN));
+							method.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC;
+						}
+					}
 				}
+				
+				dump(targetClass);
 			}
-
-			dump(targetClass);
 		}
 	}
-
+	
 	public void dump(ClassNode clazz) {
 		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 		clazz.accept(writer);
@@ -166,7 +249,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
 	}
