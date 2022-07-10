@@ -43,6 +43,7 @@ public class ChunkManagerMixin {
      */
     @Inject(method = "getTrackingPlayers", at = @At("HEAD"), cancellable = true)
     public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<Stream<ServerPlayerEntity>> cir) {
+        if (!TrackyAccessor.isMainTracky()) return;
         final Map<UUID, Function<PlayerEntity, Iterable<ChunkPos>>> map = TrackyAccessor.getForcedChunks(world);
 
         final List<ServerPlayerEntity> players = new ArrayList<>();

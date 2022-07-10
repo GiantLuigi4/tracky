@@ -1,5 +1,6 @@
 package com.tracky.mixin.client;
 
+import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.world.ClientWorld;
@@ -42,18 +43,21 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	
 	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/Chunk;", cancellable = true)
 	public void preGetChunk0(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load, CallbackInfoReturnable<Chunk> cir) {
+		if (!TrackyAccessor.isMainTracky()) return;
 		Chunk chunk = getChunk(new ChunkPos(chunkX, chunkZ));
 		if (chunk != null) cir.setReturnValue(chunk);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/IChunk;", cancellable = true)
 	public void preGetChunk1(int pChunkX, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad, CallbackInfoReturnable<Chunk> cir) {
+		if (!TrackyAccessor.isMainTracky()) return;
 		Chunk chunk = getChunk(new ChunkPos(pChunkX, pChunkZ));
 		if (chunk != null) cir.setReturnValue(chunk);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "unloadChunk", cancellable = true)
 	public void preDropChunk(int pX, int pZ, CallbackInfo ci) {
+		if (!TrackyAccessor.isMainTracky()) return;
 		Chunk chunk = chunks.remove(new ChunkPos(pX, pZ));
 		if (chunk != null) {
 			net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload(chunk));
@@ -64,6 +68,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	
 	@Inject(at = @At("HEAD"), method = "loadChunk", cancellable = true)
 	public void preReplaceWithPacket(int pX, int pZ, BiomeContainer biomeContainerIn, PacketBuffer packetIn, CompoundNBT nbtTagIn, int sizeIn, boolean fullChunk, CallbackInfoReturnable<Chunk> cir) {
+		if (!TrackyAccessor.isMainTracky()) return;
 		ChunkPos pos = new ChunkPos(pX, pZ);
 		Chunk chunk = getChunk(pos);
 		if (biomeContainerIn == null) {

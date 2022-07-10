@@ -1,5 +1,6 @@
 package com.tracky.mixin.client;
 
+import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.AbstractChunkProvider;
@@ -12,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class AbstractChunkProviderMixin {
 	@Inject(at = @At("HEAD"), method = "chunkExists", cancellable = true)
 	public void preCheckExists(int x, int z, CallbackInfoReturnable<Boolean> cir) {
+		if (!TrackyAccessor.isMainTracky()) return;
 		if (this instanceof IChunkProviderAttachments) {
 			cir.setReturnValue(((IChunkProviderAttachments) this).hasChunkAt(new ChunkPos(x, z)));
 		}

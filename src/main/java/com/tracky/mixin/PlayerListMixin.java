@@ -36,6 +36,7 @@ public abstract class PlayerListMixin {
 
     @Inject(method = "sendToAllNearExcept", at = @At("HEAD"), cancellable = true)
     public void broadcast(@Nullable PlayerEntity pExcept, double pX, double pY, double pZ, double pRadius, RegistryKey<World> pDimension, IPacket<?> pPacket, CallbackInfo ci) {
+        if (!TrackyAccessor.isMainTracky()) return;
 
         ServerWorld level = server.getWorld(pDimension);
 
