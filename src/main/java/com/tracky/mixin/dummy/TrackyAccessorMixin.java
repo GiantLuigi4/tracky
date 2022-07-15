@@ -1,4 +1,4 @@
-package com.tracky.mixin.empty;
+package com.tracky.mixin.dummy;
 
 import com.tracky.TrackyAccessor;
 import org.spongepowered.asm.mixin.Mixin;

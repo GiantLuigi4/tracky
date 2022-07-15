@@ -40,18 +40,18 @@ public class MixinPlugin implements IMixinConfigPlugin {
 		return null;
 	}
 	
-	private static final String chunkPosClass = "net/minecraft/util/math/ChunkPos";
-	private static final String worldClass = "net/minecraft/world/World";
-	private static final String clientWorldClass = "net/minecraft/client/world/ClientWorld";
-	private static final String playerClass = "net/minecraft/entity/Player";
-	private static final String sharedConstantsClass = "net/minecraft/util/SharedConstants";
+	private static final String chunkPosClass = "net/minecraft/world/level/ChunkPos";
+	private static final String worldClass = "net/minecraft/world/level/Level";
+	private static final String clientWorldClass = "net/minecraft/client/multiplayer/ClientLevel";
+	private static final String playerClass = "net/minecraft/world/entity/Player";
+	private static final String sharedConstantsClass = "net/minecraft/SharedConstants";
 	
 	FieldNode targetField;
 	FieldNode renderField;
 	FieldNode versionsField;
 	
 	private static final String type = "java/util/Function<L" + playerClass + ";Ljava/lang/Iterable<L" + chunkPosClass + ";>;";
-	private static final String typeClient = "java/util/Supplier<L" + chunkPosClass + ";>";
+	private static final String typeClient = "java/util/Map<Ljava/util/UUID;Ljava/util/Supplier<L" + chunkPosClass + ";>;>";
 	private static final String typeServer = "java/util/Map<Ljava/util/UUID;L" + type + ";>";
 	private static final String typeVersion = "java/util/Map<Ljava/lang/String;Ljava/lang/String;>";
 	
@@ -124,6 +124,10 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+		if (!mixinClassName.contains("dummy")) {
+			// no reason to process it if it is not a dummy mixin
+			return;
+		}
 		// so, the jvm really does not care about the name of a field
 		// so I can do stupid stuff like this, and have essentially a 0% chance of anyone ever happening to have the same field name
 		// however, this also guarantees that there is a 100% certainty that all trackies use the same central field

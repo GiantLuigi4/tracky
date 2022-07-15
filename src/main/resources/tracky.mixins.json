@@ -6,10 +6,10 @@
   "refmap": "tracky.refmap.json",
   "plugin": "com.tracky.MixinPlugin",
   "mixins": [
-    "empty.SharedConstantsMixin",
-    "empty.WorldMixin",
-    "empty.ClientWorldMixin",
-    "empty.TrackyAccessorMixin"
+    "dummy.SharedConstantsMixin",
+    "dummy.WorldMixin",
+    "dummy.ClientWorldMixin",
+    "dummy.TrackyAccessorMixin"
   ],
   "client": [
     "client.ClientChunkProviderMixin",

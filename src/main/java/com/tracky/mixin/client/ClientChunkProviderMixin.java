@@ -2,18 +2,15 @@ package com.tracky.mixin.client;
 
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
-import net.minecraft.client.multiplayer.ClientChunkProvider;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.SectionPos;
-import net.minecraft.world.biome.BiomeContainer;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.lighting.WorldLightManager;
-import org.apache.logging.log4j.Logger;
+import net.minecraft.client.multiplayer.ClientChunkCache;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,83 +21,73 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashMap;
+import java.util.function.Consumer;
 
 // TODO: we can look into making this less invasive later on, but for now, this should do
-@Mixin(ClientChunkProvider.class)
+@Mixin(ClientChunkCache.class)
 public abstract class ClientChunkProviderMixin implements IChunkProviderAttachments {
 	@Shadow
 	@Final
-	private ClientWorld world;
-	@Shadow
-	@Final
-	private static Logger LOGGER;
+	ClientLevel level;
 	
 	@Shadow
-	public abstract WorldLightManager getLightManager();
+	public abstract LevelLightEngine getLightEngine();
 	
 	@Unique
-	HashMap<ChunkPos, Chunk> chunks = new HashMap<>();
+	HashMap<ChunkPos, LevelChunk> chunks = new HashMap<>();
 	
-	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/Chunk;", cancellable = true)
-	public void preGetChunk0(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load, CallbackInfoReturnable<Chunk> cir) {
+	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/level/chunk/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess;", cancellable = true)
+	public void preGetChunk0(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load, CallbackInfoReturnable<LevelChunk> cir) {
 		if (!TrackyAccessor.isMainTracky()) return;
-		Chunk chunk = getChunk(new ChunkPos(chunkX, chunkZ));
+		LevelChunk chunk = getChunk(new ChunkPos(chunkX, chunkZ));
 		if (chunk != null) cir.setReturnValue(chunk);
 	}
 	
-	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/IChunk;", cancellable = true)
-	public void preGetChunk1(int pChunkX, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad, CallbackInfoReturnable<Chunk> cir) {
+	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/level/chunk/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/LevelChunk;", cancellable = true)
+	public void preGetChunk1(int pChunkX, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad, CallbackInfoReturnable<LevelChunk> cir) {
 		if (!TrackyAccessor.isMainTracky()) return;
-		Chunk chunk = getChunk(new ChunkPos(pChunkX, pChunkZ));
+		LevelChunk chunk = getChunk(new ChunkPos(pChunkX, pChunkZ));
 		if (chunk != null) cir.setReturnValue(chunk);
 	}
 	
-	@Inject(at = @At("HEAD"), method = "unloadChunk", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "drop", cancellable = true)
 	public void preDropChunk(int pX, int pZ, CallbackInfo ci) {
 		if (!TrackyAccessor.isMainTracky()) return;
-		Chunk chunk = chunks.remove(new ChunkPos(pX, pZ));
+		LevelChunk chunk = chunks.remove(new ChunkPos(pX, pZ));
 		if (chunk != null) {
 			net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload(chunk));
-			this.world.onChunkUnloaded(chunk);
+			this.level.unload(chunk);
 			ci.cancel();
 		}
 	}
 	
-	@Inject(at = @At("HEAD"), method = "loadChunk", cancellable = true)
-	public void preReplaceWithPacket(int pX, int pZ, BiomeContainer biomeContainerIn, PacketBuffer packetIn, CompoundNBT nbtTagIn, int sizeIn, boolean fullChunk, CallbackInfoReturnable<Chunk> cir) {
+	@Inject(at = @At("HEAD"), method = "replaceWithPacketData", cancellable = true)
+	public void preReplaceWithPacket(int pX, int pZ, FriendlyByteBuf pBuffer, CompoundTag pTag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> pConsumer, CallbackInfoReturnable<LevelChunk> cir) {
 		if (!TrackyAccessor.isMainTracky()) return;
 		ChunkPos pos = new ChunkPos(pX, pZ);
-		Chunk chunk = getChunk(pos);
-		if (biomeContainerIn == null) {
-			LOGGER.warn("Ignoring chunk since we don't have complete data: {}, {}", pX, pZ);
-			cir.setReturnValue(null);
-			return;
-		}
+		LevelChunk chunk = getChunk(pos);
 		
 		boolean wasPresent;
 		if (!(wasPresent = !(chunk == null)))
-			chunk = new Chunk(this.world, pos, biomeContainerIn);
-		chunk.read(biomeContainerIn, packetIn, nbtTagIn, sizeIn);
+			chunk = new LevelChunk(this.level, pos);
+		chunk.replaceWithPacketData(pBuffer, pTag, pConsumer);
 		if (!wasPresent)
 			this.chunks.put(pos, chunk);
-		else this.chunks.replace(pos, chunk);
-		
-		ChunkSection[] achunksection = chunk.getSections();
-		WorldLightManager worldlightmanager = this.getLightManager();
-		worldlightmanager.enableLightSources(pos, true);
-		
-		for (int j = 0; j < achunksection.length; ++j) {
-			ChunkSection chunksection = achunksection[j];
-			worldlightmanager.updateSectionStatus(SectionPos.of(pX, j, pZ), ChunkSection.isEmpty(chunksection));
+		else {
+			LevelChunk chunk1 = this.chunks.get(pos);
+			if (chunk1 != null)
+				if (chunk1 != chunk)
+					level.unload(chunk1);
+			this.chunks.replace(pos, chunk);
 		}
 		
-		this.world.onChunkLoaded(pX, pZ);
+		this.level.onChunkLoaded(pos);
 		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(chunk));
 		cir.setReturnValue(chunk);
 	}
 	
 	@Unique
-	public Chunk getChunk(ChunkPos pos) {
+	public LevelChunk getChunk(ChunkPos pos) {
 		return chunks.getOrDefault(pos, null);
 	}
 

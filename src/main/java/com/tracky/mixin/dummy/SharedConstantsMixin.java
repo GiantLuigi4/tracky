@@ -1,6 +1,6 @@
-package com.tracky.mixin.empty;
+package com.tracky.mixin.dummy;
 
-import net.minecraft.util.SharedConstants;
+import net.minecraft.SharedConstants;
 import org.spongepowered.asm.mixin.Mixin;
 
 /**
