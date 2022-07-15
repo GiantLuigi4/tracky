@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.tracky.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_16",
   "refmap": "tracky.refmap.json",
   "plugin": "com.tracky.MixinPlugin",
   "mixins": [
@@ -12,8 +12,7 @@
     "dummy.TrackyAccessorMixin"
   ],
   "client": [
-    "client.ClientChunkProviderMixin",
-    "client.AbstractChunkProviderMixin"
+    "client.ClientChunkProviderMixin"
   ],
   "injectors": {
     "defaultRequire": 1
