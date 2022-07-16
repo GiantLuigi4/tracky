@@ -12,7 +12,8 @@
     "dummy.TrackyAccessorMixin"
   ],
   "client": [
-    "client.ClientChunkProviderMixin"
+    "client.ClientChunkProviderMixin",
+    "client.LevelRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

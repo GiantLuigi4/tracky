@@ -91,10 +91,10 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		return chunks.getOrDefault(pos, null);
 	}
 
-//	@Override
-//	public Chunk[] forcedChunks() {
-//		return chunks.values().toArray(new Chunk[0]);
-//	}
+	@Override
+	public LevelChunk[] forcedChunks() {
+		return chunks.values().toArray(new LevelChunk[0]);
+	}
 
 //	@Override
 //	public Chunk[] regularChunks() {
