@@ -20,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 // TODO: we can look into making this less invasive later on, but for now, this should do
@@ -90,13 +92,38 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	public LevelChunk getChunk(ChunkPos pos) {
 		return chunks.getOrDefault(pos, null);
 	}
-
+	
 	@Override
 	public LevelChunk[] forcedChunks() {
 		return chunks.values().toArray(new LevelChunk[0]);
 	}
-
-//	@Override
+	
+	HashMap<ChunkPos, Long> lastUpdates = new HashMap<>();
+	
+	@Override
+	public void setUpdated(int x, int z) {
+		ChunkPos pos = new ChunkPos(x, z);
+		if (lastUpdates.containsKey(pos))
+			lastUpdates.replace(pos, System.currentTimeMillis());
+		else lastUpdates.put(pos, System.currentTimeMillis());
+	}
+	
+	@Override
+	public long getLastUpdate(LevelChunk chunk) {
+		return lastUpdates.getOrDefault(chunk.getPos(), 0L);
+	}
+	
+	@Inject(at = @At("HEAD"), method = "tick")
+	public void preTick(BooleanSupplier p_202421_, boolean p_202422_, CallbackInfo ci) {
+		ArrayList<ChunkPos> toRemove = new ArrayList<>();
+		for (ChunkPos chunkPos : lastUpdates.keySet())
+			if (!chunks.containsKey(chunkPos))
+				toRemove.add(chunkPos);
+		for (ChunkPos chunkPos : toRemove)
+			lastUpdates.remove(chunkPos);
+	}
+	
+	//	@Override
 //	public Chunk[] regularChunks() {
 //		// AT did weird
 //		AtomicReferenceArray<Chunk> chunksArray = ((StorageAccessor) (Object) storage).chunks();

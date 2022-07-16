@@ -13,7 +13,9 @@
   ],
   "client": [
     "client.ClientChunkProviderMixin",
-    "client.LevelRendererMixin"
+    "client.ChunkBorderRendererMixin",
+    "client.SectionChangePacketMixin",
+    "client.BlockUpdatePacketMixin"
   ],
   "injectors": {
     "defaultRequire": 1
