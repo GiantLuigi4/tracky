@@ -14,11 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientboundSectionBlocksUpdatePacket.class)
 public class SectionChangePacketMixin {
-	@Shadow @Final private SectionPos sectionPos;
+	@Shadow
+	@Final
+	private SectionPos sectionPos;
 	
 	@Inject(at = @At("HEAD"), method = "handle(Lnet/minecraft/network/protocol/game/ClientGamePacketListener;)V")
 	public void preHandle(ClientGamePacketListener pHandler, CallbackInfo ci) {
-		IChunkProviderAttachments attachments = (IChunkProviderAttachments) Minecraft.getInstance().level.getChunkSource();
-		attachments.setUpdated(sectionPos.x(), sectionPos.z());
+		if (Minecraft.getInstance().level != null) {
+			IChunkProviderAttachments attachments = (IChunkProviderAttachments) Minecraft.getInstance().level.getChunkSource();
+			attachments.setUpdated(sectionPos.x(), sectionPos.z());
+		}
 	}
 }
