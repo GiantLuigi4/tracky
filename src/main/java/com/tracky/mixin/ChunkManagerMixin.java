@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkManagerMixin {
@@ -184,6 +183,7 @@ public abstract class ChunkManagerMixin {
 		
 		ChunkPos playerChunk = pPlayer.chunkPosition();
 		ChunkPos center = new ChunkPos(new BlockPos(origin.x, origin.y, origin.z));
+//		Vec3 pChunkPos = new Vec3(playerChunk.x, 0, playerChunk.z);
 		
 		for (int x = -viewDistance; x <= viewDistance; x++) {
 			for (int z = -viewDistance; z <= viewDistance; z++) {
@@ -191,22 +191,22 @@ public abstract class ChunkManagerMixin {
 				if (tracked.contains(pos)) continue;
 
 //				Vec3 chunkPos = new Vec3(pos.x, 0, pos.z);
-//
-//				// TODO: this distance check breaks everything
+
+				// TODO: this distance check breaks everything
 //				if (chunkPos.distanceToSqr(pChunkPos) < viewDistance) {
-				boolean wasLoaded;
-				updateChunkTracking(
-						pPlayer, pos,
-						new MutableObject<>(),
-						wasLoaded = chunkTracker.trackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
-						true // start tracking
-				);
-				
-				if (!wasLoaded && !success) {
-					anyFailed = true;
-				} else {
-					tracked.add(pos);
-				}
+					boolean wasLoaded;
+					updateChunkTracking(
+							pPlayer, pos,
+							new MutableObject<>(),
+							wasLoaded = chunkTracker.trackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
+							true // start tracking
+					);
+					
+					if (!wasLoaded && !success) {
+						anyFailed = true;
+					} else {
+						tracked.add(pos);
+					}
 //				}
 			}
 		}
