@@ -9,7 +9,10 @@
     "dummy.SharedConstantsMixin",
     "dummy.WorldMixin",
     "dummy.ClientWorldMixin",
-    "dummy.TrackyAccessorMixin"
+    "dummy.TrackyAccessorMixin",
+    "ChunkManagerMixin",
+    "PlayerListMixin",
+    "ServerPlayerMixin"
   ],
   "client": [
     "client.ClientChunkProviderMixin",
