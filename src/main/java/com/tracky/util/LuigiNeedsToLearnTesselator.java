@@ -6,6 +6,7 @@ import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -68,6 +69,41 @@ public class LuigiNeedsToLearnTesselator {
 			
 			bufferbuilder.vertex(x, y, z).color(1 - diff, diff, 0.0F, 0.0F).endVertex();
 		}
+		
+		ChunkPos ckPos = new ChunkPos(new BlockPos((int) pCamX, 0, (int) pCamZ));
+//		double x = ((((int) (pCamX / 16)) * 16) - pCamX);
+		double x = ckPos.x * 16 - pCamX;
+		double y = minecraft.level.getMinBuildHeight() - pCamY;
+		double y1 = minecraft.level.getMaxBuildHeight() - pCamY;
+		double z = ckPos.z * 16 - pCamZ;
+		
+		for (int xO = 0; xO < 2; xO++) {
+			for (int zO = 0; zO < 2; zO++) {
+				bufferbuilder.vertex(x + xO * 16, y, z + zO * 16).color(1, 1, 0.0F, 0.0F).endVertex();
+				
+				bufferbuilder.vertex(x + xO * 16, y, z + zO * 16).color(1, 1, 0.0F, 1.0F).endVertex();
+				bufferbuilder.vertex(x + xO * 16, y1, z + zO * 16).color(1, 1, 0.0F, 1.0F).endVertex();
+				
+				bufferbuilder.vertex(x + xO * 16, y1, z + zO * 16).color(1, 1, 0.0F, 0.0F).endVertex();
+			}
+		}
+		
+		y = minecraft.level.getMinBuildHeight();
+		y = ((int) (y / 16)) * 16;
+		y1 = minecraft.level.getMaxBuildHeight();
+		
+		for (int yO = (int) y; yO <= y1 + 1; yO += 16) {
+			bufferbuilder.vertex(x, yO - pCamY, z).color(0, 0, 1.0F, 0.0F).endVertex();
+			
+			bufferbuilder.vertex(x, yO - pCamY, z).color(0, 0, 1.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(x + 16, yO - pCamY, z).color(0, 0, 1.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(x + 16, yO - pCamY, z + 16).color(0, 0, 1.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(x, yO - pCamY, z + 16).color(0, 0, 1.0F, 1.0F).endVertex();
+			bufferbuilder.vertex(x, yO - pCamY, z).color(0, 0, 1.0F, 1.0F).endVertex();
+			
+			bufferbuilder.vertex(x, yO - pCamY, z).color(0, 0, 1.0F, 0.0F).endVertex();
+		}
+		
 		tesselator.end();
 		
 		RenderSystem.enableBlend();
