@@ -70,7 +70,7 @@ public class LuigiNeedsToLearnTesselator {
 			bufferbuilder.vertex(x, y, z).color(1 - diff, diff, 0.0F, 0.0F).endVertex();
 		}
 		
-		ChunkPos ckPos = new ChunkPos(new BlockPos((int) pCamX, 0, (int) pCamZ));
+		ChunkPos ckPos = entity.chunkPosition();
 //		double x = ((((int) (pCamX / 16)) * 16) - pCamX);
 		double x = ckPos.x * 16 - pCamX;
 		double y = minecraft.level.getMinBuildHeight() - pCamY;

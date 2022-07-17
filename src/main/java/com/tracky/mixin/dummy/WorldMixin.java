@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.function.Supplier;
 
 /**
@@ -24,6 +24,14 @@ import java.util.function.Supplier;
 public class WorldMixin {
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData p_204149_, ResourceKey p_204150_, Holder p_204151_, Supplier p_204152_, boolean p_204153_, boolean p_204154_, long p_204155_, CallbackInfo ci) {
-		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> Arrays.asList(new ChunkPos(new BlockPos(-18, 6, 9))));
+		ArrayList<ChunkPos> positions = new ArrayList<>();
+		ChunkPos startPos = new ChunkPos(new BlockPos(42, 0, 71));
+		ChunkPos endPos = new ChunkPos(new BlockPos(-88, 0, -61));
+		for (int x = endPos.x; x <= startPos.x; x++) {
+			for (int z = endPos.z; z <= startPos.z; z++) {
+				positions.add(new ChunkPos(x, z));
+			}
+		}
+		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> positions);
 	}
 }
