@@ -4,6 +4,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -30,6 +31,8 @@ public class TrackyAccessor {
 	 * having the dev need to change any variables for every render
 	 */
 	public static native Map<UUID, Supplier<Iterable<ChunkPos>>> getRenderedChunks(Level level);
+	
+	public static native Map<UUID, List<Player>> getPlayersLoadingChunks(Level level);
 	
 	public static boolean isMainTracky() {
 		return MixinPlugin.isMainTracky;

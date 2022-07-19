@@ -1,5 +1,6 @@
 package com.tracky.mixin;
 
+import com.mojang.datafixers.util.Either;
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.ITrackChunks;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -9,6 +10,7 @@ import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -26,6 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 @Mixin(ChunkMap.class)
@@ -100,6 +105,42 @@ public abstract class ChunkManagerMixin {
 	
 	@Shadow
 	protected abstract SectionPos updatePlayerPos(ServerPlayer p_140374_);
+	
+	@Shadow
+	protected abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleChunkLoad(ChunkPos pChunkPos);
+	
+	@Shadow
+	protected abstract void scheduleUnload(long pChunkPos, ChunkHolder pChunkHolder);
+	
+	@Unique
+	ArrayList<ChunkPos> trackyForced = new ArrayList<>();
+	
+	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
+	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) throws ExecutionException, InterruptedException {
+		ArrayList<Player> playersChecked = new ArrayList<>();
+		Map<UUID, Function<Player, Iterable<ChunkPos>>> function = TrackyAccessor.getForcedChunks(level);
+		ArrayList<ChunkPos> poses = new ArrayList<>();
+		for (List<Player> value : TrackyAccessor.getPlayersLoadingChunks(level).values()) {
+			for (Player player : value) {
+				if (playersChecked.contains(player)) continue;
+				
+				playersChecked.add(player);
+				for (Function<Player, Iterable<ChunkPos>> playerIterableFunction : function.values()) {
+					for (ChunkPos chunkPos : playerIterableFunction.apply(player)) {
+						if (!trackyForced.remove(chunkPos) && !poses.contains(chunkPos)) {
+							level.setChunkForced(chunkPos.x, chunkPos.z, true);
+						}
+					}
+				}
+			}
+		}
+		
+		for (ChunkPos chunkPos : trackyForced) {
+			level.setChunkForced(chunkPos.x, chunkPos.z, false);
+		}
+		
+		trackyForced.addAll(poses);
+	}
 	
 	// TODO: is there a way to do this without replacing the entire "move" method?
 	@Inject(at = @At("HEAD"), method = "move", cancellable = true)
@@ -191,22 +232,22 @@ public abstract class ChunkManagerMixin {
 				if (tracked.contains(pos)) continue;
 
 //				Vec3 chunkPos = new Vec3(pos.x, 0, pos.z);
-
+				
 				// TODO: this distance check breaks everything
 //				if (chunkPos.distanceToSqr(pChunkPos) < viewDistance) {
-					boolean wasLoaded;
-					updateChunkTracking(
-							pPlayer, pos,
-							new MutableObject<>(),
-							wasLoaded = chunkTracker.trackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
-							true // start tracking
-					);
-					
-					if (!wasLoaded && !success) {
-						anyFailed = true;
-					} else {
-						tracked.add(pos);
-					}
+				boolean wasLoaded;
+				updateChunkTracking(
+						pPlayer, pos,
+						new MutableObject<>(),
+						wasLoaded = chunkTracker.trackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
+						true // start tracking
+				);
+				
+				if (!wasLoaded && !success) {
+					anyFailed = true;
+				} else {
+					tracked.add(pos);
+				}
 //				}
 			}
 		}

@@ -10,7 +10,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public class MixinPlugin implements IMixinConfigPlugin {
 	protected static boolean isMainTracky = false;
@@ -47,10 +50,12 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	private static final String sharedConstantsClass = "net/minecraft/SharedConstants";
 	
 	FieldNode targetField;
+	FieldNode playerList;
 	FieldNode renderField;
 	FieldNode versionsField;
 	
 	private static final String type = "java/util/Function<L" + playerClass + ";Ljava/lang/Iterable<L" + chunkPosClass + ";>;";
+	private static final String typePlayerList = "java/util/Map<Ljava/util/UUID;Ljava/util/List<L" + playerClass + ";>;>";
 	private static final String typeClient = "java/util/Map<Ljava/util/UUID;Ljava/util/Supplier<L" + chunkPosClass + ";>;>";
 	private static final String typeServer = "java/util/Map<Ljava/util/UUID;L" + type + ";>";
 	private static final String typeVersion = "java/util/Map<Ljava/lang/String;Ljava/lang/String;>";
@@ -133,6 +138,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 		// however, this also guarantees that there is a 100% certainty that all trackies use the same central field
 		// this makes it possible to make it so that only the main tracky does stuff
 		String fieldName = trackyUUID.toString() + " Tracky Forced";
+		String playerListFieldName = trackyUUID.toString() + " Tracky Players";
 		// idk why intelliJ complained about the "toString" on the one below but not the one above, but ok
 		String renderFieldName = trackyUUID + " Tracky Rendered";
 		String versionFieldName = trackyUUID + " Tracky Versions";
@@ -140,6 +146,45 @@ public class MixinPlugin implements IMixinConfigPlugin {
 			renderField = injectField(targetClass, renderFieldName, false);
 		} else if (targetClassName.equals(worldClass.replace("/", "."))) {
 			targetField = injectField(targetClass, fieldName, true);
+			
+			for (FieldNode field : targetClass.fields) {
+				if (field.name.equals(playerListFieldName)) {
+					playerList = field;
+					return;
+				}
+			}
+			
+			targetClass.fields.add(playerList = new FieldNode(
+					// synthetic hides it from the decompiler
+					Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+					playerListFieldName,
+					"Ljava/util/Map;",
+					"L" + typePlayerList + ";",
+					null
+			));
+			
+			for (MethodNode method : targetClass.methods) {
+				if (method.name.equals("<init>")) {
+					ArrayList<AbstractInsnNode> targets = new ArrayList<>();
+					for (AbstractInsnNode instruction : method.instructions) {
+						if (instruction.getOpcode() == Opcodes.RETURN) {
+							targets.add(instruction);
+						}
+					}
+					for (AbstractInsnNode target : targets) {
+						InsnList list = new InsnList();
+						String des = playerList.desc.substring(1, playerList.desc.length() - 1);
+						list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+						list.add(new TypeInsnNode(Opcodes.NEW, des.replace("Map", "HashMap")));
+						list.add(new InsnNode(Opcodes.DUP));
+						list.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, des.replace("Map", "HashMap"), "<init>", "()V"));
+						AbstractInsnNode insn = new FieldInsnNode(Opcodes.PUTFIELD, targetClass.name.replace(".", "/"), playerList.name, playerList.desc);
+						list.add(insn);
+						method.instructions.insertBefore(target, list);
+					}
+				}
+			}
+			dump(targetClass);
 		} else {
 			if (targetClassName.equals(sharedConstantsClass.replace("/", "."))) {
 				for (FieldNode field : targetClass.fields) {
@@ -190,6 +235,11 @@ public class MixinPlugin implements IMixinConfigPlugin {
 					switch (method.name) {
 						case "getForcedChunks": {
 							targ = targetField;
+							owner = worldClass;
+							break;
+						}
+						case "getPlayersLoadingChunks": {
+							targ = playerList;
 							owner = worldClass;
 							break;
 						}
