@@ -103,9 +103,12 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	@Override
 	public void setUpdated(int x, int z) {
 		ChunkPos pos = new ChunkPos(x, z);
-		if (lastUpdates.containsKey(pos))
-			lastUpdates.replace(pos, System.currentTimeMillis());
-		else lastUpdates.put(pos, System.currentTimeMillis());
+
+		synchronized (lastUpdates) {
+			if (lastUpdates.containsKey(pos))
+				lastUpdates.replace(pos, System.currentTimeMillis());
+			else lastUpdates.put(pos, System.currentTimeMillis());
+		}
 	}
 	
 	@Override
@@ -115,12 +118,16 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	
 	@Inject(at = @At("HEAD"), method = "tick")
 	public void preTick(BooleanSupplier p_202421_, boolean p_202422_, CallbackInfo ci) {
-		ArrayList<ChunkPos> toRemove = new ArrayList<>();
-		for (ChunkPos chunkPos : lastUpdates.keySet())
-			if (!chunks.containsKey(chunkPos))
-				toRemove.add(chunkPos);
-		for (ChunkPos chunkPos : toRemove)
-			lastUpdates.remove(chunkPos);
+		synchronized (lastUpdates) {
+			ArrayList<ChunkPos> toRemove = new ArrayList<>();
+
+			for (ChunkPos chunkPos : lastUpdates.keySet())
+				if (!chunks.containsKey(chunkPos))
+					toRemove.add(chunkPos);
+
+			for (ChunkPos chunkPos : toRemove)
+				lastUpdates.remove(chunkPos);
+		}
 	}
 	
 	//	@Override
