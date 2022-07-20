@@ -141,49 +141,31 @@ public abstract class ChunkManagerMixin {
 		
 		trackyForced.addAll(poses);
 	}
-	
-	// TODO: is there a way to do this without replacing the entire "move" method?
-	@Inject(at = @At("HEAD"), method = "move", cancellable = true)
-	public void preMove(ServerPlayer pPlayer, CallbackInfo ci) {
-		for (ChunkMap.TrackedEntity chunkmap$trackedentity : this.entityMap.values()) {
-			if (chunkmap$trackedentity.entity == pPlayer) chunkmap$trackedentity.updatePlayers(this.level.players());
-			else chunkmap$trackedentity.updatePlayer(pPlayer);
-		}
-		
-		SectionPos oldPos = pPlayer.getLastSectionPos();
-		SectionPos newPos = SectionPos.of(pPlayer);
-		long oldAsLong = oldPos.chunk().toLong();
-		long newAsLong = newPos.chunk().toLong();
-		boolean ignorePlayer = this.playerMap.ignored(pPlayer);
-		boolean skipPlayer = this.skipPlayer(pPlayer);
-		boolean wat = oldPos.asLong() != newPos.asLong();
-		if (wat || ignorePlayer != skipPlayer) {
-			this.updatePlayerPos(pPlayer);
-			if (!ignorePlayer) this.distanceManager.removePlayer(oldPos, pPlayer);
-			if (!skipPlayer) this.distanceManager.addPlayer(newPos, pPlayer);
-			if (!ignorePlayer && skipPlayer) this.playerMap.ignorePlayer(pPlayer);
-			if (ignorePlayer && !skipPlayer) this.playerMap.unIgnorePlayer(pPlayer);
-			if (oldAsLong != newAsLong) this.playerMap.updatePlayer(oldAsLong, newAsLong, pPlayer);
-		}
-		
-		ITrackChunks chunkTracker = (ITrackChunks) pPlayer;
+
+
+	/**
+	 * Tracks chunks loaded by cameras to make sure they're being sent to the client
+	 */
+	@Inject(method = "move", at = @At(value = "TAIL"))
+	private void trackCameraLoadedChunks(ServerPlayer player, CallbackInfo callback) {
+
+		ITrackChunks chunkTracker = (ITrackChunks) player;
 		if (!chunkTracker.setDoUpdate(false)) return;
-		
+
 		ArrayList<ChunkPos> tracked = new ArrayList<>();
-		boolean anyFailed = false;
-		anyFailed = forAllInRange(pPlayer.position(), pPlayer, chunkTracker, tracked) || anyFailed;
+		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
 		for (Function<Player, Iterable<ChunkPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
-			for (ChunkPos chunkPos : value.apply(pPlayer)) {
+			for (ChunkPos chunkPos : value.apply(player)) {
 				if (tracked.contains(chunkPos)) continue;
-				
+
 				boolean wasLoaded;
 				updateChunkTracking(
-						pPlayer, chunkPos,
+						player, chunkPos,
 						new MutableObject<>(),
 						wasLoaded = chunkTracker.trackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
 						true // start tracking
 				);
-				
+
 				if (!wasLoaded && !success) {
 					anyFailed = true;
 				} else {
@@ -191,31 +173,6 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
-
-//		chunkTracker.trackedChunks().removeAll(tracked);
-		for (ChunkPos trackedChunk : chunkTracker.trackedChunks()) {
-//			if (nonEclidianInRange(trackedChunk, pPlayer)) {
-//				tracked.add(trackedChunk);
-//				updateChunkTracking(
-//						pPlayer, trackedChunk,
-//						new MutableObject<>(),
-//						true, // this will always be true, no point in checking the list
-//						true // player should know about the chunk
-//				);
-//			} else {
-			updateChunkTracking(
-					pPlayer, trackedChunk,
-					new MutableObject<>(),
-					true, // this will always be true, no point in checking the list
-					false // unloading/untracking
-			);
-//			}
-		}
-		chunkTracker.trackedChunks().clear();
-		chunkTracker.trackedChunks().addAll(tracked);
-		
-		if (anyFailed) chunkTracker.setDoUpdate(true);
-		ci.cancel();
 	}
 	
 	@Unique
@@ -224,17 +181,17 @@ public abstract class ChunkManagerMixin {
 		
 		ChunkPos playerChunk = pPlayer.chunkPosition();
 		ChunkPos center = new ChunkPos(new BlockPos(origin.x, origin.y, origin.z));
-//		Vec3 pChunkPos = new Vec3(playerChunk.x, 0, playerChunk.z);
-		
+		Vec3 pChunkPos = new Vec3(playerChunk.x, 0, playerChunk.z);
+
 		for (int x = -viewDistance; x <= viewDistance; x++) {
 			for (int z = -viewDistance; z <= viewDistance; z++) {
 				ChunkPos pos = new ChunkPos(center.x + x, center.z + z);
 				if (tracked.contains(pos)) continue;
 
-//				Vec3 chunkPos = new Vec3(pos.x, 0, pos.z);
+				Vec3 chunkPos = new Vec3(pos.x, 0, pos.z);
 				
 				// TODO: this distance check breaks everything
-//				if (chunkPos.distanceToSqr(pChunkPos) < viewDistance) {
+				if (chunkPos.distanceToSqr(pChunkPos) < viewDistance) {
 				boolean wasLoaded;
 				updateChunkTracking(
 						pPlayer, pos,
@@ -248,7 +205,7 @@ public abstract class ChunkManagerMixin {
 				} else {
 					tracked.add(pos);
 				}
-//				}
+				}
 			}
 		}
 		
