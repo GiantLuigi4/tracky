@@ -6,19 +6,22 @@
   "refmap": "tracky.refmap.json",
   "plugin": "com.tracky.MixinPlugin",
   "mixins": [
-    "dummy.SharedConstantsMixin",
-    "dummy.WorldMixin",
-    "dummy.ClientWorldMixin",
-    "dummy.TrackyAccessorMixin",
     "ChunkManagerMixin",
     "PlayerListMixin",
-    "ServerPlayerMixin"
+    "ServerPlayerMixin",
+    "client.render.ViewAreaAccessor",
+    "dummy.ClientWorldMixin",
+    "dummy.SharedConstantsMixin",
+    "dummy.TrackyAccessorMixin",
+    "dummy.WorldMixin"
   ],
   "client": [
-    "client.ClientChunkProviderMixin",
+    "client.BlockUpdatePacketMixin",
     "client.ChunkBorderRendererMixin",
+    "client.ClientChunkProviderMixin",
     "client.SectionChangePacketMixin",
-    "client.BlockUpdatePacketMixin"
+    "client.render.LevelRendererMixin",
+    "client.render.ViewAreaMixin"
   ],
   "injectors": {
     "defaultRequire": 1
