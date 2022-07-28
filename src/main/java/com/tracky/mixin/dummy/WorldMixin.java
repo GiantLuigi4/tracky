@@ -26,13 +26,27 @@ public class WorldMixin {
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData p_204149_, ResourceKey p_204150_, Holder p_204151_, Supplier p_204152_, boolean p_204153_, boolean p_204154_, long p_204155_, CallbackInfo ci) {
 		ArrayList<ChunkPos> positions = new ArrayList<>();
-		ChunkPos startPos = new ChunkPos(new BlockPos(42, 0, 71));
-		ChunkPos endPos = new ChunkPos(new BlockPos(-88, 0, -61));
-		for (int x = endPos.x; x <= startPos.x; x++) {
-			for (int z = endPos.z; z <= startPos.z; z++) {
-				positions.add(new ChunkPos(x, z));
+
+		// all temp
+		{
+			ChunkPos startPos = new ChunkPos(new BlockPos(42, 0, 71));
+			ChunkPos endPos = new ChunkPos(new BlockPos(-88, 0, -61));
+			for (int x = endPos.x; x <= startPos.x; x++) {
+				for (int z = endPos.z; z <= startPos.z; z++) {
+					positions.add(new ChunkPos(x, z));
+				}
 			}
 		}
+		{
+			ChunkPos startPos = new ChunkPos(new BlockPos(-297 - 200, 0, 296));
+			ChunkPos endPos = new ChunkPos(new BlockPos(-456 - 200, 0, 328));
+			for (int x = endPos.x; x <= startPos.x; x++) {
+				for (int z = startPos.z; z <= endPos.z; z++) {
+					positions.add(new ChunkPos(x, z));
+				}
+			}
+		}
+
 		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> {
 			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), Arrays.asList(player));
 			
