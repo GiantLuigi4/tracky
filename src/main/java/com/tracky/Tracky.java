@@ -1,6 +1,12 @@
 package com.tracky;
 
+import com.tracky.api.ClientTracking;
+import com.tracky.api.ServerTracking;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import java.util.Map;
 import java.util.Random;
@@ -49,6 +55,23 @@ public class Tracky {
 		MixinPlugin.isMainTracky = isMain;
 		
 		System.out.println("Tracky@" + (Tracky.class.toString().replace("class ", "")) + " is " + (MixinPlugin.isMainTracky ? "" : "not") + " the main tracky instance, running version " + MixinPlugin.VERSION + ".");
+		
+		if (MixinPlugin.allowAPI) {
+			MinecraftForge.EVENT_BUS.addListener(this::onUnloadWorld);
+			MinecraftForge.EVENT_BUS.addListener(this::onRemovePlayer);
+		}
+	}
+	
+	public void onUnloadWorld(WorldEvent.Unload event) {
+		ServerTracking.onUnloadLevel(event.getWorld());
+		if (FMLEnvironment.dist.isClient())
+			ClientTracking.onUnloadLevel(event.getWorld());
+	}
+	
+	public void onRemovePlayer(PlayerEvent.PlayerLoggedOutEvent event) {
+		ServerTracking.onRemovePlayer(event.getPlayer());
+		if (FMLEnvironment.dist.isClient())
+			ClientTracking.onRemovePlayer(event.getPlayer());
 	}
 	
 	// a default UUID dependent upon the name which the class is shaded under

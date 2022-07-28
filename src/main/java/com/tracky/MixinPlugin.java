@@ -17,6 +17,7 @@ import java.util.UUID;
 
 public class MixinPlugin implements IMixinConfigPlugin {
 	protected static boolean isMainTracky = false;
+	public static boolean allowAPI = false;
 	
 	UUID trackyUUID = new UUID("tracky".hashCode() * 3427843L, "tracker".hashCode() * 4782347L);
 	

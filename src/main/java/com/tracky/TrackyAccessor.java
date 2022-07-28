@@ -22,7 +22,6 @@ public class TrackyAccessor {
 	// also it's native so that it doesn't have a method body
 	public static native Map<UUID, Function<Player, Iterable<ChunkPos>>> getForcedChunks(Level level);
 	
-	
 	/**
 	 * client only
 	 * is a function as QOL
