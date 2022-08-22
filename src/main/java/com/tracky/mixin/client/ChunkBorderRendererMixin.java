@@ -1,7 +1,7 @@
 package com.tracky.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.tracky.util.LuigiNeedsToLearnTesselator;
+import com.tracky.util.LuigiKindaLearnedTesselator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.debug.ChunkBorderRenderer;
@@ -20,6 +20,6 @@ public class ChunkBorderRendererMixin {
 	
 	@Inject(at = @At("HEAD"), method = "render", cancellable = true)
 	public void preRender(PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
-		LuigiNeedsToLearnTesselator.preRender(minecraft, pPoseStack, pBufferSource, pCamX, pCamY, pCamZ, ci);
+		LuigiKindaLearnedTesselator.preRender(minecraft, pPoseStack, pBufferSource, pCamX, pCamY, pCamZ, ci);
 	}
 }

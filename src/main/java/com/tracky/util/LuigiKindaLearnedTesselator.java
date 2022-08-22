@@ -13,7 +13,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-public class LuigiNeedsToLearnTesselator {
+public class LuigiKindaLearnedTesselator {
 	public static void preRender(Minecraft minecraft, PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
 		if (FMLEnvironment.production) return;
 		

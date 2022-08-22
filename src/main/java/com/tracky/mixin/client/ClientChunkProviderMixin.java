@@ -2,11 +2,13 @@ package com.tracky.mixin.client;
 
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 // TODO: we can look into making this less invasive later on, but for now, this should do
 @Mixin(ClientChunkCache.class)
@@ -35,6 +38,8 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	@Shadow
 	public abstract LevelLightEngine getLightEngine();
 	
+	@Shadow
+	private volatile ClientChunkCache.Storage storage;
 	@Unique
 	HashMap<ChunkPos, LevelChunk> chunks = new HashMap<>();
 	
@@ -103,7 +108,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	@Override
 	public void setUpdated(int x, int z) {
 		ChunkPos pos = new ChunkPos(x, z);
-
+		
 		synchronized (lastUpdates) {
 			if (lastUpdates.containsKey(pos))
 				lastUpdates.replace(pos, System.currentTimeMillis());
@@ -116,15 +121,41 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		return lastUpdates.getOrDefault(chunk.getPos(), 0L);
 	}
 	
+	@Inject(at = @At("HEAD"), method = "updateViewRadius")
+	public void onUpdateViewDegrees /* GiantLuigi4: sometimes I name things weirdly like this */(int pViewDistance, CallbackInfo ci) {
+		if (pViewDistance != ((ChunkStorageAccessor) (Object) /* not sure why this cast to Object is needed */ storage).getChunkRadius()) {
+			ArrayList<ChunkPos> toRemove = new ArrayList<>();
+			loopChunks:
+			for (ChunkPos chunkPos : chunks.keySet()) {
+				LevelChunk levelchunk = getChunk(chunkPos);
+				if (levelchunk != null) {
+					ChunkPos chunkpos = levelchunk.getPos();
+					if (((ChunkStorageAccessor) (Object) storage).isInRange(chunkpos.x, chunkpos.z)) {
+						continue;
+					}
+					for (Function<Player, Iterable<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
+						for (ChunkPos pos : value.apply(Minecraft.getInstance().player)) {
+							if (pos.equals(chunkPos)) {
+								continue loopChunks;
+							}
+						}
+					}
+				}
+				toRemove.add(chunkPos);
+			}
+			toRemove.forEach(chunks::remove);
+		}
+	}
+	
 	@Inject(at = @At("HEAD"), method = "tick")
 	public void preTick(BooleanSupplier p_202421_, boolean p_202422_, CallbackInfo ci) {
 		synchronized (lastUpdates) {
 			ArrayList<ChunkPos> toRemove = new ArrayList<>();
-
+			
 			for (ChunkPos chunkPos : lastUpdates.keySet())
 				if (!chunks.containsKey(chunkPos))
 					toRemove.add(chunkPos);
-
+			
 			for (ChunkPos chunkPos : toRemove)
 				lastUpdates.remove(chunkPos);
 		}

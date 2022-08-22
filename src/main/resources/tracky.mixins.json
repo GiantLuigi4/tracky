@@ -23,7 +23,8 @@
     "client.render.ViewAreaMixin",
     "client.render.RenderChunkInfoMixin",
     "client.render.ViewAreaAccessor",
-    "client.render.FogRendererMixin"
+    "client.render.FogRendererMixin",
+    "client.ChunkStorageAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
