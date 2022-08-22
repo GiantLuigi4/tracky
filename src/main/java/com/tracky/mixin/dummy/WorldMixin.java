@@ -47,10 +47,12 @@ public class WorldMixin {
 			}
 		}
 
+
+
 		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> {
 			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), Arrays.asList(player));
 			
-			return positions;
+			return new ArrayList<>() {{ add(new ChunkPos(5,5)); }};
 		});
 	}
 }

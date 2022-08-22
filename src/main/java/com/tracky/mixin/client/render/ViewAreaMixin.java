@@ -112,7 +112,7 @@ public abstract class ViewAreaMixin {
                 if (renderChunks == null) {
                     cir.setReturnValue(null);
                 } else {
-                    ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y - level.getMinSection()];
+                    ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y /*- Math.abs(level.getMinSection())*/];
                     cir.setReturnValue(renderChunk);
                 }
             }

@@ -9,7 +9,6 @@
     "ChunkManagerMixin",
     "PlayerListMixin",
     "ServerPlayerMixin",
-    "client.render.ViewAreaAccessor",
     "dummy.ClientWorldMixin",
     "dummy.SharedConstantsMixin",
     "dummy.TrackyAccessorMixin",
@@ -21,7 +20,10 @@
     "client.ClientChunkProviderMixin",
     "client.SectionChangePacketMixin",
     "client.render.LevelRendererMixin",
-    "client.render.ViewAreaMixin"
+    "client.render.ViewAreaMixin",
+    "client.render.RenderChunkInfoMixin",
+    "client.render.ViewAreaAccessor",
+    "client.render.FogRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

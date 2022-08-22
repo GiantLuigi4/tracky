@@ -1,5 +1,7 @@
 package com.tracky.mixin.client.render;
 
+import com.mojang.blaze3d.shaders.FogShape;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.tracky.TrackyAccessor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -8,6 +10,7 @@ import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -52,10 +55,17 @@ public class LevelRendererMixin {
         for (ChunkPos chunk : trackyRenderedChunksList) {
             for (int y = 0; y < level.getSectionsCount(); y++) {
                 ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x << 4, y << 4, chunk.z << 4));
+
+                if (gottenRenderChunk != null) {
+                    LevelRenderer.RenderChunkInfo info = RenderChunkInfoMixin.invokeInit(gottenRenderChunk, (Direction) null, 0);
+                    pChunkInfos.add(info);
+                    pInfoMap.put(gottenRenderChunk, info);
+                }
             }
         }
 
 
     }
+
 
 }
