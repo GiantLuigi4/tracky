@@ -55,7 +55,6 @@ public abstract class PlayerListMixin {
 			// messy iteration but no way to avoid with our structure
 			for (ServerPlayer player : level.getPlayers((p) -> true)) {
 				if (player == pExcept) continue;
-
 				for (Function<Player, Iterable<ChunkPos>> func : map.values()) {
 					final Iterable<ChunkPos> chunks = func.apply(player);
 					
