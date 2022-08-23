@@ -23,6 +23,7 @@
     "client.render.ViewAreaMixin",
     "client.render.RenderChunkInfoMixin",
     "client.render.ViewAreaAccessor",
+    "client.render.RenderChunkMixin",
     "client.render.FogRendererMixin",
     "client.ChunkStorageAccessor"
   ],
