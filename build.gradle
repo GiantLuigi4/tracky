@@ -290,4 +290,10 @@ publishing {
     }
 }
 
-System.out.println(System.getProperty("user.home"))
+if (System.getProperty("user.home").contains("jitpack")) {
+    System.out.println("publishing")
+    tasks.reobfJar.finalizedBy("publishToMavenLocal")
+    System.out.println("published(?)")
+
+    System.out.println(System.getProperty("user.home"))
+}
