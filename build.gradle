@@ -264,9 +264,6 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 publishing {
     publications {
         mavenForge(MavenPublication) {
-            artifactId = "Tracky"
-            from components.java
-
             artifact(sourcesJar) {
                 builtBy sourcesJar
             }
