@@ -46,7 +46,7 @@ public abstract class ChunkManagerMixin {
 	// I think this is the right target?
 	@Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
-		if (!TrackyAccessor.isMainTracky()) return;
+//		if (!TrackyAccessor.isMainTracky()) return;
 		final Map<UUID, Function<Player, Iterable<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
 		
 		final List<ServerPlayer> players = new ArrayList<>();

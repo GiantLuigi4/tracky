@@ -38,7 +38,7 @@ public abstract class PlayerListMixin {
 	// is broadcast the right target?
 	@Inject(method = "broadcast", at = @At("HEAD"), cancellable = true)
 	public void broadcast(@Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket, CallbackInfo ci) {
-		if (!TrackyAccessor.isMainTracky()) return;
+//		if (!TrackyAccessor.isMainTracky()) return;
 		
 		ServerLevel level = server.getLevel(pDimension);
 		

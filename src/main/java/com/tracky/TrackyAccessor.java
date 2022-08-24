@@ -1,5 +1,8 @@
 package com.tracky;
 
+import com.tracky.access.ClientMapHolder;
+import com.tracky.access.ServerMapHolder;
+import com.tracky.debug.ITrackChunks;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -20,7 +23,9 @@ public class TrackyAccessor {
 	 * @return the list of force loaded chunks
 	 */
 	// also it's native so that it doesn't have a method body
-	public static native Map<UUID, Function<Player, Iterable<ChunkPos>>> getForcedChunks(Level level);
+	public static Map<UUID, Function<Player, Iterable<ChunkPos>>> getForcedChunks(Level level) {
+		return ((ServerMapHolder) level).trackyHeldMapS();
+	}
 	
 	/**
 	 * client only
@@ -29,13 +34,19 @@ public class TrackyAccessor {
 	 * having it be a supplier allows it to change multiple times per frame without
 	 * having the dev need to change any variables for every render
 	 */
-	public static native Map<UUID, Supplier<Iterable<ChunkPos>>> getRenderedChunks(Level level);
-	
-	public static native Map<UUID, List<Player>> getPlayersLoadingChunks(Level level);
-	
-	public static boolean isMainTracky() {
-		return MixinPlugin.isMainTracky;
+	public static Map<UUID, Supplier<Iterable<ChunkPos>>> getRenderedChunks(Level level) {
+		return ((ClientMapHolder) level).trackyHeldMapC();
 	}
 	
-	public static native Map<String, String> getTrackyVersions();
+	public static Map<UUID, List<Player>> getPlayersLoadingChunks(Level level) {
+		return ((ServerMapHolder) level).trackyPlayerMap();
+	}
+	
+	/**
+	 * call this whenever you modify your list of tracked chunks
+	 * this tells tracky that the list has changed, and that new chunks likely have to be sent to the client, or that the client needs to know to drop chunks
+	 */
+	public static void markForRetracking(Player player) {
+		((ITrackChunks) player).setDoUpdate(true);
+	}
 }

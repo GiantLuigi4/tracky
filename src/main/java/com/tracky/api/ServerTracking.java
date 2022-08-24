@@ -1,6 +1,6 @@
 package com.tracky.api;
 
-import com.tracky.MixinPlugin;
+//import com.tracky.MixinPlugin;
 import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import net.minecraft.world.entity.player.Player;
@@ -17,8 +17,8 @@ public class ServerTracking {
 	private static final HashMap<Level, HashMap<UUID, Supplier<Iterable<ChunkPos>>>> forced = new HashMap();
 	
 	public static void forceChunks(Level level, Player player, Supplier<Iterable<ChunkPos>> positions) {
-		if (!MixinPlugin.allowAPI)
-			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
+//		if (!MixinPlugin.allowAPI)
+//			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
 		
 		HashMap<UUID, Supplier<Iterable<ChunkPos>>> forLevel = forced.get(level);
 		if (forLevel == null) {
@@ -30,8 +30,8 @@ public class ServerTracking {
 	}
 	
 	public static void removeForceLoading(Level level, Player player) {
-		if (!MixinPlugin.allowAPI)
-			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
+//		if (!MixinPlugin.allowAPI)
+//			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
 		
 		HashMap<UUID, Supplier<Iterable<ChunkPos>>> forLevel = forced.get(level);
 		if (forLevel != null) {

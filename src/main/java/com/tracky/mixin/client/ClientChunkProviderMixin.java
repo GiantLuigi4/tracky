@@ -45,21 +45,21 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	
 	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/level/chunk/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess;", cancellable = true)
 	public void preGetChunk0(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load, CallbackInfoReturnable<LevelChunk> cir) {
-		if (!TrackyAccessor.isMainTracky()) return;
+//		if (!TrackyAccessor.isMainTracky()) return;
 		LevelChunk chunk = getChunk(new ChunkPos(chunkX, chunkZ));
 		if (chunk != null) cir.setReturnValue(chunk);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "getChunk(IILnet/minecraft/world/level/chunk/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/LevelChunk;", cancellable = true)
 	public void preGetChunk1(int pChunkX, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad, CallbackInfoReturnable<LevelChunk> cir) {
-		if (!TrackyAccessor.isMainTracky()) return;
+//		if (!TrackyAccessor.isMainTracky()) return;
 		LevelChunk chunk = getChunk(new ChunkPos(pChunkX, pChunkZ));
 		if (chunk != null) cir.setReturnValue(chunk);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "drop", cancellable = true)
 	public void preDropChunk(int pX, int pZ, CallbackInfo ci) {
-		if (!TrackyAccessor.isMainTracky()) return;
+//		if (!TrackyAccessor.isMainTracky()) return;
 		LevelChunk chunk = chunks.remove(new ChunkPos(pX, pZ));
 		if (chunk != null) {
 			net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload(chunk));
@@ -70,7 +70,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	
 	@Inject(at = @At("HEAD"), method = "replaceWithPacketData", cancellable = true)
 	public void preReplaceWithPacket(int pX, int pZ, FriendlyByteBuf pBuffer, CompoundTag pTag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> pConsumer, CallbackInfoReturnable<LevelChunk> cir) {
-		if (!TrackyAccessor.isMainTracky()) return;
+//		if (!TrackyAccessor.isMainTracky()) return;
 		ChunkPos pos = new ChunkPos(pX, pZ);
 		LevelChunk chunk = getChunk(pos);
 		

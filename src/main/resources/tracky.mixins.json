@@ -4,7 +4,6 @@
   "package": "com.tracky.mixin",
   "compatibilityLevel": "JAVA_16",
   "refmap": "tracky.refmap.json",
-  "plugin": "com.tracky.MixinPlugin",
   "mixins": [
     "ChunkManagerMixin",
     "PlayerListMixin",

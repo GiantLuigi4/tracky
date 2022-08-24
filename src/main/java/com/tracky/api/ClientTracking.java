@@ -1,6 +1,6 @@
 package com.tracky.api;
 
-import com.tracky.MixinPlugin;
+//import com.tracky.MixinPlugin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.player.Player;
@@ -14,15 +14,15 @@ public class ClientTracking {
 	private static final HashMap<ClientLevel, Supplier<Iterable<ChunkPos>>> forced = new HashMap();
 	
 	public static void forceChunks(ClientLevel level, Supplier<Iterable<ChunkPos>> positions) {
-		if (!MixinPlugin.allowAPI)
-			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
+//		if (!MixinPlugin.allowAPI)
+//			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
 		
 		forced.put(level, positions);
 	}
 	
 	public static void removeForceLoading(ClientLevel level) {
-		if (!MixinPlugin.allowAPI)
-			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
+//		if (!MixinPlugin.allowAPI)
+//			throw new RuntimeException("Tracky API is not enabled; make sure you set " + MixinPlugin.class.getName() + "$allowAPI to true before initializing Tracky.");
 		
 		forced.remove(level);
 	}
