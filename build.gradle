@@ -13,13 +13,10 @@ buildscript {
     }
 }
 
-plugins {
-    id 'maven-publish'
-}
-
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
+apply plugin: 'maven-publish'
 
 jarJar.enable()
 
@@ -140,47 +137,49 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
-    maven {
-        // Location of the maven that hosts JEI files (and TiC)
-        name 'Progwml6 maven'
-        url 'https://dvs1.progwml6.com/files/maven'
-    }
-    /*maven {
-        // Location of a maven mirror for JEI files, as a fallback
-        name 'ModMaven'
-        url 'https://modmaven.k-4u.nl'
-    }*/
-    maven {
-        // Location of the maven for vazkii's mods
-        name 'blamejared'
-        url 'https://maven.blamejared.com'
-    }
-    maven {
-        // Location of the maven for mixed mappings, Registrate, and Flywheel
-        name 'tterrag maven'
-        url 'https://maven.tterrag.com'
-    }
-    maven {
-        url 'https://www.cursemaven.com'
-        content {
-            includeGroup "curse.maven"
-        }
-    }
-    maven {
-        //location of the maven for dynamic trees
-        url 'https://harleyoconnor.com/maven'
-    }
-    maven {
-        //location of the maven for curios api
-        url = "https://maven.theillusivec4.top/"
-    }
-    maven {
-        name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
-        content {
-            includeGroup "maven.modrinth"
-        }
-    }
+
+//    // TODO: only one of these is needed, and it's only needed for testing purposes
+//    maven {
+//        // Location of the maven that hosts JEI files (and TiC)
+//        name 'Progwml6 maven'
+//        url 'https://dvs1.progwml6.com/files/maven'
+//    }
+//    /*maven {
+//        // Location of a maven mirror for JEI files, as a fallback
+//        name 'ModMaven'
+//        url 'https://modmaven.k-4u.nl'
+//    }*/
+//    maven {
+//        // Location of the maven for vazkii's mods
+//        name 'blamejared'
+//        url 'https://maven.blamejared.com'
+//    }
+//    maven {
+//        // Location of the maven for mixed mappings, Registrate, and Flywheel
+//        name 'tterrag maven'
+//        url 'https://maven.tterrag.com'
+//    }
+//    maven {
+//        url 'https://www.cursemaven.com'
+//        content {
+//            includeGroup "curse.maven"
+//        }
+//    }
+//    maven {
+//        //location of the maven for dynamic trees
+//        url 'https://harleyoconnor.com/maven'
+//    }
+//    maven {
+//        //location of the maven for curios api
+//        url = "https://maven.theillusivec4.top/"
+//    }
+//    maven {
+//        name = "Modrinth"
+//        url = "https://api.modrinth.com/maven"
+//        content {
+//            includeGroup "maven.modrinth"
+//        }
+//    }
 }
 
 dependencies {
@@ -189,10 +188,10 @@ dependencies {
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
 
-    // testing purposes
-    jarJar(fg.deobf(group: 'com.jozufozu.flywheel', name: "flywheel-forge-1.18.2", version: '[0.6.4,0.6.5)')) {
-        jarJar.pin(it, "0.6.5-91")
-    }
+//    // testing purposes
+//    jarJar(fg.deobf(group: 'com.jozufozu.flywheel', name: "flywheel-forge-1.18.2", version: '[0.6.4,0.6.5)')) {
+//        jarJar.pin(it, "0.6.5-91")
+//    }
 
     // Real mod deobf dependency examples - these get remapped to your current mappings
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}:api") // Adds JEI API as a compile dependency
@@ -224,57 +223,71 @@ jar {
     }
 }
 
-// I have no idea what I'm doing, but I cannot seem to get a obsfucated jar with jars in it
-task reobfJarJar() {
-    System.out.println("move")
-
-    File fl = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + ".jar")
-    fl.renameTo(new File(fl.toString() + ".temp"))
-
-    File fl1 = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + "-all.jar")
-    fl1.renameTo(fl)
-}
-
-task moveBack() {
-    System.out.println("go back")
-
-    File fl = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + ".jar")
-    File fl1 = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + "-all.jar")
-
-    fl.renameTo(fl1)
-    new File(fl.toString() + ".temp").renameTo(fl)
-}
-
-task buildJarJar() {
-}
+//// I have no idea what I'm doing, but I cannot seem to get a obsfucated jar with jars in it
+//task reobfJarJar() {
+//    System.out.println("move")
+//
+//    File fl = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + ".jar")
+//    fl.renameTo(new File(fl.toString() + ".temp"))
+//
+//    File fl1 = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + "-all.jar")
+//    fl1.renameTo(fl)
+//}
+//
+//task moveBack() {
+//    System.out.println("go back")
+//
+//    File fl = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + ".jar")
+//    File fl1 = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + "-all.jar")
+//
+//    fl.renameTo(fl1)
+//    new File(fl.toString() + ".temp").renameTo(fl)
+//}
+//
+//task buildJarJar() {
+//}
 
 jar.finalizedBy('reobfJar')
 
-buildJarJar.dependsOn('build')
-buildJarJar.dependsOn('jarJar')
-buildJarJar.dependsOn('reobfJarJar')
-buildJarJar.dependsOn('reobfJar')
-buildJarJar.dependsOn('moveBack')
+//buildJarJar.dependsOn('build')
+//buildJarJar.dependsOn('jarJar')
+//buildJarJar.dependsOn('reobfJarJar')
+//buildJarJar.dependsOn('reobfJar')
+//buildJarJar.dependsOn('moveBack')
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
 }
 
+//publishing {
+//    publications {
+//        mavenForge(MavenPublication) {
+//            artifactId = "Tracky"
+//            from components.java
+//
+//            artifact(sourcesJar) {
+//                builtBy sourcesJar
+//            }
+//        }
+//    }
+//
+//    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+//    repositories {
+//        maven { url = java.lang.System.getProperty("user.home") + "/.m2/repository" }
+//    }
+//}
+
 publishing {
     publications {
-        mavenForge(MavenPublication) {
-            artifactId = "Tracky"
-            from components.java
+        maven(MavenPublication) {
+            groupId = 'tracky'
+            artifactId = 'Tracky'
+            version = "1.0-SNAPSHOT"
 
-            artifact(sourcesJar) {
-                builtBy sourcesJar
-            }
+            from components.java
         }
     }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        maven { url = "~/.m2/repository" }
-    }
 }
+
+System.out.println(System.getProperty("user.home"))
