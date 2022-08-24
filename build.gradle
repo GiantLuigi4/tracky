@@ -281,9 +281,9 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId = 'tracky'
-            artifactId = 'Tracky'
-            version = "1.0-SNAPSHOT"
+            groupId = group
+            artifactId = archivesBaseName
+            version = version
 
             from components.java
         }
