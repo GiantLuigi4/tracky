@@ -315,7 +315,8 @@ tasks.register('messupMaven') {
             "</project>\n"
     File fl = new File(System.getProperty("user.home") + "/.m2/repository/tracky/tracky/1.0-SNAPSHOT/tracky-1.0-SNAPSHOT.pom")
     if (fl.exists()) {
-        for (int i = 0; i < 100; i++) {
+        int fails = 0
+        for (int i = 0; i < 1000; i++) {
             try {
                 FileOutputStream stream = new FileOutputStream(fl)
                 stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
@@ -323,8 +324,35 @@ tasks.register('messupMaven') {
                 break
             } catch (Throwable ignored) {
                 Thread.sleep(1000)
+                System.out.println("Fail " + (fails++) + "/1000")
             }
         }
+    }
+    fl = new File(project.buildDir.toString() + "/publications/maven/pom-default.xml")
+    if (fl.parentFile.exists()) {
+        fl.createNewFile()
+    }
+    System.out.println(fl)
+    if (fl.exists()) {
+        int fails = 0
+        for (int i = 0; i < 1000; i++) {
+            try {
+                FileOutputStream stream = new FileOutputStream(fl)
+                stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
+                stream.close()
+                break
+            } catch (Throwable ignored) {
+                Thread.sleep(1000)
+                System.out.println("Fail " + (fails++) + "/1000")
+            }
+        }
+    }
+    fl = new File("pom.xml")
+    if (!fl.exists()) {
+        fl.createNewFile()
+        FileOutputStream stream = new FileOutputStream(fl)
+        stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
+        stream.close()
     }
 }
 
