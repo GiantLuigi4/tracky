@@ -291,9 +291,8 @@ publishing {
 }
 
 if (System.getProperty("user.home").contains("jitpack")) {
-    System.out.println("publishing")
-    tasks.reobfJar.finalizedBy("publishToMavenLocal")
-    System.out.println("published(?)")
+    System.out.println("Jitpack detected, forcefully setting up publishing")
+    jar.finalizedBy("publishToMavenLocal")
 
     System.out.println(System.getProperty("user.home"))
 }
