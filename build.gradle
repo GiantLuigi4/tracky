@@ -256,11 +256,20 @@ buildJarJar.dependsOn('reobfJarJar')
 buildJarJar.dependsOn('reobfJar')
 buildJarJar.dependsOn('moveBack')
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 publishing {
     publications {
         mavenForge(MavenPublication) {
             artifactId = "Tracky-forge"
             from components.java
+
+            artifact(sourcesJar) {
+                builtBy sourcesJar
+            }
         }
     }
 
