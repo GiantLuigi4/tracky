@@ -1,3 +1,5 @@
+import java.nio.charset.StandardCharsets
+
 buildscript {
     repositories {
         // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
@@ -296,3 +298,34 @@ if (System.getProperty("user.home").contains("jitpack")) {
 
     System.out.println(System.getProperty("user.home"))
 }
+
+tasks.register('messupMaven') {
+    String pom = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
+            "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+            "  <!-- This module was also published with a richer model, Gradle metadata,  -->\n" +
+            "  <!-- which should be used instead. Do not delete the following line which  -->\n" +
+            "  <!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->\n" +
+            "  <!-- that they should prefer consuming it instead. -->\n" +
+            "  <!-- do_not_remove: published-with-gradle-metadata -->\n" +
+            "  <modelVersion>4.0.0</modelVersion>\n" +
+            "  <groupId>tracky</groupId>\n" +
+            "  <artifactId>tracky</artifactId>\n" +
+            "  <version>1.0-SNAPSHOT</version>\n" +
+            "</project>\n"
+    File fl = new File(System.getProperty("user.home") + "/.m2/repository/tracky/tracky/1.0-SNAPSHOT/tracky-1.0-SNAPSHOT.pom")
+    if (fl.exists()) {
+        for (int i = 0; i < 100; i++) {
+            try {
+                FileOutputStream stream = new FileOutputStream(fl)
+                stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
+                stream.close()
+                break
+            } catch (Throwable ignored) {
+                Thread.sleep(1000)
+            }
+        }
+    }
+}
+
+tasks.getByName("publishToMavenLocal").finalizedBy("messupMaven")
