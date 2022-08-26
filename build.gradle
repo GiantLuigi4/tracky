@@ -1,5 +1,3 @@
-import java.nio.charset.StandardCharsets
-
 buildscript {
     repositories {
         // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
@@ -23,7 +21,7 @@ apply plugin: 'maven-publish'
 jarJar.enable()
 
 group = 'tracky'
-version = '1.0-SNAPSHOT'
+version = '1.0'
 
 java {
     archivesBaseName = 'tracky'
@@ -139,49 +137,6 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
-
-//    // TODO: only one of these is needed, and it's only needed for testing purposes
-//    maven {
-//        // Location of the maven that hosts JEI files (and TiC)
-//        name 'Progwml6 maven'
-//        url 'https://dvs1.progwml6.com/files/maven'
-//    }
-//    /*maven {
-//        // Location of a maven mirror for JEI files, as a fallback
-//        name 'ModMaven'
-//        url 'https://modmaven.k-4u.nl'
-//    }*/
-//    maven {
-//        // Location of the maven for vazkii's mods
-//        name 'blamejared'
-//        url 'https://maven.blamejared.com'
-//    }
-//    maven {
-//        // Location of the maven for mixed mappings, Registrate, and Flywheel
-//        name 'tterrag maven'
-//        url 'https://maven.tterrag.com'
-//    }
-//    maven {
-//        url 'https://www.cursemaven.com'
-//        content {
-//            includeGroup "curse.maven"
-//        }
-//    }
-//    maven {
-//        //location of the maven for dynamic trees
-//        url 'https://harleyoconnor.com/maven'
-//    }
-//    maven {
-//        //location of the maven for curios api
-//        url = "https://maven.theillusivec4.top/"
-//    }
-//    maven {
-//        name = "Modrinth"
-//        url = "https://api.modrinth.com/maven"
-//        content {
-//            includeGroup "maven.modrinth"
-//        }
-//    }
 }
 
 dependencies {
@@ -189,11 +144,6 @@ dependencies {
     // that the dep is a ForgeGradle 'patcher' dependency, and its patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
-
-//    // testing purposes
-//    jarJar(fg.deobf(group: 'com.jozufozu.flywheel', name: "flywheel-forge-1.18.2", version: '[0.6.4,0.6.5)')) {
-//        jarJar.pin(it, "0.6.5-91")
-//    }
 
     // Real mod deobf dependency examples - these get remapped to your current mappings
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}:api") // Adds JEI API as a compile dependency
@@ -225,60 +175,12 @@ jar {
     }
 }
 
-//// I have no idea what I'm doing, but I cannot seem to get a obsfucated jar with jars in it
-//task reobfJarJar() {
-//    System.out.println("move")
-//
-//    File fl = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + ".jar")
-//    fl.renameTo(new File(fl.toString() + ".temp"))
-//
-//    File fl1 = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + "-all.jar")
-//    fl1.renameTo(fl)
-//}
-//
-//task moveBack() {
-//    System.out.println("go back")
-//
-//    File fl = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + ".jar")
-//    File fl1 = new File(project.buildDir.toString() + "/libs/" + project.name + "-" + project.version + "-all.jar")
-//
-//    fl.renameTo(fl1)
-//    new File(fl.toString() + ".temp").renameTo(fl)
-//}
-//
-//task buildJarJar() {
-//}
-
 jar.finalizedBy('reobfJar')
-
-//buildJarJar.dependsOn('build')
-//buildJarJar.dependsOn('jarJar')
-//buildJarJar.dependsOn('reobfJarJar')
-//buildJarJar.dependsOn('reobfJar')
-//buildJarJar.dependsOn('moveBack')
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
 }
-
-//publishing {
-//    publications {
-//        mavenForge(MavenPublication) {
-//            artifactId = "Tracky"
-//            from components.java
-//
-//            artifact(sourcesJar) {
-//                builtBy sourcesJar
-//            }
-//        }
-//    }
-//
-//    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-//    repositories {
-//        maven { url = java.lang.System.getProperty("user.home") + "/.m2/repository" }
-//    }
-//}
 
 publishing {
     publications {
@@ -287,73 +189,13 @@ publishing {
             artifactId = archivesBaseName
             version = version
 
-            from components.java
+//            from components.java
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url = "file://D:/Programs/Minecraft/modSources/SimpleMaven/maven/"
         }
     }
 }
-
-if (System.getProperty("user.home").contains("jitpack")) {
-    System.out.println("Jitpack detected, forcefully setting up publishing")
-    jar.finalizedBy("publishToMavenLocal")
-
-    System.out.println(System.getProperty("user.home"))
-}
-
-tasks.register('messupMaven') {
-    String pom = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
-            "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
-            "  <!-- This module was also published with a richer model, Gradle metadata,  -->\n" +
-            "  <!-- which should be used instead. Do not delete the following line which  -->\n" +
-            "  <!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->\n" +
-            "  <!-- that they should prefer consuming it instead. -->\n" +
-            "  <!-- do_not_remove: published-with-gradle-metadata -->\n" +
-            "  <modelVersion>4.0.0</modelVersion>\n" +
-            "  <groupId>tracky</groupId>\n" +
-            "  <artifactId>tracky</artifactId>\n" +
-            "  <version>1.0-SNAPSHOT</version>\n" +
-            "</project>\n"
-    File fl = new File(System.getProperty("user.home") + "/.m2/repository/tracky/tracky/1.0-SNAPSHOT/tracky-1.0-SNAPSHOT.pom")
-    if (fl.exists()) {
-        int fails = 0
-        for (int i = 0; i < 1000; i++) {
-            try {
-                FileOutputStream stream = new FileOutputStream(fl)
-                stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
-                stream.close()
-                break
-            } catch (Throwable ignored) {
-                Thread.sleep(1000)
-                System.out.println("Fail " + (fails++) + "/1000")
-            }
-        }
-    }
-    fl = new File(project.buildDir.toString() + "/publications/maven/pom-default.xml")
-    if (fl.parentFile.exists()) {
-        fl.createNewFile()
-    }
-    System.out.println(fl)
-    if (fl.exists()) {
-        int fails = 0
-        for (int i = 0; i < 1000; i++) {
-            try {
-                FileOutputStream stream = new FileOutputStream(fl)
-                stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
-                stream.close()
-                break
-            } catch (Throwable ignored) {
-                Thread.sleep(1000)
-                System.out.println("Fail " + (fails++) + "/1000")
-            }
-        }
-    }
-    fl = new File("pom.xml")
-    if (!fl.exists()) {
-        fl.createNewFile()
-        FileOutputStream stream = new FileOutputStream(fl)
-        stream.write(((String) pom).getBytes(StandardCharsets.UTF_8))
-        stream.close()
-    }
-}
-
-tasks.getByName("publishToMavenLocal").finalizedBy("messupMaven")
