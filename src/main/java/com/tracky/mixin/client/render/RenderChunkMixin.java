@@ -27,13 +27,14 @@ public abstract class RenderChunkMixin {
         int x = Mth.intFloorDiv(origin.getX(), 16);
         int z = Mth.intFloorDiv(origin.getZ(), 16);
 
-        Collection<Supplier<Iterable<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(Minecraft.getInstance().level).values();
+        Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(Minecraft.getInstance().level).values();
         List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
 
-        for (Supplier<Iterable<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-                trackyRenderedChunksList.add(trackyRenderedChunk);
-            }
+        for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
+//                trackyRenderedChunksList.add(trackyRenderedChunk);
+//            }
+            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
         }
 
         if (trackyRenderedChunksList.contains(new ChunkPos(x, z))) {

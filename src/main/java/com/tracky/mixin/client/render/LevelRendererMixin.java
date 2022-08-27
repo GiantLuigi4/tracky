@@ -42,13 +42,14 @@ public class LevelRendererMixin {
     @Inject(method = "updateRenderChunks", at = @At(value = "TAIL"))
     private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
 
-        Collection<Supplier<Iterable<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+        Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
         List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
 
-        for (Supplier<Iterable<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-                trackyRenderedChunksList.add(trackyRenderedChunk);
-            }
+        for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
+//                trackyRenderedChunksList.add(trackyRenderedChunk);
+//            }
+            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
         }
 
         // for every tracky chunk the player should be rendering

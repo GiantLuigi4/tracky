@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -49,13 +50,13 @@ public abstract class PlayerListMixin {
 			
 			final ChunkPos pos = new ChunkPos(x, z);
 			
-			final Map<UUID, Function<Player, Iterable<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
+			final Map<UUID, Function<Player, Collection<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
 			
 			// for all players in the level send the relevant chunks
 			// messy iteration but no way to avoid with our structure
 			for (ServerPlayer player : level.getPlayers((p) -> true)) {
 				if (player == pExcept) continue;
-				for (Function<Player, Iterable<ChunkPos>> func : map.values()) {
+				for (Function<Player, Collection<ChunkPos>> func : map.values()) {
 					final Iterable<ChunkPos> chunks = func.apply(player);
 					
 					for (ChunkPos chunk : chunks) {

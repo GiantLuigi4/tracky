@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -133,7 +134,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 					if (((ChunkStorageAccessor) (Object) storage).isInRange(chunkpos.x, chunkpos.z)) {
 						continue;
 					}
-					for (Function<Player, Iterable<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
+					for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
 						for (ChunkPos pos : value.apply(Minecraft.getInstance().player)) {
 							if (pos.equals(chunkPos)) {
 								continue loopChunks;

@@ -24,10 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BooleanSupplier;
@@ -47,7 +44,7 @@ public abstract class ChunkManagerMixin {
 	@Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
 //		if (!TrackyAccessor.isMainTracky()) return;
-		final Map<UUID, Function<Player, Iterable<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
+		final Map<UUID, Function<Player, Collection<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
 		
 		final List<ServerPlayer> players = new ArrayList<>();
 		boolean isTrackedByAny = false;
@@ -55,7 +52,7 @@ public abstract class ChunkManagerMixin {
 		// for all players in the level send the relevant chunks
 		// messy iteration but no way to avoid with our structure
 		for (ServerPlayer player : level.getPlayers((p) -> true)) {
-			for (Function<Player, Iterable<ChunkPos>> func : map.values()) {
+			for (Function<Player, Collection<ChunkPos>> func : map.values()) {
 				final Iterable<ChunkPos> chunks = func.apply(player);
 				
 				for (ChunkPos chunk : chunks) {
@@ -118,14 +115,14 @@ public abstract class ChunkManagerMixin {
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) throws ExecutionException, InterruptedException {
 		ArrayList<Player> playersChecked = new ArrayList<>();
-		Map<UUID, Function<Player, Iterable<ChunkPos>>> function = TrackyAccessor.getForcedChunks(level);
+		Map<UUID, Function<Player, Collection<ChunkPos>>> function = TrackyAccessor.getForcedChunks(level);
 		ArrayList<ChunkPos> poses = new ArrayList<>();
 		for (List<Player> value : TrackyAccessor.getPlayersLoadingChunks(level).values()) {
 			for (Player player : value) {
 				if (playersChecked.contains(player)) continue;
 				
 				playersChecked.add(player);
-				for (Function<Player, Iterable<ChunkPos>> playerIterableFunction : function.values()) {
+				for (Function<Player, Collection<ChunkPos>> playerIterableFunction : function.values()) {
 					for (ChunkPos chunkPos : playerIterableFunction.apply(player)) {
 						if (!trackyForced.remove(chunkPos) && !poses.contains(chunkPos)) {
 							level.setChunkForced(chunkPos.x, chunkPos.z, true);
@@ -154,7 +151,7 @@ public abstract class ChunkManagerMixin {
 
 		ArrayList<ChunkPos> tracked = new ArrayList<>();
 		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
-		for (Function<Player, Iterable<ChunkPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
+		for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
 			for (ChunkPos chunkPos : value.apply(player)) {
 				if (tracked.contains(chunkPos)) continue;
 

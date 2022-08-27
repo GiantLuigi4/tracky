@@ -64,10 +64,10 @@ public class WorldMixin implements ServerMapHolder {
 	}
 	
 	@Unique
-	private Map<UUID, Function<Player, Iterable<ChunkPos>>> trackyForcedChunks;
+	private Map<UUID, Function<Player, Collection<ChunkPos>>> trackyForcedChunks;
 	
 	@Override
-	public Map<UUID, Function<Player, Iterable<ChunkPos>>> trackyHeldMapS() {
+	public Map<UUID, Function<Player, Collection<ChunkPos>>> trackyHeldMapS() {
 		return trackyForcedChunks;
 	}
 	

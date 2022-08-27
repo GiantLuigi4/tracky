@@ -21,7 +21,7 @@ apply plugin: 'maven-publish'
 jarJar.enable()
 
 group = 'tracky'
-version = '1.3'
+version = '1.1'
 
 java {
     archivesBaseName = 'tracky'
@@ -195,6 +195,8 @@ publishing {
     }
     repositories {
         maven {
+            // TODO: swap this for a proper location
+            //       currently, it's just going to a specified location on the D drive, which only acts as a maven for me
             url = "file://D:/Programs/Minecraft/modSources/SimpleMaven/maven/"
         }
     }

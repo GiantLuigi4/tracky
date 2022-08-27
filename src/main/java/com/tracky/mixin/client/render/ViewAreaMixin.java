@@ -62,13 +62,14 @@ public abstract class ViewAreaMixin {
     protected void setDirty(int x, int y, int z, boolean important, CallbackInfo ci) {
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
-            Collection<Supplier<Iterable<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+            Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
             List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
 
-            for (Supplier<Iterable<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-                    trackyRenderedChunksList.add(trackyRenderedChunk);
-                }
+            for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
+//                    trackyRenderedChunksList.add(trackyRenderedChunk);
+//                }
+                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }
 
             if (trackyRenderedChunksList.contains(cpos)) {
@@ -100,13 +101,14 @@ public abstract class ViewAreaMixin {
 
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
-            Collection<Supplier<Iterable<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+            Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
             List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
 
-            for (Supplier<Iterable<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-                    trackyRenderedChunksList.add(trackyRenderedChunk);
-                }
+            for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
+//                    trackyRenderedChunksList.add(trackyRenderedChunk);
+//                }
+                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }
 
             if (trackyRenderedChunksList.contains(cpos)) {
