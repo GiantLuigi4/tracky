@@ -2,6 +2,7 @@ package com.tracky;
 
 import com.tracky.api.ClientTracking;
 import com.tracky.api.ServerTracking;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -15,7 +16,9 @@ public class Tracky {
 	public Tracky() {
 //		FMLJavaModLoadingContext.get().getModEventBus();
 //		MinecraftForge.EVENT_BUS;
-		
+
+		MinecraftForge.EVENT_BUS.addListener(this::onUnloadWorld);
+		MinecraftForge.EVENT_BUS.addListener(this::onRemovePlayer);
 		System.out.println("Default UUID Test: " + getDefaultUUID());
 	}
 	
