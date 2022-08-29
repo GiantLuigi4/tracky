@@ -54,7 +54,7 @@ public class LevelRendererMixin {
 
         // for every tracky chunk the player should be rendering
         for (ChunkPos chunk : trackyRenderedChunksList) {
-            for (int y = 0; y < level.getSectionsCount(); y++) {
+            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
                 ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x << 4, y << 4, chunk.z << 4));
 
                 if (gottenRenderChunk != null) {
