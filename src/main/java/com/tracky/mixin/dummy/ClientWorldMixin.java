@@ -33,9 +33,18 @@ public class ClientWorldMixin implements ClientMapHolder {
     @Inject(at = @At("TAIL"), method = "<init>")
     public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
         trackyRenderedChunks = new HashMap<>();
-    
+
         ArrayList<ChunkPos> positions = new ArrayList<>();
-    
+
+        {
+            ChunkPos startPos = new ChunkPos(new BlockPos(80, 0, 80));
+            ChunkPos endPos = new ChunkPos(new BlockPos(120, 0, 120));
+            for (int x = startPos.x; x <= endPos.x; x++) {
+                for (int z = startPos.z; z <= endPos.z; z++) {
+                    positions.add(new ChunkPos(x, z));
+                }
+            }
+        }
 //        // all temp
 //        {
 //            ChunkPos startPos = new ChunkPos(new BlockPos(42, 0, 71));
@@ -57,12 +66,9 @@ public class ClientWorldMixin implements ClientMapHolder {
 //        }
 //
 //        // all temp
-//        TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), () -> {
-//            return positions;
-//        });
-//        TrackyAccessor.getRenderedChunks((Level) (Object) this).put(UUID.randomUUID(), () -> {
-//            return new ArrayList<>(){{add(new ChunkPos(5, 5));}};
-//        });
+        TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), () -> {
+            return positions;
+        });
     }
     
     @Override

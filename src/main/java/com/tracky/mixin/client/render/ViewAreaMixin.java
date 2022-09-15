@@ -39,6 +39,8 @@ public abstract class ViewAreaMixin {
     @Shadow
     protected abstract int getChunkIndex(int pX, int pY, int pZ);
 
+    @Shadow protected int chunkGridSizeZ;
+    @Shadow protected int chunkGridSizeX;
     @Unique
     private final HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> tracky$renderChunkCache = new HashMap<>();
 
@@ -60,15 +62,18 @@ public abstract class ViewAreaMixin {
      */
     @Inject(method = "setDirty", at = @At("HEAD"), cancellable = true)
     protected void setDirty(int x, int y, int z, boolean important, CallbackInfo ci) {
+//        int i = Math.floorMod(x, this.chunkGridSizeX);
+//        int k = Math.floorMod(z, this.chunkGridSizeZ);
+
+        int preY = y;
+        y = Math.floorMod(y - this.level.getMinSection(), this.chunkGridSizeY);
+
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
             Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
             List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
 
             for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-//                    trackyRenderedChunksList.add(trackyRenderedChunk);
-//                }
                 trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }
 
@@ -78,11 +83,12 @@ public abstract class ViewAreaMixin {
 
                 if (renderChunks[y] == null) {
                     int chunkIndex = getChunkIndex(x, y, z);
-                    final ChunkRenderDispatcher.RenderChunk renderChunk = tracky$chunkRenderDispatcher.new RenderChunk(chunkIndex, x << 4, y << 4, z << 4);
+                    final ChunkRenderDispatcher.RenderChunk renderChunk = tracky$chunkRenderDispatcher.new RenderChunk(chunkIndex, x << 4, preY << 4, z << 4);
                     renderChunks[y] = renderChunk;
                 }
 
                 renderChunks[y].setDirty(important);
+                ((RenderChunkAccessor) renderChunks[y]).setPlayerChanged(true);
                 ci.cancel();
             }
         }
@@ -96,7 +102,7 @@ public abstract class ViewAreaMixin {
     public void getRenderChunkAt(BlockPos pPos, CallbackInfoReturnable<ChunkRenderDispatcher.RenderChunk> cir) {
 
         int x = Math.floorDiv(pPos.getX(), 16),
-                y = Math.floorDiv(pPos.getY(), 16),
+                y = Math.floorDiv(pPos.getY() - this.level.getMinBuildHeight(), 16),
                 z = Math.floorDiv(pPos.getZ(), 16);
 
         if (y >= 0 && y < this.chunkGridSizeY) {

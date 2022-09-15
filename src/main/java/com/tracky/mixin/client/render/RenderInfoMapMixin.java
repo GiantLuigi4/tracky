@@ -4,6 +4,7 @@ import com.tracky.util.VecMap;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.Vec3i;
+import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,9 +19,14 @@ public class RenderInfoMapMixin {
 	HashMap<Vec3i,  LevelRenderer.RenderChunkInfo> map = new HashMap<>();
 
 	@Inject(at = @At("HEAD"), method = "put", cancellable = true)
-	public void preGet(ChunkRenderDispatcher.RenderChunk pRenderChunk, LevelRenderer.RenderChunkInfo pInfo, CallbackInfo ci) {
+	public void prePut(ChunkRenderDispatcher.RenderChunk pRenderChunk, LevelRenderer.RenderChunkInfo pInfo, CallbackInfo ci) {
 		Vec3i vec = pRenderChunk.getOrigin();
-		vec = new Vec3i(vec.getX() / 16, vec.getY() / 16, vec.getZ() / 16);
+
+		int x = Mth.intFloorDiv((int) vec.getX(), 16);
+		int y = Mth.intFloorDiv((int) vec.getY(), 16);
+		int z = Mth.intFloorDiv((int) vec.getZ(), 16);
+
+		vec = new Vec3i(x, y, z);
 		map.put(vec, pInfo);
 		ci.cancel();
 	}
@@ -28,7 +34,12 @@ public class RenderInfoMapMixin {
 	@Inject(at = @At("HEAD"), method = "get", cancellable = true)
 	public void preGet(ChunkRenderDispatcher.RenderChunk pRenderChunk, CallbackInfoReturnable<LevelRenderer.RenderChunkInfo> cir) {
 		Vec3i vec = pRenderChunk.getOrigin();
-		vec = new Vec3i(vec.getX() / 16, vec.getY() / 16, vec.getZ() / 16);
+
+		int x = Mth.intFloorDiv((int) vec.getX(), 16);
+		int y = Mth.intFloorDiv((int) vec.getY(), 16);
+		int z = Mth.intFloorDiv((int) vec.getZ(), 16);
+
+		vec = new Vec3i(x, y, z);
 		cir.setReturnValue(map.get(vec));
 	}
 }
