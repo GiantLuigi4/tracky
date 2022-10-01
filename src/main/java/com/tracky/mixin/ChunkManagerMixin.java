@@ -170,6 +170,8 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
+		chunkTracker.trackedChunks().clear();
+		chunkTracker.trackedChunks().addAll(tracked);
 		
 		if (anyFailed) {
 			// if a chunk doesn't get loaded by the time the track starting finishes, mark it for another attempt at tracking
