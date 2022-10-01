@@ -25,7 +25,9 @@
     "client.render.RenderChunkMixin",
     "client.render.FogRendererMixin",
     "client.ChunkStorageAccessor",
-    "client.render.RenderInfoMapMixin"
+    "client.render.RenderInfoMapMixin",
+    "client.render.RenderChunkAccessor",
+    "client.render.VertexBufferAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
