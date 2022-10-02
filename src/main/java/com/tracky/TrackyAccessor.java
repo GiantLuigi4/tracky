@@ -3,6 +3,7 @@ package com.tracky;
 import com.tracky.access.ClientMapHolder;
 import com.tracky.access.ServerMapHolder;
 import com.tracky.debug.ITrackChunks;
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -24,7 +25,7 @@ public class TrackyAccessor {
 	 * @return the list of force loaded chunks
 	 */
 	// also it's native so that it doesn't have a method body
-	public static Map<UUID, Function<Player, Collection<ChunkPos>>> getForcedChunks(Level level) {
+	public static Map<UUID, Function<Player, Collection<SectionPos>>> getForcedChunks(Level level) {
 		return ((ServerMapHolder) level).trackyHeldMapS();
 	}
 	
@@ -35,7 +36,7 @@ public class TrackyAccessor {
 	 * having it be a supplier allows it to change multiple times per frame without
 	 * having the dev need to change any variables for every render
 	 */
-	public static Map<UUID, Supplier<Collection<ChunkPos>>> getRenderedChunks(Level level) {
+	public static Map<UUID, Supplier<Collection<SectionPos>>> getRenderedChunks(Level level) {
 		return ((ClientMapHolder) level).trackyHeldMapC();
 	}
 	

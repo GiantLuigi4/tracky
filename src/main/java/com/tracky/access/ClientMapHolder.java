@@ -1,5 +1,6 @@
 package com.tracky.access;
 
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.Collection;
@@ -8,5 +9,5 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public interface ClientMapHolder {
-	Map<UUID, Supplier<Collection<ChunkPos>>> trackyHeldMapC();
+	Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC();
 }

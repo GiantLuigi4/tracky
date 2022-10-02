@@ -5,6 +5,7 @@ import com.tracky.TrackyAccessor;
 import com.tracky.access.ServerMapHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -20,10 +21,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * this is intentionally empty
- * it is merely here so that {@link com.tracky.MixinPlugin} can process the world class
- */
 @Mixin(Level.class)
 public class WorldMixin implements ServerMapHolder {
 	@Inject(at = @At("TAIL"), method = "<init>")
@@ -31,24 +28,28 @@ public class WorldMixin implements ServerMapHolder {
 		trackyForcedChunks = new HashMap<>();
 		trackyForcedPlayers = new HashMap<>();
 		
-		ArrayList<ChunkPos> positions = new ArrayList<>();
+		ArrayList<SectionPos> positions = new ArrayList<>();
 		
 		// all temp
 		{
-			ChunkPos startPos = new ChunkPos(new BlockPos(42, 0, 71));
-			ChunkPos endPos = new ChunkPos(new BlockPos(-88, 0, -61));
-			for (int x = endPos.x; x <= startPos.x; x++) {
-				for (int z = endPos.z; z <= startPos.z; z++) {
-					positions.add(new ChunkPos(x, z));
+			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
+			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
+			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+						positions.add(SectionPos.of(x, y, z));
+					}
 				}
 			}
 		}
 		{
-			ChunkPos startPos = new ChunkPos(new BlockPos(-297 - 200, 0, 296));
-			ChunkPos endPos = new ChunkPos(new BlockPos(-456 - 200, 0, 328));
-			for (int x = endPos.x; x <= startPos.x; x++) {
-				for (int z = startPos.z; z <= endPos.z; z++) {
-					positions.add(new ChunkPos(x, z));
+			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, 0, 296));
+			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 0, 328));
+			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+						positions.add(SectionPos.of(x, y, z));
+					}
 				}
 			}
 		}
@@ -62,10 +63,10 @@ public class WorldMixin implements ServerMapHolder {
 	}
 	
 	@Unique
-	private Map<UUID, Function<Player, Collection<ChunkPos>>> trackyForcedChunks;
+	private Map<UUID, Function<Player, Collection<SectionPos>>> trackyForcedChunks;
 	
 	@Override
-	public Map<UUID, Function<Player, Collection<ChunkPos>>> trackyHeldMapS() {
+	public Map<UUID, Function<Player, Collection<SectionPos>>> trackyHeldMapS() {
 		return trackyForcedChunks;
 	}
 	
