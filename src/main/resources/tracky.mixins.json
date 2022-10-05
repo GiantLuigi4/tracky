@@ -9,8 +9,6 @@
     "PlayerListMixin",
     "ServerPlayerMixin",
     "dummy.ClientWorldMixin",
-    "dummy.SharedConstantsMixin",
-    "dummy.TrackyAccessorMixin",
     "dummy.WorldMixin"
   ],
   "client": [

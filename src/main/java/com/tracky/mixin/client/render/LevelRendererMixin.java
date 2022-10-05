@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
@@ -65,24 +66,24 @@ public abstract class LevelRendererMixin {
     @Inject(method = "updateRenderChunks", at = @At(value = "TAIL"))
     private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
 
-        Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-        List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
+        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+        List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
 
-        for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
             trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
         }
 
         // for every tracky chunk the player should be rendering
-        for (ChunkPos chunk : trackyRenderedChunksList) {
-            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
-                ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x << 4, y << 4, chunk.z << 4));
+        for (SectionPos chunk : trackyRenderedChunksList) {
+//            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
+                ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
 
                 if (gottenRenderChunk != null) {
                     LevelRenderer.RenderChunkInfo info = RenderChunkInfoMixin.invokeInit(gottenRenderChunk, (Direction) null, 0);
                     pChunkInfos.add(info);
                     pInfoMap.put(gottenRenderChunk, info);
                 }
-            }
+//            }
         }
 
 
@@ -90,17 +91,17 @@ public abstract class LevelRendererMixin {
 
     @Inject(method = "applyFrustum", at = @At("TAIL"))
     private void applyFrustum(Frustum pFrustrum, CallbackInfo ci) {
-        Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-        List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
+        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+        List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
 
-        for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
             trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
         }
 
         // for every tracky chunk the player should be rendering
-        for (ChunkPos chunk : trackyRenderedChunksList) {
-            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
-                ChunkRenderDispatcher.RenderChunk renderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x << 4, y << 4, chunk.z << 4));
+        for (SectionPos chunk : trackyRenderedChunksList) {
+//            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
+                ChunkRenderDispatcher.RenderChunk renderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
 
                 if (renderChunk != null) {
                     LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
@@ -108,7 +109,7 @@ public abstract class LevelRendererMixin {
                     if (!renderChunksInFrustum.contains(info) && info != null)
                         renderChunksInFrustum.add(info);
                 }
-            }
+//            }
         }
     }
 

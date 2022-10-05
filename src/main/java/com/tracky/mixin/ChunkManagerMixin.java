@@ -1,6 +1,7 @@
 package com.tracky.mixin;
 
 import com.mojang.datafixers.util.Either;
+import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.ITrackChunks;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -44,7 +45,7 @@ public abstract class ChunkManagerMixin {
 	@Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
 //		if (!TrackyAccessor.isMainTracky()) return;
-		final Map<UUID, Function<Player, Collection<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
+		final Map<UUID, Function<Player, Collection<SectionPos>>> map = TrackyAccessor.getForcedChunks(level);
 		
 		final List<ServerPlayer> players = new ArrayList<>();
 		boolean isTrackedByAny = false;
@@ -52,11 +53,11 @@ public abstract class ChunkManagerMixin {
 		// for all players in the level send the relevant chunks
 		// messy iteration but no way to avoid with our structure
 		for (ServerPlayer player : level.getPlayers((p) -> true)) {
-			for (Function<Player, Collection<ChunkPos>> func : map.values()) {
-				final Iterable<ChunkPos> chunks = func.apply(player);
+			for (Function<Player, Collection<SectionPos>> func : map.values()) {
+				final Iterable<SectionPos> chunks = func.apply(player);
 				
-				for (ChunkPos chunk : chunks) {
-					if (chunk.equals(chunkPos)) {
+				for (SectionPos chunk : chunks) {
+					if (chunk.equals(new ChunkPos(chunkPos.x, chunkPos.z))) {
 						// send the packet if the player is tracking it
 						players.add(player);
 						isTrackedByAny = true;
@@ -110,33 +111,38 @@ public abstract class ChunkManagerMixin {
 	protected abstract void scheduleUnload(long pChunkPos, ChunkHolder pChunkHolder);
 	
 	@Unique
-	ArrayList<ChunkPos> trackyForced = new ArrayList<>();
+	ArrayList<SectionPos> trackyForced = new ArrayList<>();
 	
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) throws ExecutionException, InterruptedException {
 		ArrayList<Player> playersChecked = new ArrayList<>();
-		Map<UUID, Function<Player, Collection<ChunkPos>>> function = TrackyAccessor.getForcedChunks(level);
+		Map<UUID, Function<Player, Collection<SectionPos>>> function = TrackyAccessor.getForcedChunks(level);
 		ArrayList<ChunkPos> poses = new ArrayList<>();
 		for (List<Player> value : TrackyAccessor.getPlayersLoadingChunks(level).values()) {
 			for (Player player : value) {
 				if (playersChecked.contains(player)) continue;
 				
 				playersChecked.add(player);
-				for (Function<Player, Collection<ChunkPos>> playerIterableFunction : function.values()) {
-					for (ChunkPos chunkPos : playerIterableFunction.apply(player)) {
-						if (!trackyForced.remove(chunkPos) && !poses.contains(chunkPos)) {
-							level.setChunkForced(chunkPos.x, chunkPos.z, true);
+				for (Function<Player, Collection<SectionPos>> playerIterableFunction : function.values()) {
+					for (SectionPos chunkPos : playerIterableFunction.apply(player)) {
+						if (!trackyForced.remove(chunkPos) && !poses.contains(new ChunkPos(chunkPos.x(), chunkPos.z()))) {
+							level.setChunkForced(chunkPos.x(), chunkPos.z(), true);
 						}
 					}
 				}
 			}
 		}
-		
-		for (ChunkPos chunkPos : trackyForced) {
+
+		ArrayList<ChunkPos> chunkPoses = new ArrayList<>();
+		for (SectionPos chunkPos : trackyForced) {
+			chunkPoses.add(new ChunkPos(chunkPos.x(), chunkPos.z()));
+		}
+
+		for (ChunkPos chunkPos : chunkPoses) {
 			level.setChunkForced(chunkPos.x, chunkPos.z, false);
 		}
 		
-		trackyForced.addAll(poses);
+//		trackyForced.addAll(poses);
 	}
 
 
@@ -149,15 +155,15 @@ public abstract class ChunkManagerMixin {
 		ITrackChunks chunkTracker = (ITrackChunks) player;
 		if (!chunkTracker.setDoUpdate(false)) return;
 
-		ArrayList<ChunkPos> tracked = new ArrayList<>();
-		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
-		for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
-			for (ChunkPos chunkPos : value.apply(player)) {
+		ArrayList<SectionPos> tracked = new ArrayList<>();
+		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, Tracky.collapse(tracked));
+		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
+			for (SectionPos chunkPos : value.apply(player)) {
 				if (tracked.contains(chunkPos)) continue;
 
 				boolean wasLoaded;
 				updateChunkTracking(
-						player, chunkPos,
+						player, new ChunkPos(chunkPos.x(), chunkPos.z()),
 						new MutableObject<>(),
 						wasLoaded = chunkTracker.trackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
 						true // start tracking

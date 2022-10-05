@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -70,14 +71,15 @@ public abstract class ViewAreaMixin {
 
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
-            Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-            List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
+            SectionPos spos = SectionPos.of(x, y + this.level.getMinSection(), z);
+            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+            List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
 
-            for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
                 trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }
 
-            if (trackyRenderedChunksList.contains(cpos)) {
+            if (trackyRenderedChunksList.contains(spos)) {
                 Function<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> newBlankRenderChunks = idk -> new ChunkRenderDispatcher.RenderChunk[this.chunkGridSizeY];
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.computeIfAbsent(cpos, newBlankRenderChunks);
 
@@ -105,19 +107,22 @@ public abstract class ViewAreaMixin {
                 y = Math.floorDiv(pPos.getY() - this.level.getMinBuildHeight(), 16),
                 z = Math.floorDiv(pPos.getZ(), 16);
 
+        int preY = Math.floorDiv(pPos.getY(), 16);
+
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
-            Collection<Supplier<Collection<ChunkPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-            List<ChunkPos> trackyRenderedChunksList = new ArrayList<>();
+            SectionPos spos = SectionPos.of(x, preY, z);
+            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+            List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
 
-            for (Supplier<Collection<ChunkPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
 //                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
 //                    trackyRenderedChunksList.add(trackyRenderedChunk);
 //                }
                 trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }
 
-            if (trackyRenderedChunksList.contains(cpos)) {
+            if (trackyRenderedChunksList.contains(spos)) {
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.get(cpos);
 
                 if (renderChunks == null) {

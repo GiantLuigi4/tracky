@@ -1,10 +1,12 @@
 package com.tracky.mixin.client;
 
+import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
@@ -134,8 +136,8 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 					if (((ChunkStorageAccessor) (Object) storage).isInRange(chunkpos.x, chunkpos.z)) {
 						continue;
 					}
-					for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
-						for (ChunkPos pos : value.apply(Minecraft.getInstance().player)) {
+					for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
+						for (ChunkPos pos : Tracky.collapse(value.apply(Minecraft.getInstance().player))) {
 							if (pos.equals(chunkPos)) {
 								continue loopChunks;
 							}

@@ -2,6 +2,7 @@ package com.tracky.mixin;
 
 import com.mojang.authlib.GameProfile;
 import com.tracky.debug.ITrackChunks;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,7 +20,7 @@ public class ServerPlayerMixin implements ITrackChunks {
 	@Unique
 	boolean doUpdate = false;
 	@Unique
-	private ArrayList<ChunkPos> chunksBeingTracked;
+	private ArrayList<SectionPos> chunksBeingTracked;
 //	@Unique
 //	private ArrayList<ChunkPos> lastChunksBeingTracked;
 	
@@ -41,7 +42,7 @@ public class ServerPlayerMixin implements ITrackChunks {
 //	}
 	
 	@Override
-	public ArrayList<ChunkPos> trackedChunks() {
+	public ArrayList<SectionPos> trackedChunks() {
 		return chunksBeingTracked;
 	}
 	

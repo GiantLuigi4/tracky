@@ -1,6 +1,7 @@
 package com.tracky.mixin;
 
 import com.tracky.TrackyAccessor;
+import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -50,17 +51,17 @@ public abstract class PlayerListMixin {
 			
 			final ChunkPos pos = new ChunkPos(x, z);
 			
-			final Map<UUID, Function<Player, Collection<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
+			final Map<UUID, Function<Player, Collection<SectionPos>>> map = TrackyAccessor.getForcedChunks(level);
 			
 			// for all players in the level send the relevant chunks
 			// messy iteration but no way to avoid with our structure
 			for (ServerPlayer player : level.getPlayers((p) -> true)) {
 				if (player == pExcept) continue;
-				for (Function<Player, Collection<ChunkPos>> func : map.values()) {
-					final Iterable<ChunkPos> chunks = func.apply(player);
+				for (Function<Player, Collection<SectionPos>> func : map.values()) {
+					final Iterable<SectionPos> chunks = func.apply(player);
 					
-					for (ChunkPos chunk : chunks) {
-						if (chunk.equals(pos)) {
+					for (SectionPos chunk : chunks) {
+						if (chunk.equals(SectionPos.of(x, y, z))) {
 							// send the packet if the player is tracking it
 							player.connection.send(pPacket);
 							ci.cancel();
