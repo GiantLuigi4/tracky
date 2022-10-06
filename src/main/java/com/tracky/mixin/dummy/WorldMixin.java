@@ -25,26 +25,15 @@ import java.util.function.Supplier;
 public class WorldMixin implements ServerMapHolder {
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData p_204149_, ResourceKey p_204150_, Holder p_204151_, Supplier p_204152_, boolean p_204153_, boolean p_204154_, long p_204155_, CallbackInfo ci) {
-//		trackyForcedChunks = new HashMap<>();
-//		trackyForcedPlayers = new HashMap<>();
+		trackyForcedChunks = new HashMap<>();
+		trackyForcedPlayers = new HashMap<>();
 //
-//		ArrayList<SectionPos> positions = new ArrayList<>();
-//
-//		// all temp
-////		{
-////			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
-////			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
-////			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-////				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-////					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-////						positions.add(SectionPos.of(x, y, z));
-////					}
-////				}
-////			}
-////		}
+		ArrayList<SectionPos> positions = new ArrayList<>();
+
+		// all temp
 //		{
-//			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
-//			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
+//			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
+//			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
 //			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
 //				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
 //					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
@@ -53,13 +42,24 @@ public class WorldMixin implements ServerMapHolder {
 //				}
 //			}
 //		}
-//
-//
-//		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> {
-//			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), Arrays.asList(player));
-//
-//			return positions;
-//		});
+		{
+			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
+			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
+			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+						positions.add(SectionPos.of(x, y, z));
+					}
+				}
+			}
+		}
+
+
+		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> {
+			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), Arrays.asList(player));
+
+			return positions;
+		});
 	}
 	
 	@Unique

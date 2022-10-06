@@ -8,7 +8,6 @@
     "ChunkManagerMixin",
     "PlayerListMixin",
     "ServerPlayerMixin",
-    "dummy.ClientWorldMixin",
     "dummy.WorldMixin"
   ],
   "client": [
@@ -25,7 +24,8 @@
     "client.ChunkStorageAccessor",
     "client.render.RenderInfoMapMixin",
     "client.render.RenderChunkAccessor",
-    "client.render.VertexBufferAccessor"
+    "client.render.VertexBufferAccessor",
+    "dummy.ClientWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

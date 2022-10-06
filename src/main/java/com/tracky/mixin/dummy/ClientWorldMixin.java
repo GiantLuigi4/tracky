@@ -27,34 +27,34 @@ public class ClientWorldMixin implements ClientMapHolder {
 	
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
-//		trackyRenderedChunks = new HashMap<>();
+		trackyRenderedChunks = new HashMap<>();
 //
-//		ArrayList<SectionPos> positions = new ArrayList<>();
+		ArrayList<SectionPos> positions = new ArrayList<>();
+
+		// all temp
+		{
+			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
+			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
+			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+						positions.add(SectionPos.of(x, y, z));
+					}
+				}
+			}
+		}
 //
 //		// all temp
-//		{
-//			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
-//			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
-//			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-//				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-//					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-//						positions.add(SectionPos.of(x, y, z));
-//					}
-//				}
-//			}
-//		}
-//
-//		// all temp
-//		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), () -> {
-//			return positions;
-//		});
-//		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(UUID.randomUUID(), () -> {
-//			return new ArrayList<>() {{
-//				for (int i = -2; i < 5; i++) {
-//					add(SectionPos.of(5, i, 5));
-//				}
-//			}};
-//		});
+		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), () -> {
+			return positions;
+		});
+		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(UUID.randomUUID(), () -> {
+			return new ArrayList<>() {{
+				for (int i = -2; i < 5; i++) {
+					add(SectionPos.of(5, i, 5));
+				}
+			}};
+		});
 	}
 	
 	@Override

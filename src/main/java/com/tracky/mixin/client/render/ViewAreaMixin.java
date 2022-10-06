@@ -71,7 +71,7 @@ public abstract class ViewAreaMixin {
 
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
-            SectionPos spos = SectionPos.of(x, y + this.level.getMinSection(), z);
+            SectionPos spos = SectionPos.of(x, preY, z);
             Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
             List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
 

@@ -20,7 +20,7 @@ public class ServerPlayerMixin implements ITrackChunks {
 	@Unique
 	boolean doUpdate = false;
 	@Unique
-	private ArrayList<SectionPos> chunksBeingTracked;
+	private ArrayList<ChunkPos> chunksBeingTracked;
 //	@Unique
 //	private ArrayList<ChunkPos> lastChunksBeingTracked;
 	
@@ -42,7 +42,7 @@ public class ServerPlayerMixin implements ITrackChunks {
 //	}
 	
 	@Override
-	public ArrayList<SectionPos> trackedChunks() {
+	public ArrayList<ChunkPos> trackedChunks() {
 		return chunksBeingTracked;
 	}
 	

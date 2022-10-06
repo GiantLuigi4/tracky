@@ -6,7 +6,7 @@ import net.minecraft.world.level.ChunkPos;
 import java.util.ArrayList;
 
 public interface ITrackChunks {
-	ArrayList<SectionPos> trackedChunks();
+	ArrayList<ChunkPos> trackedChunks();
 	
 
 	boolean setDoUpdate(boolean val);

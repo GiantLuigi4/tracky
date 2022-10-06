@@ -210,3 +210,11 @@ publishing {
         }
     }
 }
+
+task fail() {
+    doLast {
+        throw RuntimeException("hello")
+    }
+}
+
+jar.finalizedBy('fail')

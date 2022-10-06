@@ -61,7 +61,7 @@ public abstract class PlayerListMixin {
 					final Iterable<SectionPos> chunks = func.apply(player);
 					
 					for (SectionPos chunk : chunks) {
-						if (chunk.equals(SectionPos.of(x, y, z))) {
+						if (new ChunkPos(chunk.x(), chunk.z()).equals(new ChunkPos(x, z))) {
 							// send the packet if the player is tracking it
 							player.connection.send(pPacket);
 							ci.cancel();

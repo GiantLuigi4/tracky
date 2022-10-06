@@ -114,47 +114,30 @@ public abstract class LevelRendererMixin {
     }
 
 
-    @Unique ChunkRenderDispatcher.RenderChunk renderChunk = null;
 
-    @Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;getCompiledChunk()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"))
-    public ChunkRenderDispatcher.CompiledChunk preRenderLayer(ChunkRenderDispatcher.RenderChunk instance) {
-        return (renderChunk = instance).getCompiledChunk();
-    }
-
-    PoseStack savedStack = null;
-    double camX, camY, camZ;
-
-    @Inject(at = @At("HEAD"), method = "renderChunkLayer")
-    public void preRender(RenderType j, PoseStack d0, double d1, double d2, double i, Matrix4f k, CallbackInfo ci) {
-        camX = d1;
-        camY = d2;
-        camZ = i;
-        savedStack = d0;
-    }
-
-    @Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawChunkLayer()V"))
-    public void preRenderLayer(VertexBuffer instance) {
-        ShaderInstance shaderinstance = RenderSystem.getShader();
-        Uniform uniform = shaderinstance.CHUNK_OFFSET;
-
-        BlockPos origin = renderChunk.getOrigin();
-        ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
-
-        int x = Mth.intFloorDiv(origin.getX(), 16);
-        int y = Mth.intFloorDiv(origin.getY(), 16);
-        int z = Mth.intFloorDiv(origin.getZ(), 16);
-
-
-        if (TrackyAccessor.getRenderedChunks(level).values().stream().map(Supplier::get).flatMap(Collection::stream).toList().contains(new ChunkPos(x, z))) {
-            PoseStack modelViewStack = RenderSystem.getModelViewStack();
-            Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
-
-            modelViewStack.pushPose();
-            Temp.process((LevelRenderer) (Object) this, instance, renderChunk, uniform, savedStack, projectionMatrix, chunk, origin, x, y, z, camX, camY, camZ, instance);
-
-            modelViewStack.popPose();
-        } else {
-            instance.drawChunkLayer();
-        }
-    }
+//    @Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawChunkLayer()V"))
+//    public void preRenderLayer(VertexBuffer instance) {
+//        ShaderInstance shaderinstance = RenderSystem.getShader();
+//        Uniform uniform = shaderinstance.CHUNK_OFFSET;
+//
+//        BlockPos origin = renderChunk.getOrigin();
+//        ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
+//
+//        int x = Mth.intFloorDiv(origin.getX(), 16);
+//        int y = Mth.intFloorDiv(origin.getY(), 16);
+//        int z = Mth.intFloorDiv(origin.getZ(), 16);
+//
+//
+//        if (TrackyAccessor.getRenderedChunks(level).values().stream().map(Supplier::get).flatMap(Collection::stream).toList().contains(new ChunkPos(x, z))) {
+//            PoseStack modelViewStack = RenderSystem.getModelViewStack();
+//            Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
+//
+//            modelViewStack.pushPose();
+//            Temp.process((LevelRenderer) (Object) this, instance, renderChunk, uniform, savedStack, projectionMatrix, chunk, origin, x, y, z, camX, camY, camZ, instance);
+//
+//            modelViewStack.popPose();
+//        } else {
+//            instance.drawChunkLayer();
+//        }
+//    }
 }
