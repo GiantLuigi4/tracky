@@ -151,7 +151,7 @@ public abstract class ChunkManagerMixin {
 		if (!chunkTracker.setDoUpdate(false)) return;
 
 		ArrayList<ChunkPos> tracked = new ArrayList<>();
-		chunkTracker.trackedChunks().clear();
+		chunkTracker.tickTracking();
 		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
 		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
 			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
@@ -161,7 +161,7 @@ public abstract class ChunkManagerMixin {
 				updateChunkTracking(
 						player, chunkPos,
 						new MutableObject<>(),
-						wasLoaded = chunkTracker.trackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
+						wasLoaded = chunkTracker.oldTrackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
 						true // start tracking
 				);
 
@@ -172,7 +172,6 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
-		chunkTracker.tickTracking();
 		chunkTracker.trackedChunks().addAll(tracked);
 		
 		if (anyFailed) {
@@ -202,7 +201,7 @@ public abstract class ChunkManagerMixin {
 					updateChunkTracking(
 							pPlayer, pos,
 							new MutableObject<>(),
-							wasLoaded = chunkTracker.trackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
+							wasLoaded = chunkTracker.oldTrackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
 							true // start tracking
 					);
 
