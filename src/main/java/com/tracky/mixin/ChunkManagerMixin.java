@@ -151,6 +151,7 @@ public abstract class ChunkManagerMixin {
 		if (!chunkTracker.setDoUpdate(false)) return;
 
 		ArrayList<ChunkPos> tracked = new ArrayList<>();
+		chunkTracker.trackedChunks().clear();
 		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
 		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
 			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
@@ -171,9 +172,9 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
-		chunkTracker.trackedChunks().clear();
+		chunkTracker.tickTracking();
 		chunkTracker.trackedChunks().addAll(tracked);
-
+		
 		if (anyFailed) {
 			// if a chunk doesn't get loaded by the time the track starting finishes, mark it for another attempt at tracking
 			chunkTracker.setDoUpdate(true);

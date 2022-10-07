@@ -2,7 +2,6 @@ package com.tracky.mixin;
 
 import com.mojang.authlib.GameProfile;
 import com.tracky.debug.ITrackChunks;
-import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,25 +20,33 @@ public class ServerPlayerMixin implements ITrackChunks {
 	boolean doUpdate = false;
 	@Unique
 	private ArrayList<ChunkPos> chunksBeingTracked;
-//	@Unique
-//	private ArrayList<ChunkPos> lastChunksBeingTracked;
+	@Unique
+	private ArrayList<ChunkPos> lastChunksBeingTracked;
 	
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(MinecraftServer p_143384_, ServerLevel p_143385_, GameProfile p_143386_, CallbackInfo ci) {
 		chunksBeingTracked = new ArrayList<>();
-//		lastChunksBeingTracked = new ArrayList<>();
+		lastChunksBeingTracked = new ArrayList<>();
 	}
 	
-//	@Override
-//	public void tickTracking() {
-//		lastChunksBeingTracked = chunksBeingTracked;
-//		chunksBeingTracked = new ArrayList<>();
-//	}
-//
-//	@Override
-//	public ArrayList<ChunkPos> oldTrackedChunks() {
-//		return lastChunksBeingTracked;
-//	}
+	// this prevents chunks from being dropped during the vanilla player move method if it's force tracked
+	@Inject(at = @At("HEAD"), method = "untrackChunk", cancellable = true)
+	public void preUntrackChunk(ChunkPos p_9089_, CallbackInfo ci) {
+		if (chunksBeingTracked.contains(p_9089_)) {
+			ci.cancel();
+		}
+	}
+	
+	@Override
+	public void tickTracking() {
+		lastChunksBeingTracked = chunksBeingTracked;
+		chunksBeingTracked = new ArrayList<>();
+	}
+	
+	@Override
+	public ArrayList<ChunkPos> oldTrackedChunks() {
+		return lastChunksBeingTracked;
+	}
 	
 	@Override
 	public ArrayList<ChunkPos> trackedChunks() {
