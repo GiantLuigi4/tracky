@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -33,11 +34,11 @@ import java.util.function.Function;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkManagerMixin {
-
+	
 	@Shadow
 	@Final
 	ServerLevel level;
-
+	
 	/**
 	 * Make the chunk manager send chunk updates to clients tracking tracky-enforced chunks
 	 */
@@ -46,16 +47,16 @@ public abstract class ChunkManagerMixin {
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
 //		if (!TrackyAccessor.isMainTracky()) return;
 		final Map<UUID, Function<Player, Collection<SectionPos>>> map = TrackyAccessor.getForcedChunks(level);
-
+		
 		final List<ServerPlayer> players = new ArrayList<>();
 		boolean isTrackedByAny = false;
-
+		
 		// for all players in the level send the relevant chunks
 		// messy iteration but no way to avoid with our structure
 		for (ServerPlayer player : level.getPlayers((p) -> true)) {
 			for (Function<Player, Collection<SectionPos>> func : map.values()) {
 				final Iterable<ChunkPos> chunks = Tracky.collapse(func.apply(player));
-
+				
 				for (ChunkPos chunk : chunks) {
 					if (chunk.equals(chunkPos)) {
 						// send the packet if the player is tracking it
@@ -65,19 +66,19 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
-
+		
 		if (isTrackedByAny) {
 			// add players that are tracking it by vanilla
 			cir.getReturnValue().forEach((player) -> {
 				if (!players.contains(player))
 					players.add(player);
 			});
-
+			
 			cir.setReturnValue(players);
 			cir.cancel();
 		}
 	}
-
+	
 	@Shadow
 	int viewDistance;
 	boolean success = false;
@@ -90,29 +91,29 @@ public abstract class ChunkManagerMixin {
 	@Shadow
 	@Final
 	private ChunkMap.DistanceManager distanceManager;
-
+	
 	@Shadow
 	@Nullable
 	protected abstract ChunkHolder getVisibleChunkIfPresent(long p_140328_);
-
+	
 	@Shadow
 	protected abstract void updateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad);
-
+	
 	@Shadow
 	protected abstract boolean skipPlayer(ServerPlayer pPlayer);
-
+	
 	@Shadow
 	protected abstract SectionPos updatePlayerPos(ServerPlayer p_140374_);
-
+	
 	@Shadow
 	protected abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleChunkLoad(ChunkPos pChunkPos);
-
+	
 	@Shadow
 	protected abstract void scheduleUnload(long pChunkPos, ChunkHolder pChunkHolder);
-
+	
 	@Unique
 	ArrayList<ChunkPos> trackyForced = new ArrayList<>();
-
+	
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) throws ExecutionException, InterruptedException {
 		ArrayList<Player> playersChecked = new ArrayList<>();
@@ -121,7 +122,7 @@ public abstract class ChunkManagerMixin {
 		for (List<Player> value : TrackyAccessor.getPlayersLoadingChunks(level).values()) {
 			for (Player player : value) {
 				if (playersChecked.contains(player)) continue;
-
+				
 				playersChecked.add(player);
 				for (Function<Player, Collection<SectionPos>> playerIterableFunction : function.values()) {
 					for (ChunkPos chunkPos : Tracky.collapse(playerIterableFunction.apply(player))) {
@@ -132,15 +133,15 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
-
+		
 		for (ChunkPos chunkPos : trackyForced) {
 			level.setChunkForced(chunkPos.x, chunkPos.z, false);
 		}
-
+		
 		trackyForced.addAll(poses);
 	}
-
-
+	
+	
 	/**
 	 * Tracks chunks loaded by cameras to make sure they're being sent to the client
 	 */
@@ -150,51 +151,69 @@ public abstract class ChunkManagerMixin {
 		ITrackChunks chunkTracker = (ITrackChunks) player;
 		if (!chunkTracker.setDoUpdate(false)) return;
 
-		ArrayList<ChunkPos> tracked = new ArrayList<>();
-		chunkTracker.tickTracking();
-		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
+//		ArrayList<ChunkPos> tracked = new ArrayList<>();
+//		chunkTracker.tickTracking();
+//		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
+//		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
+//			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
+//				if (tracked.contains(chunkPos)) continue;
+//
+//				boolean wasLoaded;
+//				updateChunkTracking(
+//						player, chunkPos,
+//						new MutableObject<>(),
+//						wasLoaded = chunkTracker.oldTrackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
+//						true // start tracking
+//				);
+//
+//				if (!wasLoaded && !success) {
+//					anyFailed = true;
+//				} else {
+//					tracked.add(chunkPos);
+//				}
+//			}
+//		}
+//		chunkTracker.trackedChunks().addAll(tracked);
+//
+//		if (anyFailed) {
+//			// if a chunk doesn't get loaded by the time the track starting finishes, mark it for another attempt at tracking
+//			chunkTracker.setDoUpdate(true);
+//		}
+		
+		ArrayList<ChunkPos> positions = new ArrayList<>();
 		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
 			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
-				if (tracked.contains(chunkPos)) continue;
-
-				boolean wasLoaded;
-				updateChunkTracking(
-						player, chunkPos,
-						new MutableObject<>(),
-						wasLoaded = chunkTracker.oldTrackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
-						true // start tracking
-				);
-
-				if (!wasLoaded && !success) {
-					anyFailed = true;
-				} else {
-					tracked.add(chunkPos);
+				if (!positions.contains(chunkPos)) {
+					positions.add(chunkPos);
 				}
 			}
 		}
-		chunkTracker.trackedChunks().addAll(tracked);
 		
-		if (anyFailed) {
-			// if a chunk doesn't get loaded by the time the track starting finishes, mark it for another attempt at tracking
-			chunkTracker.setDoUpdate(true);
+		ArrayList<ChunkPos> toRemove = new ArrayList<>();
+		for (ChunkPos trackedChunk : chunkTracker.trackedChunks()) {
+			if (!positions.contains(trackedChunk)) {
+				toRemove.add(trackedChunk);
+				updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
+			}
 		}
+		chunkTracker.trackedChunks().removeAll(toRemove);
 	}
-
+	
 	@Unique
 	public boolean forAllInRange(Vec3 origin, ServerPlayer pPlayer, ITrackChunks chunkTracker, ArrayList<ChunkPos> tracked) {
 		boolean anyFailed = false;
-
+		
 		ChunkPos playerChunk = pPlayer.chunkPosition();
 		ChunkPos center = new ChunkPos(new BlockPos(origin.x, origin.y, origin.z));
 		Vec3 pChunkPos = new Vec3(playerChunk.x, 0, playerChunk.z);
-
+		
 		for (int x = -viewDistance; x <= viewDistance; x++) {
 			for (int z = -viewDistance; z <= viewDistance; z++) {
 				ChunkPos pos = new ChunkPos(center.x + x, center.z + z);
 				if (tracked.contains(pos)) continue;
-
+				
 				Vec3 chunkPos = new Vec3(pos.x, 0, pos.z);
-
+				
 				// TODO: this distance check breaks everything
 				if (chunkPos.distanceToSqr(pChunkPos) < viewDistance) {
 					boolean wasLoaded;
@@ -204,7 +223,7 @@ public abstract class ChunkManagerMixin {
 							wasLoaded = chunkTracker.oldTrackedChunks().remove(pos), // remove it so that the next loop doesn't untrack it
 							true // start tracking
 					);
-
+					
 					if (!wasLoaded && !success) {
 						anyFailed = true;
 					} else {
@@ -213,20 +232,45 @@ public abstract class ChunkManagerMixin {
 				}
 			}
 		}
-
+		
 		return anyFailed;
 	}
-
+	
 	@Inject(at = @At("HEAD"), method = "updatePlayerPos")
 	public void preUpdatePos(ServerPlayer p_140374_, CallbackInfoReturnable<SectionPos> cir) {
 		((ITrackChunks) p_140374_).setDoUpdate(true);
 	}
-
+	
+	// TODO: I'd like to not use a redirect, but ModifyArgs crashes the game and I think that's a forge issue
+	@Redirect(
+			method = "move",
+			at = @At(
+					value = "INVOKE",
+					target = "Lnet/minecraft/server/level/ChunkMap;updateChunkTracking(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/level/ChunkPos;Lorg/apache/commons/lang3/mutable/MutableObject;ZZ)V"
+			)
+	)
+	public void modifyTracking(ChunkMap chunkMap, ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
+		boolean isForced = false;
+		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
+			for (ChunkPos chunkPos : Tracky.collapse(value.apply(pPlayer))) {
+				if (chunkPos.equals(pChunkPos)) {
+					pLoad = true;
+					isForced = true;
+					break;
+				}
+			}
+		}
+		if (isForced) {
+			((ITrackChunks)pPlayer).trackedChunks().add(pChunkPos);
+		}
+		updateChunkTracking(pPlayer, pChunkPos, pPacketCache, pWasLoaded, pLoad);
+	}
+	
 	@Inject(at = @At("HEAD"), method = "playerLoadedChunk")
 	public void preLoadChunk(ServerPlayer pPlaer, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, LevelChunk pChunk, CallbackInfo ci) {
 		success = true;
 	}
-
+	
 	@Inject(at = @At("HEAD"), method = "updateChunkTracking", cancellable = true)
 	public void preUpdateTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
 		success = false;
