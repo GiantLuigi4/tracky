@@ -189,6 +189,10 @@ public abstract class ChunkManagerMixin {
 			}
 		}
 		
+		for (ChunkPos position : positions) {
+			updateChunkTracking(player, position, new MutableObject<>(), chunkTracker.trackedChunks().contains(position), true);
+		}
+		
 		ArrayList<ChunkPos> toRemove = new ArrayList<>();
 		for (ChunkPos trackedChunk : chunkTracker.trackedChunks()) {
 			if (!positions.contains(trackedChunk)) {
