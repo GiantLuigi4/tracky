@@ -193,14 +193,16 @@ public abstract class ChunkManagerMixin {
 			Tracky$modifyTracking(player, position, new MutableObject<>(), chunkTracker.trackedChunks().contains(position), true);
 		}
 		
-		ArrayList<ChunkPos> toRemove = new ArrayList<>();
-		for (ChunkPos trackedChunk : chunkTracker.trackedChunks()) {
+		chunkTracker.tickTracking();
+//		ArrayList<ChunkPos> toRemove = new ArrayList<>();
+		for (ChunkPos trackedChunk : chunkTracker.oldTrackedChunks()) {
 			if (!positions.contains(trackedChunk)) {
-				toRemove.add(trackedChunk);
 				updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
+			} else {
+				chunkTracker.trackedChunks().add(trackedChunk);
 			}
 		}
-		chunkTracker.trackedChunks().removeAll(toRemove);
+//		chunkTracker.trackedChunks().removeAll(toRemove);
 	}
 	
 	@Unique
