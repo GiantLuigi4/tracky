@@ -190,7 +190,7 @@ public abstract class ChunkManagerMixin {
 		}
 		
 		for (ChunkPos position : positions) {
-			updateChunkTracking(player, position, new MutableObject<>(), chunkTracker.trackedChunks().contains(position), true);
+			Tracky$modifyTracking(player, position, new MutableObject<>(), chunkTracker.trackedChunks().contains(position), true);
 		}
 		
 		ArrayList<ChunkPos> toRemove = new ArrayList<>();
@@ -254,6 +254,10 @@ public abstract class ChunkManagerMixin {
 			)
 	)
 	public void modifyTracking(ChunkMap chunkMap, ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
+		Tracky$modifyTracking(pPlayer, pChunkPos, pPacketCache, pWasLoaded, pLoad);
+	}
+	
+	protected void Tracky$modifyTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
 		boolean isForced = false;
 		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
 			for (ChunkPos chunkPos : Tracky.collapse(value.apply(pPlayer))) {

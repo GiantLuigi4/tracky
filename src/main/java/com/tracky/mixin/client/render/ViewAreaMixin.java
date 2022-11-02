@@ -6,7 +6,6 @@ import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Final;
@@ -134,4 +133,14 @@ public abstract class ViewAreaMixin {
             }
         }
     }
+	
+	@Inject(at = @At("HEAD"), method = "releaseAllBuffers")
+	public void preReleaseBuffers(CallbackInfo ci) {
+		for (ChunkRenderDispatcher.RenderChunk[] value : tracky$renderChunkCache.values()) {
+			for (ChunkRenderDispatcher.RenderChunk renderChunk : value) {
+				if (renderChunk != null) // sometimes a render chunk can be null
+					renderChunk.releaseBuffers(); // free gl resources
+			}
+		}
+	}
 }
