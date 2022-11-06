@@ -23,7 +23,11 @@ public class Tracky {
 
 		MinecraftForge.EVENT_BUS.addListener(this::onUnloadWorld);
 		MinecraftForge.EVENT_BUS.addListener(this::onRemovePlayer);
-		System.out.println("Default UUID Test: " + getDefaultUUID());
+		System.out.println("Default UUID Tests: \n" +
+				"- " + getDefaultUUID("tracky", "sampleuuid") + "\n" +
+				"- " + getDefaultUUID("tracky", "sampleUUID") + "\n" +
+				"- " + getDefaultUUID("landlord", "worldshell")
+		);
 	}
 	
 	public void onUnloadWorld(WorldEvent.Unload event) {
@@ -42,12 +46,10 @@ public class Tracky {
 	 * a default UUID based on the name of the  calling class
 	 * this is expensive, and the result should be cached and each mod should only have one UUID it uses
 	*/
-	public static UUID getDefaultUUID() {
-//		return defaultUUID;
-		StackTraceElement[] traceElements = Thread.currentThread().getStackTrace();
+	public static UUID getDefaultUUID(String modid, String name) {
 		return new UUID(
-				traceElements[2].toString().hashCode() * 9383064L,
-				new Random(traceElements[2].toString().hashCode() + 32874).nextLong() * 10623261L
+				modid.hashCode() * 9383064L,
+				new Random(name.hashCode() + 32874L * modid.length()).nextLong() * 10623261L
 		);
 	}
 
@@ -61,7 +63,7 @@ public class Tracky {
 		for (SectionPos sectionPos : x) {
 			ChunkPos c = sectionToChunk(sectionPos);
 
-			if(!y.contains(c))
+//			if(!y.contains(c))
 				y.add(c);
 		}
 		return y;

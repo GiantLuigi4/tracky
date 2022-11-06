@@ -10,4 +10,5 @@ public interface ITrackChunks {
 	
 	void tickTracking();
 	boolean setDoUpdate(boolean val);
+	boolean shouldUpdate();
 }

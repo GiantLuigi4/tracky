@@ -42,24 +42,27 @@ public class WorldMixin implements ServerMapHolder {
 //				}
 //			}
 //		}
-		{
-			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
-			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
-			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-						positions.add(SectionPos.of(x, y, z));
-					}
-				}
-			}
-		}
 
-
-		TrackyAccessor.getForcedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), (player) -> {
-			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), Arrays.asList(player));
-
-			return positions;
-		});
+//		{
+//			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
+//			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
+//			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+//				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+//					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+//						positions.add(SectionPos.of(x, y, z));
+//					}
+//				}
+//			}
+//		}
+//
+////		positions.clear();
+//
+//		UUID testUUID = Tracky.getDefaultUUID("tracky", "testing");
+//		TrackyAccessor.getForcedChunks((Level) (Object) this).put(testUUID, (player) -> {
+//			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(testUUID, Collections.singletonList(player));
+//
+//			return positions;
+//		});
 	}
 	
 	@Unique

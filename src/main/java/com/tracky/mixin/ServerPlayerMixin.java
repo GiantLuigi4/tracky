@@ -59,4 +59,9 @@ public class ServerPlayerMixin implements ITrackChunks {
 		this.doUpdate = val;
 		return doUpdate;
 	}
+	
+	@Override
+	public boolean shouldUpdate() {
+		return doUpdate;
+	}
 }

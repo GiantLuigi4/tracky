@@ -32,29 +32,29 @@ public class ClientWorldMixin implements ClientMapHolder {
 		ArrayList<SectionPos> positions = new ArrayList<>();
 
 		// all temp
-		{
-			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
-			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
-			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-						positions.add(SectionPos.of(x, y, z));
-					}
-				}
-			}
-		}
-//
-//		// all temp
-		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID(), () -> {
-			return positions;
-		});
-		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(UUID.randomUUID(), () -> {
-			return new ArrayList<>() {{
-				for (int i = -2; i < 5; i++) {
-					add(SectionPos.of(5, i, 5));
-				}
-			}};
-		});
+//		{
+//			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
+//			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
+//			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+//				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+//					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+//						positions.add(SectionPos.of(x, y, z));
+//					}
+//				}
+//			}
+//		}
+////
+////		// all temp
+//		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID("tracky", "testing"), () -> {
+//			return positions;
+//		});
+//		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(UUID.randomUUID(), () -> {
+//			return new ArrayList<>() {{
+//				for (int i = -2; i < 5; i++) {
+//					add(SectionPos.of(5, i, 5));
+//				}
+//			}};
+//		});
 	}
 	
 	@Override

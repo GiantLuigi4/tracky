@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 
 public class ClientTracking {
 	private static final HashMap<ClientLevel, Supplier<Collection<SectionPos>>> forced = new HashMap();
-	private static final UUID uuid = Tracky.getDefaultUUID();
+	private static final UUID uuid = Tracky.getDefaultUUID("tracky", "api:client");
 	
 	public static void forceChunks(ClientLevel level, Supplier<Collection<SectionPos>> positions) {
 //		if (!MixinPlugin.allowAPI)

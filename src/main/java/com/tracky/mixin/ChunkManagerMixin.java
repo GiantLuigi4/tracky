@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -142,15 +143,41 @@ public abstract class ChunkManagerMixin {
 	}
 	
 	
+	@Unique
+	// these fields are the way they are for both optimization and safety incase of multi-threading moddings
+	private static AtomicReference<ArrayList<ChunkPos>> collapsedChunks = new AtomicReference<>();
+	private boolean flattenedArray = false; // if this is false, then the tail injections aren't going to work on the current tick, so it should wait until the following tick
+	
+	@Inject(method = "move", at = @At(value = "HEAD"))
+	private void preTrackCameraLoadedChunks(ServerPlayer player, CallbackInfo callback) {
+		flattenedArray = false;
+		ITrackChunks chunkTracker = (ITrackChunks) player;
+		if (!chunkTracker.shouldUpdate()) return;
+		flattenedArray = true;
+		
+		ArrayList<ChunkPos> positions = new ArrayList<>();
+		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
+//			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
+//				if (!positions.contains(chunkPos)) {
+//					positions.add(chunkPos);
+//				}
+//			}
+			positions.addAll(Tracky.collapse(value.apply(player)));
+		}
+		collapsedChunks.set(positions);
+	}
+	
 	/**
 	 * Tracks chunks loaded by cameras to make sure they're being sent to the client
 	 */
 	@Inject(method = "move", at = @At(value = "TAIL"))
 	private void trackCameraLoadedChunks(ServerPlayer player, CallbackInfo callback) {
-
+		if (!flattenedArray) return;
+		
 		ITrackChunks chunkTracker = (ITrackChunks) player;
-		if (!chunkTracker.setDoUpdate(false)) return;
-
+		if (!chunkTracker.shouldUpdate()) return;
+		chunkTracker.setDoUpdate(false);
+		
 //		ArrayList<ChunkPos> tracked = new ArrayList<>();
 //		chunkTracker.tickTracking();
 //		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
@@ -180,14 +207,7 @@ public abstract class ChunkManagerMixin {
 //			chunkTracker.setDoUpdate(true);
 //		}
 		
-		ArrayList<ChunkPos> positions = new ArrayList<>();
-		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
-			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
-				if (!positions.contains(chunkPos)) {
-					positions.add(chunkPos);
-				}
-			}
-		}
+		ArrayList<ChunkPos> positions = collapsedChunks.get();
 		
 		for (ChunkPos position : positions) {
 			Tracky$modifyTracking(player, position, new MutableObject<>(), chunkTracker.trackedChunks().contains(position), true);
@@ -196,7 +216,7 @@ public abstract class ChunkManagerMixin {
 		chunkTracker.tickTracking();
 //		ArrayList<ChunkPos> toRemove = new ArrayList<>();
 		for (ChunkPos trackedChunk : chunkTracker.oldTrackedChunks()) {
-			if (!positions.contains(trackedChunk)) {
+			if (!positions.contains(trackedChunk)) { // TODO: this is slow
 				updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
 			} else {
 				chunkTracker.trackedChunks().add(trackedChunk);
@@ -260,18 +280,18 @@ public abstract class ChunkManagerMixin {
 	}
 	
 	protected void Tracky$modifyTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
+		if (!flattenedArray) return;
+		
 		boolean isForced = false;
-		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
-			for (ChunkPos chunkPos : Tracky.collapse(value.apply(pPlayer))) {
-				if (chunkPos.equals(pChunkPos)) {
-					pLoad = true;
-					isForced = true;
-					break;
-				}
+		for (ChunkPos chunkPos : collapsedChunks.get()) {
+			if (chunkPos.equals(pChunkPos)) {
+				pLoad = true;
+				isForced = true;
+				break;
 			}
 		}
 		if (isForced) {
-			((ITrackChunks)pPlayer).trackedChunks().add(pChunkPos);
+			((ITrackChunks) pPlayer).trackedChunks().add(pChunkPos);
 		}
 		updateChunkTracking(pPlayer, pChunkPos, pPacketCache, pWasLoaded, pLoad);
 	}
