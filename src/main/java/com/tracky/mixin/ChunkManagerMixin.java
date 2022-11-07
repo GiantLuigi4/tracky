@@ -280,7 +280,10 @@ public abstract class ChunkManagerMixin {
 	}
 	
 	protected void Tracky$modifyTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
-		if (!flattenedArray) return;
+		if (!flattenedArray) {
+			updateChunkTracking(pPlayer, pChunkPos, pPacketCache, pWasLoaded, pLoad);
+			return;
+		}
 		
 		boolean isForced = false;
 		for (ChunkPos chunkPos : collapsedChunks.get()) {
