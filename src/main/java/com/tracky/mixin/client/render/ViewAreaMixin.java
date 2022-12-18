@@ -17,10 +17,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -112,12 +109,9 @@ public abstract class ViewAreaMixin {
             ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
             Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-            List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
+            HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
 
             for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//                for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-//                    trackyRenderedChunksList.add(trackyRenderedChunk);
-//                }
                 trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }
 

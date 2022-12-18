@@ -92,24 +92,24 @@ public abstract class LevelRendererMixin {
     @Inject(method = "applyFrustum", at = @At("TAIL"))
     private void applyFrustum(Frustum pFrustrum, CallbackInfo ci) {
         Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-        List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
+        HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
 
         for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
             trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
         }
 
+        HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet(this.renderChunksInFrustum);
+
         // for every tracky chunk the player should be rendering
         for (SectionPos chunk : trackyRenderedChunksList) {
-//            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
-                ChunkRenderDispatcher.RenderChunk renderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
+            ChunkRenderDispatcher.RenderChunk renderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
 
-                if (renderChunk != null) {
-                    LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
+            if (renderChunk != null) {
+                LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
 
-                    if (!renderChunksInFrustum.contains(info) && info != null)
-                        renderChunksInFrustum.add(info);
-                }
-//            }
+                if (!settedFrustum.contains(info) && info != null)
+                    this.renderChunksInFrustum.add(info);
+            }
         }
     }
 
