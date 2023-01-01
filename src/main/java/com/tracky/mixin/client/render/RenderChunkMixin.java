@@ -30,7 +30,7 @@ public abstract class RenderChunkMixin {
         int z = Mth.intFloorDiv(origin.getZ(), 16);
 
         Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(Minecraft.getInstance().level).values();
-        List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
+        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
 
         for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
 //            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {

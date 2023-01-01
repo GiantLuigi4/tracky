@@ -10,10 +10,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 @Mod("tracky")
 public class Tracky {
@@ -57,8 +54,8 @@ public class Tracky {
 		return new ChunkPos(sectionPos.x(), sectionPos.z());
 	}
 
-	public static ArrayList<ChunkPos> collapse(Collection<SectionPos> x) {
-		ArrayList<ChunkPos> y = new ArrayList<>();
+	public static Set<ChunkPos> collapse(Collection<SectionPos> x) {
+		Set<ChunkPos> y = new HashSet<>();
 
 		for (SectionPos sectionPos : x) {
 			ChunkPos c = sectionToChunk(sectionPos);

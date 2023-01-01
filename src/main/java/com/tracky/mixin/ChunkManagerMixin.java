@@ -145,7 +145,7 @@ public abstract class ChunkManagerMixin {
 	
 	@Unique
 	// these fields are the way they are for both optimization and safety incase of multi-threading moddings
-	private static AtomicReference<ArrayList<ChunkPos>> collapsedChunks = new AtomicReference<>();
+	private static AtomicReference<Set<ChunkPos>> collapsedChunks = new AtomicReference<>();
 	private boolean flattenedArray = false; // if this is false, then the tail injections aren't going to work on the current tick, so it should wait until the following tick
 	
 	@Inject(method = "move", at = @At(value = "HEAD"))
@@ -155,7 +155,7 @@ public abstract class ChunkManagerMixin {
 		if (!chunkTracker.shouldUpdate()) return;
 		flattenedArray = true;
 		
-		ArrayList<ChunkPos> positions = new ArrayList<>();
+		Set<ChunkPos> positions = new HashSet<>();
 		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
 //			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
 //				if (!positions.contains(chunkPos)) {
@@ -207,7 +207,7 @@ public abstract class ChunkManagerMixin {
 //			chunkTracker.setDoUpdate(true);
 //		}
 		
-		ArrayList<ChunkPos> positions = collapsedChunks.get();
+		Set<ChunkPos> positions = collapsedChunks.get();
 		
 		for (ChunkPos position : positions) {
 			Tracky$modifyTracking(player, position, new MutableObject<>(), chunkTracker.trackedChunks().contains(position), true);
@@ -286,12 +286,9 @@ public abstract class ChunkManagerMixin {
 		}
 		
 		boolean isForced = false;
-		for (ChunkPos chunkPos : collapsedChunks.get()) {
-			if (chunkPos.equals(pChunkPos)) {
-				pLoad = true;
-				isForced = true;
-				break;
-			}
+		if (collapsedChunks.get().contains(pChunkPos)) {
+			pLoad = true;
+			isForced = true;
 		}
 		if (isForced) {
 			((ITrackChunks) pPlayer).trackedChunks().add(pChunkPos);

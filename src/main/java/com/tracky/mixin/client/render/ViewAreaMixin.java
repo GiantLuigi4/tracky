@@ -69,8 +69,8 @@ public abstract class ViewAreaMixin {
             ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
             Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-            List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
-
+            Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
+    
             for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
                 trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
             }

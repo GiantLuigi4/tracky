@@ -1,5 +1,6 @@
 package com.tracky.mixin.client.render;
 
+import com.tracky.access.RenderInfoMapExtensions;
 import com.tracky.util.VecMap;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -14,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.HashMap;
 
 @Mixin(LevelRenderer.RenderInfoMap.class)
-public class RenderInfoMapMixin {
+public class RenderInfoMapMixin implements RenderInfoMapExtensions {
 //	VecMap<LevelRenderer.RenderChunkInfo> map = new VecMap<>(2);
 	HashMap<Vec3i,  LevelRenderer.RenderChunkInfo> map = new HashMap<>();
 
@@ -41,5 +42,10 @@ public class RenderInfoMapMixin {
 
 		vec = new Vec3i(x, y, z);
 		cir.setReturnValue(map.get(vec));
+	}
+	
+	@Override
+	public HashMap<Vec3i, LevelRenderer.RenderChunkInfo> getRenderChunkMap() {
+		return map;
 	}
 }

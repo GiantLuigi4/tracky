@@ -67,8 +67,8 @@ public abstract class LevelRendererMixin {
     private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
 
         Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-        List<SectionPos> trackyRenderedChunksList = new ArrayList<>();
-
+        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
+    
         for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
             trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
         }
