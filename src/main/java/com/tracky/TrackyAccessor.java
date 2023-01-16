@@ -5,13 +5,9 @@ import com.tracky.access.ServerMapHolder;
 import com.tracky.debug.ITrackChunks;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -24,7 +20,6 @@ public class TrackyAccessor {
 	 * @param level the world to get the force loaded chunks of
 	 * @return the list of force loaded chunks
 	 */
-	// also it's native so that it doesn't have a method body
 	public static Map<UUID, Function<Player, Collection<SectionPos>>> getForcedChunks(Level level) {
 		return ((ServerMapHolder) level).trackyHeldMapS();
 	}
@@ -50,5 +45,18 @@ public class TrackyAccessor {
 	 */
 	public static void markForRetracking(Player player) {
 		((ITrackChunks) player).setDoUpdate(true);
+	}
+	
+	/**
+	 * call this whenever you modify your list of tracked chunks
+	 * this tells tracky that the list has changed, and that new chunks likely have to be sent to the client, or that the client needs to know to drop chunks
+	 */
+	public static void markForRerender(Level lvl) {
+		// TODO: might be a good idea to offload this onto a second thread?
+		// creates a new set to avoid needing synchronization
+		Set<SectionPos> positions = new HashSet<>();
+		for (Supplier<Collection<SectionPos>> value : ((ClientMapHolder) lvl).trackyHeldMapC().values())
+			positions.addAll(value.get());
+		((ClientMapHolder) lvl).trackySetRenderChunksC(positions);
 	}
 }

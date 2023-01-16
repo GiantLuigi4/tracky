@@ -1,6 +1,7 @@
 package com.tracky.mixin.client.render;
 
 import com.tracky.TrackyAccessor;
+import com.tracky.access.ClientMapHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -29,16 +30,17 @@ public abstract class RenderChunkMixin {
         int y = Mth.intFloorDiv(origin.getY(), 16);
         int z = Mth.intFloorDiv(origin.getZ(), 16);
 
-        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(Minecraft.getInstance().level).values();
-        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
-
-        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
-//                trackyRenderedChunksList.add(trackyRenderedChunk);
-//            }
-            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-        }
-
+//        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(Minecraft.getInstance().level).values();
+//        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
+//
+//        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+////            for (ChunkPos trackyRenderedChunk : trackyRenderedChunksSupplier.get()) {
+////                trackyRenderedChunksList.add(trackyRenderedChunk);
+////            }
+//            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
+//        }
+        Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
+    
         if (trackyRenderedChunksList.contains(SectionPos.of(x, y, z))) {
             cir.setReturnValue(0.0D);
         }

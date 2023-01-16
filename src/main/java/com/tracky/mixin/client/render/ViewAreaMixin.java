@@ -1,6 +1,8 @@
 package com.tracky.mixin.client.render;
 
 import com.tracky.TrackyAccessor;
+import com.tracky.access.ClientMapHolder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -68,12 +70,13 @@ public abstract class ViewAreaMixin {
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
-            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-            Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
-    
-            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-            }
+//            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+//            Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
+//
+//            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
+//            }
+            Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
 
             if (trackyRenderedChunksList.contains(spos)) {
                 Function<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> newBlankRenderChunks = idk -> new ChunkRenderDispatcher.RenderChunk[this.chunkGridSizeY];
@@ -108,13 +111,14 @@ public abstract class ViewAreaMixin {
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
-            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-            HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
-
-            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-            }
-
+//            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+//            HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
+//
+//            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
+//            }
+            Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
+    
             if (trackyRenderedChunksList.contains(spos)) {
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.get(cpos);
 
@@ -131,10 +135,12 @@ public abstract class ViewAreaMixin {
 	@Inject(at = @At("HEAD"), method = "releaseAllBuffers")
 	public void preReleaseBuffers(CallbackInfo ci) {
 		for (ChunkRenderDispatcher.RenderChunk[] value : tracky$renderChunkCache.values()) {
-			for (ChunkRenderDispatcher.RenderChunk renderChunk : value) {
-				if (renderChunk != null) // sometimes a render chunk can be null
-					renderChunk.releaseBuffers(); // free gl resources
-			}
+            for (int i = 0; i < value.length; i++) {
+                ChunkRenderDispatcher.RenderChunk renderChunk = value[i];
+                if (renderChunk != null) // sometimes a render chunk can be null
+                    renderChunk.releaseBuffers(); // free gl resources
+                value[i] = null;
+            }
 		}
 	}
 }

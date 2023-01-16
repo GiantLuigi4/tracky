@@ -8,8 +8,10 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Matrix4f;
 import com.tracky.Temp;
 import com.tracky.TrackyAccessor;
+import com.tracky.access.ClientMapHolder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -66,12 +68,13 @@ public abstract class LevelRendererMixin {
     @Inject(method = "updateRenderChunks", at = @At(value = "TAIL"))
     private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
 
-        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
-    
-        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-        }
+//        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+//        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
+//
+//        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
+//        }
+        Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder) Minecraft.getInstance().level).trackyGetRenderChunksC();
 
         // for every tracky chunk the player should be rendering
         for (SectionPos chunk : trackyRenderedChunksList) {
@@ -91,12 +94,13 @@ public abstract class LevelRendererMixin {
 
     @Inject(method = "applyFrustum", at = @At("TAIL"))
     private void applyFrustum(Frustum pFrustrum, CallbackInfo ci) {
-        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-        HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
-
-        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-        }
+//        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
+//        HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
+//
+//        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
+//            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
+//        }
+        Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
 
         HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet(this.renderChunksInFrustum);
 
