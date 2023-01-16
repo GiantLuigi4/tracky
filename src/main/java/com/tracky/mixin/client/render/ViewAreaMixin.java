@@ -40,6 +40,7 @@ public abstract class ViewAreaMixin {
 
     @Shadow protected int chunkGridSizeZ;
     @Shadow protected int chunkGridSizeX;
+    @Shadow public ChunkRenderDispatcher.RenderChunk[] chunks;
     @Unique
     private final HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> tracky$renderChunkCache = new HashMap<>();
 
@@ -81,11 +82,28 @@ public abstract class ViewAreaMixin {
             if (trackyRenderedChunksList.contains(spos)) {
                 Function<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> newBlankRenderChunks = idk -> new ChunkRenderDispatcher.RenderChunk[this.chunkGridSizeY];
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.computeIfAbsent(cpos, newBlankRenderChunks);
-
+    
+                // TODO: reuse vanilla chunks?
+//                {
+//                    int i = Math.floorMod(x, this.chunkGridSizeX);
+//                    int j = Math.floorMod(y - this.level.getMinSection(), this.chunkGridSizeY);
+//                    int k = Math.floorMod(z, this.chunkGridSizeZ);
+//
+//                    int index = this.getChunkIndex(i, j, k);
+//
+//                    ChunkRenderDispatcher.RenderChunk chunkrenderdispatcher$renderchunk = this.chunks[index];
+//                    if (chunkrenderdispatcher$renderchunk != null) {
+//                        renderChunks[y] = chunkrenderdispatcher$renderchunk;
+//                    }
+//                }
+                
                 if (renderChunks[y] == null) {
                     int chunkIndex = getChunkIndex(x, y, z);
                     final ChunkRenderDispatcher.RenderChunk renderChunk = tracky$chunkRenderDispatcher.new RenderChunk(chunkIndex, x << 4, preY << 4, z << 4);
                     renderChunks[y] = renderChunk;
+                    
+                    renderChunks[y].setDirty(important);
+                    ((RenderChunkAccessor) renderChunks[y]).setPlayerChanged(true);
                 }
 
                 renderChunks[y].setDirty(important);
@@ -123,7 +141,7 @@ public abstract class ViewAreaMixin {
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.get(cpos);
 
                 if (renderChunks == null) {
-                    cir.setReturnValue(null);
+//                    cir.setReturnValue(null);
                 } else {
                     ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y /*- Math.abs(level.getMinSection())*/];
                     cir.setReturnValue(renderChunk);
@@ -132,14 +150,17 @@ public abstract class ViewAreaMixin {
         }
     }
 	
+    // TODO: this is probably dumb, but it's working for now
 	@Inject(at = @At("HEAD"), method = "releaseAllBuffers")
 	public void preReleaseBuffers(CallbackInfo ci) {
 		for (ChunkRenderDispatcher.RenderChunk[] value : tracky$renderChunkCache.values()) {
             for (int i = 0; i < value.length; i++) {
                 ChunkRenderDispatcher.RenderChunk renderChunk = value[i];
-                if (renderChunk != null) // sometimes a render chunk can be null
-                    renderChunk.releaseBuffers(); // free gl resources
-                value[i] = null;
+                if (renderChunk != null) {// sometimes a render chunk can be null
+//                    renderChunk.releaseBuffers(); // free gl resources
+                    value[i].setDirty(false);
+                    ((RenderChunkAccessor) value[i]).setPlayerChanged(true);
+                }
             }
 		}
 	}
