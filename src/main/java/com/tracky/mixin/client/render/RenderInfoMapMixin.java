@@ -17,7 +17,7 @@ import java.util.HashMap;
 @Mixin(LevelRenderer.RenderInfoMap.class)
 public class RenderInfoMapMixin implements RenderInfoMapExtensions {
 //	VecMap<LevelRenderer.RenderChunkInfo> map = new VecMap<>(2);
-	HashMap<Vec3i,  LevelRenderer.RenderChunkInfo> map = new HashMap<>();
+	HashMap<Vec3i, LevelRenderer.RenderChunkInfo> map = new HashMap<>();
 
 	@Inject(at = @At("HEAD"), method = "put", cancellable = true)
 	public void prePut(ChunkRenderDispatcher.RenderChunk pRenderChunk, LevelRenderer.RenderChunkInfo pInfo, CallbackInfo ci) {

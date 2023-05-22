@@ -2,6 +2,7 @@ package com.tracky.mixin.client.render;
 
 import com.tracky.TrackyAccessor;
 import com.tracky.access.ClientMapHolder;
+import com.tracky.access.ExtendedViewArea;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.ViewArea;
@@ -27,7 +28,7 @@ import java.util.function.Supplier;
  * Make sure tracky chunks get rendered
  */
 @Mixin(ViewArea.class)
-public abstract class ViewAreaMixin {
+public abstract class ViewAreaMixin implements ExtendedViewArea {
 
     @Shadow
     protected int chunkGridSizeY;
@@ -42,11 +43,16 @@ public abstract class ViewAreaMixin {
     @Shadow protected int chunkGridSizeX;
     @Shadow public ChunkRenderDispatcher.RenderChunk[] chunks;
     @Unique
-    private final HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> tracky$renderChunkCache = new HashMap<>();
+    private HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> tracky$renderChunkCache = new HashMap<>();
 
     @Unique
     private ChunkRenderDispatcher tracky$chunkRenderDispatcher;
-
+    
+    @Override
+    public HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> getTracky$renderChunkCache() {
+        return tracky$renderChunkCache;
+    }
+    
     /**
      * For some reason, mojang never stored the chunk render dispatcher passed to the constructor of a view area
      * Inject to fix this!
@@ -54,6 +60,10 @@ public abstract class ViewAreaMixin {
     @Inject(method = "<init>", at = @At("TAIL"))
     public void postInit(ChunkRenderDispatcher pChunkRenderDispatcher, Level pLevel, int pViewDistance, LevelRenderer pLevelRenderer, CallbackInfo ci) {
         this.tracky$chunkRenderDispatcher = pChunkRenderDispatcher;
+        ViewArea area = ((LevelRendererAccessor) pLevelRenderer).getViewArea();
+        if (area != null) {
+            this.tracky$renderChunkCache = ((ExtendedViewArea) area).getTracky$renderChunkCache();
+        }
     }
 
 
@@ -158,7 +168,7 @@ public abstract class ViewAreaMixin {
                 ChunkRenderDispatcher.RenderChunk renderChunk = value[i];
                 if (renderChunk != null) {// sometimes a render chunk can be null
 //                    renderChunk.releaseBuffers(); // free gl resources
-                    value[i].setDirty(false);
+                    value[i].setDirty(true);
                     ((RenderChunkAccessor) value[i]).setPlayerChanged(true);
                 }
             }

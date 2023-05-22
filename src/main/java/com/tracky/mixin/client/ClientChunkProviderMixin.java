@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 // TODO: we can look into making this less invasive later on, but for now, this should do
 @Mixin(ClientChunkCache.class)
@@ -132,17 +133,19 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 			for (ChunkPos chunkPos : chunks.keySet()) {
 				LevelChunk levelchunk = getChunk(chunkPos);
 				if (levelchunk != null) {
-					ChunkPos chunkpos = levelchunk.getPos();
-					if (((ChunkStorageAccessor) (Object) storage).isInRange(chunkpos.x, chunkpos.z)) {
-						continue;
-					}
-					for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
-						for (ChunkPos pos : Tracky.collapse(value.apply(Minecraft.getInstance().player))) {
-							if (pos.equals(chunkPos)) {
+					if (
+							chunkPos.getChessboardDistance(Minecraft.getInstance().player.chunkPosition()) < pViewDistance
+					) continue;
+					
+					for (Supplier<Collection<SectionPos>> value : TrackyAccessor.getRenderedChunks(level).values())
+						for (SectionPos sectionPos : value.get())
+							if (sectionPos.x() == chunkPos.x && sectionPos.z() == chunkPos.x)
 								continue loopChunks;
-							}
-						}
-					}
+							
+					for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values())
+						for (ChunkPos pos : Tracky.collapse(value.apply(Minecraft.getInstance().player)))
+							if (pos.equals(chunkPos))
+								continue loopChunks;
 				}
 				toRemove.add(chunkPos);
 			}

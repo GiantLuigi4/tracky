@@ -25,6 +25,7 @@
     "client.render.RenderInfoMapMixin",
     "client.render.RenderChunkAccessor",
     "client.render.VertexBufferAccessor",
+    "client.render.LevelRendererAccessor",
     "dummy.ClientWorldMixin"
   ],
   "injectors": {
