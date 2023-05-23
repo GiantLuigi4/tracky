@@ -1,41 +1,35 @@
 package com.tracky.mixin.client.render;
 
-import com.mojang.blaze3d.shaders.FogShape;
-import com.mojang.blaze3d.shaders.Uniform;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Matrix4f;
-import com.tracky.Temp;
-import com.tracky.TrackyAccessor;
 import com.tracky.access.ClientMapHolder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
-import net.minecraft.util.Mth;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Use {@link ViewAreaMixin}'s stuff in order to ensure that tracky chunks get actually rendered
@@ -67,26 +61,17 @@ public abstract class LevelRendererMixin {
      */
     @Inject(method = "updateRenderChunks", at = @At(value = "TAIL"))
     private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
-
-//        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-//        Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
-//
-//        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-//        }
         Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder) Minecraft.getInstance().level).trackyGetRenderChunksC();
 
         // for every tracky chunk the player should be rendering
         for (SectionPos chunk : trackyRenderedChunksList) {
-//            for (int y = level.getMinSection(); y < level.getMaxSection(); y++) {
-                ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
+            ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
 
-                if (gottenRenderChunk != null) {
-                    LevelRenderer.RenderChunkInfo info = RenderChunkInfoMixin.invokeInit(gottenRenderChunk, (Direction) null, 0);
-                    pChunkInfos.add(info);
-                    pInfoMap.put(gottenRenderChunk, info);
-                }
-//            }
+            if (gottenRenderChunk != null) {
+                LevelRenderer.RenderChunkInfo info = RenderChunkInfoMixin.invokeInit(gottenRenderChunk, (Direction) null, 0);
+                pChunkInfos.add(info);
+                pInfoMap.put(gottenRenderChunk, info);
+            }
         }
 
 
@@ -94,12 +79,6 @@ public abstract class LevelRendererMixin {
 
     @Inject(method = "applyFrustum", at = @At("TAIL"))
     private void applyFrustum(Frustum pFrustrum, CallbackInfo ci) {
-//        Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-//        HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
-//
-//        for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//            trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-//        }
         Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
 
         HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet(this.renderChunksInFrustum);
@@ -116,32 +95,4 @@ public abstract class LevelRendererMixin {
             }
         }
     }
-
-
-
-//    @Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawChunkLayer()V"))
-//    public void preRenderLayer(VertexBuffer instance) {
-//        ShaderInstance shaderinstance = RenderSystem.getShader();
-//        Uniform uniform = shaderinstance.CHUNK_OFFSET;
-//
-//        BlockPos origin = renderChunk.getOrigin();
-//        ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
-//
-//        int x = Mth.intFloorDiv(origin.getX(), 16);
-//        int y = Mth.intFloorDiv(origin.getY(), 16);
-//        int z = Mth.intFloorDiv(origin.getZ(), 16);
-//
-//
-//        if (TrackyAccessor.getRenderedChunks(level).values().stream().map(Supplier::get).flatMap(Collection::stream).toList().contains(new ChunkPos(x, z))) {
-//            PoseStack modelViewStack = RenderSystem.getModelViewStack();
-//            Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
-//
-//            modelViewStack.pushPose();
-//            Temp.process((LevelRenderer) (Object) this, instance, renderChunk, uniform, savedStack, projectionMatrix, chunk, origin, x, y, z, camX, camY, camZ, instance);
-//
-//            modelViewStack.popPose();
-//        } else {
-//            instance.drawChunkLayer();
-//        }
-//    }
 }

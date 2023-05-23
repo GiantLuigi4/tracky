@@ -1,6 +1,5 @@
 package com.tracky.mixin.client.render;
 
-import com.tracky.TrackyAccessor;
 import com.tracky.access.ClientMapHolder;
 import com.tracky.access.ExtendedViewArea;
 import net.minecraft.client.Minecraft;
@@ -20,9 +19,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Make sure tracky chunks get rendered
@@ -72,21 +71,12 @@ public abstract class ViewAreaMixin implements ExtendedViewArea {
      */
     @Inject(method = "setDirty", at = @At("HEAD"), cancellable = true)
     protected void setDirty(int x, int y, int z, boolean important, CallbackInfo ci) {
-//        int i = Math.floorMod(x, this.chunkGridSizeX);
-//        int k = Math.floorMod(z, this.chunkGridSizeZ);
-
         int preY = y;
         y = Math.floorMod(y - this.level.getMinSection(), this.chunkGridSizeY);
 
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
-//            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-//            Set<SectionPos> trackyRenderedChunksList = new HashSet<>();
-//
-//            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-//            }
             Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
 
             if (trackyRenderedChunksList.contains(spos)) {
@@ -139,20 +129,12 @@ public abstract class ViewAreaMixin implements ExtendedViewArea {
         if (y >= 0 && y < this.chunkGridSizeY) {
             ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
-//            Collection<Supplier<Collection<SectionPos>>> trackyRenderedChunks = TrackyAccessor.getRenderedChunks(level).values();
-//            HashSet<SectionPos> trackyRenderedChunksList = new HashSet<>();
-//
-//            for (Supplier<Collection<SectionPos>> trackyRenderedChunksSupplier : trackyRenderedChunks) {
-//                trackyRenderedChunksList.addAll(trackyRenderedChunksSupplier.get());
-//            }
             Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
     
             if (trackyRenderedChunksList.contains(spos)) {
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.get(cpos);
 
-                if (renderChunks == null) {
-//                    cir.setReturnValue(null);
-                } else {
+                if (renderChunks != null) {
                     ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y /*- Math.abs(level.getMinSection())*/];
                     cir.setReturnValue(renderChunk);
                 }

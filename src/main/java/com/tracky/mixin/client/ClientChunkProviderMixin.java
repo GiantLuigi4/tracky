@@ -143,9 +143,8 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 								continue loopChunks;
 							
 					for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values())
-						for (ChunkPos pos : Tracky.collapse(value.apply(Minecraft.getInstance().player)))
-							if (pos.equals(chunkPos))
-								continue loopChunks;
+						if (Tracky.collapse(value.apply(Minecraft.getInstance().player)).contains(chunkPos))
+							continue loopChunks;
 				}
 				toRemove.add(chunkPos);
 			}

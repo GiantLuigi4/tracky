@@ -56,14 +56,12 @@ public abstract class ChunkManagerMixin {
 		// messy iteration but no way to avoid with our structure
 		for (ServerPlayer player : level.getPlayers((p) -> true)) {
 			for (Function<Player, Collection<SectionPos>> func : map.values()) {
-				final Iterable<ChunkPos> chunks = Tracky.collapse(func.apply(player));
+				final Set<ChunkPos> chunks = Tracky.collapse(func.apply(player));
 				
-				for (ChunkPos chunk : chunks) {
-					if (chunk.equals(chunkPos)) {
-						// send the packet if the player is tracking it
-						players.add(player);
-						isTrackedByAny = true;
-					}
+				if (chunks.contains(chunkPos)) {
+					// send the packet if the player is tracking it
+					players.add(player);
+					isTrackedByAny = true;
 				}
 			}
 		}
@@ -129,6 +127,7 @@ public abstract class ChunkManagerMixin {
 					for (ChunkPos chunkPos : Tracky.collapse(playerIterableFunction.apply(player))) {
 						if (!trackyForced.remove(chunkPos) && !poses.contains(chunkPos)) {
 							level.setChunkForced(chunkPos.x, chunkPos.z, true);
+							poses.add(chunkPos);
 						}
 					}
 				}
@@ -157,11 +156,6 @@ public abstract class ChunkManagerMixin {
 		
 		Set<ChunkPos> positions = new HashSet<>();
 		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
-//			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
-//				if (!positions.contains(chunkPos)) {
-//					positions.add(chunkPos);
-//				}
-//			}
 			positions.addAll(Tracky.collapse(value.apply(player)));
 		}
 		collapsedChunks.set(positions);
@@ -178,35 +172,6 @@ public abstract class ChunkManagerMixin {
 		if (!chunkTracker.shouldUpdate()) return;
 		chunkTracker.setDoUpdate(false);
 		
-//		ArrayList<ChunkPos> tracked = new ArrayList<>();
-//		chunkTracker.tickTracking();
-//		boolean anyFailed = forAllInRange(player.position(), player, chunkTracker, tracked);
-//		for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(level).values()) {
-//			for (ChunkPos chunkPos : Tracky.collapse(value.apply(player))) {
-//				if (tracked.contains(chunkPos)) continue;
-//
-//				boolean wasLoaded;
-//				updateChunkTracking(
-//						player, chunkPos,
-//						new MutableObject<>(),
-//						wasLoaded = chunkTracker.oldTrackedChunks().remove(chunkPos), // remove it so that the next loop doesn't untrack it
-//						true // start tracking
-//				);
-//
-//				if (!wasLoaded && !success) {
-//					anyFailed = true;
-//				} else {
-//					tracked.add(chunkPos);
-//				}
-//			}
-//		}
-//		chunkTracker.trackedChunks().addAll(tracked);
-//
-//		if (anyFailed) {
-//			// if a chunk doesn't get loaded by the time the track starting finishes, mark it for another attempt at tracking
-//			chunkTracker.setDoUpdate(true);
-//		}
-		
 		Set<ChunkPos> positions = collapsedChunks.get();
 		
 		for (ChunkPos position : positions) {
@@ -214,7 +179,6 @@ public abstract class ChunkManagerMixin {
 		}
 		
 		chunkTracker.tickTracking();
-//		ArrayList<ChunkPos> toRemove = new ArrayList<>();
 		for (ChunkPos trackedChunk : chunkTracker.oldTrackedChunks()) {
 			if (!positions.contains(trackedChunk)) { // TODO: this is slow
 				updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
@@ -222,7 +186,6 @@ public abstract class ChunkManagerMixin {
 				chunkTracker.trackedChunks().add(trackedChunk);
 			}
 		}
-//		chunkTracker.trackedChunks().removeAll(toRemove);
 	}
 	
 	@Unique

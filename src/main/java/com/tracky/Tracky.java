@@ -60,8 +60,7 @@ public class Tracky {
 		for (SectionPos sectionPos : x) {
 			ChunkPos c = sectionToChunk(sectionPos);
 
-//			if(!y.contains(c))
-				y.add(c);
+			y.add(c);
 		}
 		return y;
 	}
