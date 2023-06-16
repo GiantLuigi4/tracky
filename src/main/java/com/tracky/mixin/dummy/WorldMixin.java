@@ -1,10 +1,7 @@
 package com.tracky.mixin.dummy;
 
-import com.google.common.collect.ImmutableList;
-import com.tracky.Tracky;
 import com.tracky.access.ServerMapHolder;
 import com.tracky.util.MapWrapper;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
@@ -28,40 +25,40 @@ public class WorldMixin implements ServerMapHolder {
 		trackyForcedChunks = new MapWrapper<>(new HashMap<>());
 		trackyForcedPlayers = new MapWrapper<>(new HashMap<>());
 
-		ArrayList<SectionPos> positions = new ArrayList<>();
-
-		// all temp
-		{
-			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
-			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
-			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-						positions.add(SectionPos.of(x, y, z));
-					}
-				}
-			}
-		}
-
-		{
-			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
-			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
-			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-						positions.add(SectionPos.of(x, y, z));
-					}
-				}
-			}
-		}
-
-		final List<SectionPos> immut = ImmutableList.copyOf(positions);
-
-		UUID testUUID = Tracky.getDefaultUUID("tracky", "testing");
-		trackyForcedChunks.put(testUUID, (player) -> {
-			trackyForcedPlayers.put(testUUID, Collections.singletonList(player));
-			return immut;
-		});
+//		ArrayList<SectionPos> positions = new ArrayList<>();
+//
+//		// all temp
+//		{
+//			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
+//			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
+//			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+//				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+//					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+//						positions.add(SectionPos.of(x, y, z));
+//					}
+//				}
+//			}
+//		}
+//
+//		{
+//			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
+//			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
+//			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
+//				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
+//					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+//						positions.add(SectionPos.of(x, y, z));
+//					}
+//				}
+//			}
+//		}
+//
+//		final List<SectionPos> immut = ImmutableList.copyOf(positions);
+//
+//		UUID testUUID = Tracky.getDefaultUUID("tracky", "testing");
+//		trackyForcedChunks.put(testUUID, (player) -> {
+//			trackyForcedPlayers.put(testUUID, Collections.singletonList(player));
+//			return immut;
+//		});
 	}
 	
 	@Unique

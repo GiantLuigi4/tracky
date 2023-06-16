@@ -62,9 +62,14 @@ public class LevelRendererMixin {
 	public void preCompileChunks(Camera p_194371_, CallbackInfo ci) {
 		HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet<>(this.renderChunksInFrustum);
 		
+		int initialSize = settedFrustum.size();
+		
+		out:
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
 			for (RenderSource source : value.get()) {
 				for (ChunkRenderDispatcher.RenderChunk renderChunk : source.getChunksInFrustum()) {
+					if (settedFrustum.size() > (initialSize + 1000)) break out;
+					
 					if (renderChunk != null && renderChunk.isDirty()) {
 						LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
 						
@@ -82,7 +87,8 @@ public class LevelRendererMixin {
 	/* remove the chunks which were forced from the in frustum list */
 	@Inject(at = @At("TAIL"), method = "compileChunks")
 	public void postCompileChunks(Camera p_194371_, CallbackInfo ci) {
-		renderChunksInFrustum.removeAll(chunksToRender);
+		// TODO: find a way of preventing new render chunks from rendering
+//		renderChunksInFrustum.removeAll(chunksToRender);
 		chunksToRender.clear();
 	}
 	

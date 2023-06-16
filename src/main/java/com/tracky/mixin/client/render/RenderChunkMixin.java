@@ -33,7 +33,7 @@ public abstract class RenderChunkMixin {
         SectionPos pos = SectionPos.of(x, y, z);
         
         if (Tracky.sourceContains(Minecraft.getInstance().level, pos) || trackyRenderedChunksList.contains(pos)) {
-            cir.setReturnValue(0.0D);
+            cir.setReturnValue(10.0D);
         }
     }
 }

@@ -1,10 +1,7 @@
 package com.tracky.mixin.dummy;
 
-import com.tracky.Tracky;
-import com.tracky.TrackyAccessor;
 import com.tracky.access.ClientMapHolder;
 import com.tracky.api.RenderSource;
-import com.tracky.debug.TestSource;
 import com.tracky.util.MapWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -12,7 +9,6 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -63,11 +59,12 @@ public class ClientWorldMixin implements ClientMapHolder {
 //			}};
 //		});
 		
-		// new
-		TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
-				Tracky.getDefaultUUID("tracky", "testing"),
-				() -> Arrays.asList(new TestSource())
-		);
+//		TestSource source = new TestSource();
+//		// new
+//		TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
+//				Tracky.getDefaultUUID("tracky", "testing"),
+//				() -> Arrays.asList(source)
+//		);
 	}
 	
 	@Override

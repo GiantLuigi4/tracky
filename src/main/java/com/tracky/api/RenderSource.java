@@ -4,10 +4,12 @@ import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Vector3f;
+import com.tracky.access.ExtendedViewArea;
 import com.tracky.mixin.client.render.RenderChunkInfoMixin;
-import com.tracky.mixin.client.render.ViewAreaAccessor;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -16,15 +18,16 @@ import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.ChunkPos;
 
 import java.util.*;
 
 public class RenderSource {
 	protected final Collection<SectionPos> sections;
-	protected final List<ChunkRenderDispatcher.RenderChunk> chunksInSource = new ArrayList<>();
-	protected final List<ChunkRenderDispatcher.RenderChunk> chunksInFrustum = new ArrayList<>();
+	protected List<ChunkRenderDispatcher.RenderChunk> chunksInSource = new ArrayList<>();
+	protected final List<ChunkRenderDispatcher.RenderChunk> chunksInFrustum = new ObjectArrayList<>();
 	
-	protected final ArrayList<SectionPos> newSections = new ArrayList<>();
+	protected Queue<SectionPos> newSections = new ArrayDeque<>();
 	
 	public RenderSource(Collection<SectionPos> sections) {
 		this.sections = sections;
@@ -131,7 +134,7 @@ public class RenderSource {
 	public void resort(double camX, double camY, double camZ) {
 		Vector3f vec = new Vector3f();
 		
-		// TODO: profiling?
+		// TODO: heavy optimization is needed here
 		sorted = new ArrayList<>(new ObjectRBTreeSet<>(
 				chunksInFrustum.toArray(new ChunkRenderDispatcher.RenderChunk[0]),
 				Comparator.comparingDouble(left -> {
@@ -147,10 +150,32 @@ public class RenderSource {
 	 * @param chunkInfos unused, unsure what this does or if it's necessary at all
 	 * @param infoMap    the map of existing chunk infos
 	 * @param sectionPos the position of the section being added
-	 * @return
+	 * @return if the render chunk got added
 	 */
-	protected boolean handleAdd(ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap, SectionPos sectionPos) {
-		ChunkRenderDispatcher.RenderChunk renderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(sectionPos.origin());
+	protected boolean handleAdd(Collection<ChunkRenderDispatcher.RenderChunk> dst, HashSet<ChunkRenderDispatcher.RenderChunk> existing, ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap, SectionPos sectionPos) {
+		if (sectionPos == null) return true;
+		
+		// directly accessing the extended map, as the chunks are guaranteed to be within it if they have been created
+		ExtendedViewArea extendedArea = (ExtendedViewArea) viewArea;
+		HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> map = extendedArea.getTracky$renderChunkCache();
+		
+		ChunkPos ckPos = new ChunkPos(sectionPos.getX(), sectionPos.getZ());
+		ChunkRenderDispatcher.RenderChunk[] renderChunks = map.get(ckPos);
+		
+		if (renderChunks == null) {
+			viewArea.setDirty(
+					sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(),
+					false
+			);
+			renderChunks = map.get(ckPos);
+		}
+		
+		if (renderChunks == null) return false;
+		
+		// calculate y-index
+		int y = Math.floorMod(sectionPos.getY() - Minecraft.getInstance().level.getMinSection(), Minecraft.getInstance().level.getSectionsCount());
+		ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y];
+		
 		if (renderChunk != null) {
 			// without this, the render sections can get messed up if this gets called before the chunks are synced
 			if (
@@ -160,7 +185,10 @@ public class RenderSource {
 						sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(),
 						false
 				);
-				return false;
+				renderChunk = renderChunks[y];
+				
+				if (renderChunk == null || renderChunk.getOrigin().equals(sectionPos.origin()))
+					return false;
 			}
 			
 			if (infoMap.get(renderChunk) == null) {
@@ -168,11 +196,17 @@ public class RenderSource {
 				infoMap.put(renderChunk, info);
 			}
 			
-			if (!chunksInSource.contains(renderChunk))
-				chunksInSource.add(renderChunk);
+			if (!existing.contains(renderChunk))
+				dst.add(renderChunk);
 			
 			return true;
+		} else {
+			viewArea.setDirty(
+					sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(),
+					false
+			);
 		}
+		
 		return false;
 	}
 	
@@ -196,12 +230,23 @@ public class RenderSource {
 	 */
 	public void updateChunks(ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap) {
 		if (!newSections.isEmpty()) {
-			ArrayList<SectionPos> toRemove = new ArrayList<>();
-			for (SectionPos newSection : newSections)
-				if (handleAdd(viewArea, chunkInfos, infoMap, newSection))
-					toRemove.add(newSection);
+			List<SectionPos> toKeep = new ObjectArrayList<>();
+			// update chunks is called on the main thread, while everything else that might use it is called from the render thread
+			// so if I don't copy this list, the game will crash
+			List<ChunkRenderDispatcher.RenderChunk> tmp = new ArrayList<>(chunksInSource);
+			HashSet<ChunkRenderDispatcher.RenderChunk> known = new HashSet<>(tmp);
+			int i = 0;
+			// run updates
+			while (!newSections.isEmpty() && i < 1000) {
+				SectionPos newSection = newSections.poll();
+				if (!handleAdd(tmp, known, viewArea, chunkInfos, infoMap, newSection))
+					toKeep.add(newSection);
+				i++;
+			}
 			
-			newSections.removeAll(toRemove);
+			// move data
+			chunksInSource = tmp;
+			newSections.addAll(toKeep);
 			
 			// force resort
 			lx = Integer.MIN_VALUE;
