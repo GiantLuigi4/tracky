@@ -96,10 +96,20 @@ public class LevelRendererMixin {
 	
 	/* allows sources to dump their chunk lists and request updates */
 	@Inject(at = @At("TAIL"), method = "allChanged")
-	public void postSetLevel(CallbackInfo ci) {
-		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource source : value.get())
-				source.refresh();
+	public void postChanged(CallbackInfo ci) {
+		if (level != null) // level can be null here
+			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
+				for (RenderSource source : value.get())
+					source.refresh();
+	}
+	
+	/* allows sources to dump their chunk lists and request updates */
+	@Inject(at = @At("TAIL"), method = "setLevel")
+	public void postSetLevel(ClientLevel pLevel, CallbackInfo ci) {
+		if (pLevel != null) // ???
+			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(pLevel).values())
+				for (RenderSource source : value.get())
+					source.refresh();
 	}
 	
 	/* allows render sources to perform frustum culling when vanilla does */
