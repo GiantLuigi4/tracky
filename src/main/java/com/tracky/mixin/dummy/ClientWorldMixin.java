@@ -23,7 +23,7 @@ public class ClientWorldMixin implements ClientMapHolder {
 	@Unique
 	private Map<UUID, Supplier<Collection<SectionPos>>> trackyRenderedChunks;
 	@Unique
-	private Map<UUID, Collection<RenderSource>> trackyRenderSources;
+	private Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources;
 	
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
@@ -84,7 +84,7 @@ public class ClientWorldMixin implements ClientMapHolder {
 	}
 	
 	@Override
-	public Map<UUID, Collection<RenderSource>> trackyRenderSources() {
+	public Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources() {
 		return trackyRenderSources;
 	}
 }

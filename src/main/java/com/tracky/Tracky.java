@@ -13,6 +13,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 @Mod("tracky")
 public class Tracky {
@@ -30,8 +31,8 @@ public class Tracky {
 	}
 	
 	public static boolean sourceContains(Level level, SectionPos pos) {
-		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource renderSource : value)
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
+			for (RenderSource renderSource : value.get())
 				if (renderSource.containsSection(pos))
 					return true;
 		

@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin {
@@ -61,8 +62,8 @@ public class LevelRendererMixin {
 	public void preCompileChunks(Camera p_194371_, CallbackInfo ci) {
 		HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet<>(this.renderChunksInFrustum);
 		
-		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values()) {
-			for (RenderSource source : value) {
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
+			for (RenderSource source : value.get()) {
 				for (ChunkRenderDispatcher.RenderChunk renderChunk : source.getChunksInFrustum()) {
 					if (renderChunk != null && renderChunk.isDirty()) {
 						LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
@@ -88,32 +89,32 @@ public class LevelRendererMixin {
 	/* allow sources to request baking of new sections and also get the new sections added to the list of existing render chunks */
 	@Inject(method = "updateRenderChunks", at = @At(value = "TAIL"))
 	private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
-		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource source : value)
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
+			for (RenderSource source : value.get())
 				source.updateChunks(viewArea, pChunkInfos, pInfoMap);
 	}
 	
 	/* allows sources to dump their chunk lists and request updates */
 	@Inject(at = @At("TAIL"), method = "allChanged")
 	public void postSetLevel(CallbackInfo ci) {
-		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource source : value)
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
+			for (RenderSource source : value.get())
 				source.refresh();
 	}
 	
 	/* allows render sources to perform frustum culling when vanilla does */
 	@Inject(at = @At("TAIL"), method = "applyFrustum")
 	public void postApplyFrustum(Frustum pFrustrum, CallbackInfo ci) {
-		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource source : value)
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
+			for (RenderSource source : value.get())
 				source.updateFrustum(Minecraft.getInstance().getBlockEntityRenderDispatcher().camera, pFrustrum);
 	}
 	
 	/* invokes rendering of render sources */
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"), method = "renderChunkLayer")
 	public void postRenderBlocks(RenderType pRenderType, PoseStack pPoseStack, double pCamX, double pCamY, double pCamZ, Matrix4f pProjectionMatrix, CallbackInfo ci) {
-		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values()) {
-			for (RenderSource source : value) {
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
+			for (RenderSource source : value.get()) {
 				ShaderInstance instance = RenderSystem.getShader();
 				if (source.canDraw(
 						Minecraft.getInstance().gameRenderer.getMainCamera(),

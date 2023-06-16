@@ -42,7 +42,7 @@ public class TrackyAccessor {
 	 * <p>
 	 * render sources have a method for determining if they can render, so a supplier is unnecessary here
 	 */
-	public static Map<UUID, Collection<RenderSource>> getRenderSources(Level level) {
+	public static Map<UUID, Supplier<Collection<RenderSource>>> getRenderSources(Level level) {
 		return ((ClientMapHolder) level).trackyRenderSources();
 	}
 	

@@ -13,5 +13,5 @@ public interface ClientMapHolder {
 	Collection<SectionPos> trackyGetRenderChunksC();
 	void trackySetRenderChunksC(Collection<SectionPos> positions);
 	
-	Map<UUID, Collection<RenderSource>> trackyRenderSources();
+	Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources();
 }
