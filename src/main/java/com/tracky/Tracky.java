@@ -1,9 +1,11 @@
 package com.tracky;
 
 import com.tracky.api.ClientTracking;
+import com.tracky.api.RenderSource;
 import com.tracky.api.ServerTracking;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -25,6 +27,15 @@ public class Tracky {
 				"- " + getDefaultUUID("tracky", "sampleUUID") + "\n" +
 				"- " + getDefaultUUID("landlord", "worldshell")
 		);
+	}
+	
+	public static boolean sourceContains(Level level, SectionPos pos) {
+		for (Collection<RenderSource> value : TrackyAccessor.getRenderSources(level).values())
+			for (RenderSource renderSource : value)
+				if (renderSource.containsSection(pos))
+					return true;
+		
+		return false;
 	}
 	
 	public void onUnloadWorld(WorldEvent.Unload event) {

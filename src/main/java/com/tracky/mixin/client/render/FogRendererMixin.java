@@ -14,9 +14,9 @@ public class FogRendererMixin {
 
     @Inject(method = "setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V", remap = false, at = @At("TAIL"))
     private static void setupFog(Camera camera, FogRenderer.FogMode fogMode, float farDistance, boolean near, float pt, CallbackInfo ci) {
-//        RenderSystem.setShaderFogShape(FogShape.CYLINDER);
-//        RenderSystem.setShaderFogStart(10000);
-//        RenderSystem.setShaderFogEnd(20000);
+        RenderSystem.setShaderFogShape(FogShape.CYLINDER);
+        RenderSystem.setShaderFogStart(10000);
+        RenderSystem.setShaderFogEnd(20000);
     }
 
 }

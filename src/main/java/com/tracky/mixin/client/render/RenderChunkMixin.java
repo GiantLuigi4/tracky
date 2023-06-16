@@ -1,5 +1,6 @@
 package com.tracky.mixin.client.render;
 
+import com.tracky.Tracky;
 import com.tracky.access.ClientMapHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -29,7 +30,9 @@ public abstract class RenderChunkMixin {
 
         Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
     
-        if (trackyRenderedChunksList.contains(SectionPos.of(x, y, z))) {
+        SectionPos pos = SectionPos.of(x, y, z);
+        
+        if (Tracky.sourceContains(Minecraft.getInstance().level, pos) || trackyRenderedChunksList.contains(pos)) {
             cir.setReturnValue(0.0D);
         }
     }

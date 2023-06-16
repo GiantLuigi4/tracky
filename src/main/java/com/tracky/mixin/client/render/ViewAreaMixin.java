@@ -1,5 +1,6 @@
 package com.tracky.mixin.client.render;
 
+import com.tracky.Tracky;
 import com.tracky.access.ClientMapHolder;
 import com.tracky.access.ExtendedViewArea;
 import net.minecraft.client.Minecraft;
@@ -79,7 +80,7 @@ public abstract class ViewAreaMixin implements ExtendedViewArea {
             SectionPos spos = SectionPos.of(x, preY, z);
             Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
 
-            if (trackyRenderedChunksList.contains(spos)) {
+            if (Tracky.sourceContains(level, spos) || trackyRenderedChunksList.contains(spos)) {
                 Function<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> newBlankRenderChunks = idk -> new ChunkRenderDispatcher.RenderChunk[this.chunkGridSizeY];
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.computeIfAbsent(cpos, newBlankRenderChunks);
     
@@ -127,11 +128,11 @@ public abstract class ViewAreaMixin implements ExtendedViewArea {
         int preY = Math.floorDiv(pPos.getY(), 16);
 
         if (y >= 0 && y < this.chunkGridSizeY) {
-            ChunkPos cpos = new ChunkPos(x, z);
             SectionPos spos = SectionPos.of(x, preY, z);
             Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
-    
-            if (trackyRenderedChunksList.contains(spos)) {
+            
+            if (Tracky.sourceContains(level, spos) || trackyRenderedChunksList.contains(spos)) {
+                ChunkPos cpos = new ChunkPos(x, z);
                 ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.get(cpos);
 
                 if (renderChunks != null) {

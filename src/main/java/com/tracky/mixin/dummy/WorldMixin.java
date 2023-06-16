@@ -1,14 +1,11 @@
 package com.tracky.mixin.dummy;
 
-import com.tracky.Tracky;
-import com.tracky.TrackyAccessor;
 import com.tracky.access.ServerMapHolder;
-import net.minecraft.core.BlockPos;
+import com.tracky.util.MapWrapper;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.WritableLevelData;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,12 +22,12 @@ import java.util.function.Supplier;
 public class WorldMixin implements ServerMapHolder {
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData p_204149_, ResourceKey p_204150_, Holder p_204151_, Supplier p_204152_, boolean p_204153_, boolean p_204154_, long p_204155_, CallbackInfo ci) {
-		trackyForcedChunks = new HashMap<>();
-		trackyForcedPlayers = new HashMap<>();
-//
-		ArrayList<SectionPos> positions = new ArrayList<>();
+		trackyForcedChunks = new MapWrapper<>(new HashMap<>());
+		trackyForcedPlayers = new MapWrapper<>(new HashMap<>());
 
-		// all temp
+//		ArrayList<SectionPos> positions = new ArrayList<>();
+//
+//		// all temp
 //		{
 //			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
 //			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
@@ -42,7 +39,7 @@ public class WorldMixin implements ServerMapHolder {
 //				}
 //			}
 //		}
-
+//
 //		{
 //			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
 //			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
@@ -55,13 +52,12 @@ public class WorldMixin implements ServerMapHolder {
 //			}
 //		}
 //
-////		positions.clear();
+//		final List<SectionPos> immut = ImmutableList.copyOf(positions);
 //
 //		UUID testUUID = Tracky.getDefaultUUID("tracky", "testing");
-//		TrackyAccessor.getForcedChunks((Level) (Object) this).put(testUUID, (player) -> {
-//			TrackyAccessor.getPlayersLoadingChunks((Level) (Object) this).put(testUUID, Collections.singletonList(player));
-//
-//			return positions;
+//		trackyForcedChunks.put(testUUID, (player) -> {
+//			trackyForcedPlayers.put(testUUID, Collections.singletonList(player));
+//			return immut;
 //		});
 	}
 	

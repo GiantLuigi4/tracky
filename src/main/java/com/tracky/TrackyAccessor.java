@@ -2,6 +2,7 @@ package com.tracky;
 
 import com.tracky.access.ClientMapHolder;
 import com.tracky.access.ServerMapHolder;
+import com.tracky.api.RenderSource;
 import com.tracky.debug.ITrackChunks;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
@@ -33,6 +34,16 @@ public class TrackyAccessor {
 	 */
 	public static Map<UUID, Supplier<Collection<SectionPos>>> getRenderedChunks(Level level) {
 		return ((ClientMapHolder) level).trackyHeldMapC();
+	}
+	
+	/**
+	 * client only
+	 * is a function as QOL
+	 * <p>
+	 * render sources have a method for determining if they can render, so a supplier is unnecessary here
+	 */
+	public static Map<UUID, Collection<RenderSource>> getRenderSources(Level level) {
+		return ((ClientMapHolder) level).trackyRenderSources();
 	}
 	
 	public static Map<UUID, List<Player>> getPlayersLoadingChunks(Level level) {

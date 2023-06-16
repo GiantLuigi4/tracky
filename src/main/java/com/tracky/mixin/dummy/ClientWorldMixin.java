@@ -1,6 +1,8 @@
 package com.tracky.mixin.dummy;
 
 import com.tracky.access.ClientMapHolder;
+import com.tracky.api.RenderSource;
+import com.tracky.util.MapWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -20,14 +22,18 @@ import java.util.function.Supplier;
 public class ClientWorldMixin implements ClientMapHolder {
 	@Unique
 	private Map<UUID, Supplier<Collection<SectionPos>>> trackyRenderedChunks;
+	@Unique
+	private Map<UUID, Collection<RenderSource>> trackyRenderSources;
 	
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
-		trackyRenderedChunks = new HashMap<>();
+		trackyRenderedChunks = new MapWrapper<>(new HashMap<>());
+		trackyRenderSources = new MapWrapper<>(new HashMap<>());
 		sectionPosSet = new HashSet<>();
 
-		ArrayList<SectionPos> positions = new ArrayList<>();
-
+		// legacy
+//		ArrayList<SectionPos> positions = new ArrayList<>();
+//
 //		// all temp
 //		{
 //			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
@@ -52,6 +58,12 @@ public class ClientWorldMixin implements ClientMapHolder {
 //				}
 //			}};
 //		});
+		
+		// new
+//		TrackyAccessor.getRenderSources(((Level) (Object)this)).put(
+//				Tracky.getDefaultUUID("tracky", "testing"),
+//				Arrays.asList(new TestSource())
+//		);
 	}
 	
 	@Override
@@ -69,5 +81,10 @@ public class ClientWorldMixin implements ClientMapHolder {
 	@Override
 	public void trackySetRenderChunksC(Collection<SectionPos> positions) {
 		sectionPosSet = positions;
+	}
+	
+	@Override
+	public Map<UUID, Collection<RenderSource>> trackyRenderSources() {
+		return trackyRenderSources;
 	}
 }

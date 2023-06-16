@@ -68,9 +68,12 @@ public abstract class LevelRendererMixin {
             ChunkRenderDispatcher.RenderChunk gottenRenderChunk = ((ViewAreaAccessor) viewArea).invokeGetRenderChunkAt(new BlockPos(chunk.x() << 4, chunk.y() << 4, chunk.z() << 4));
 
             if (gottenRenderChunk != null) {
-                LevelRenderer.RenderChunkInfo info = RenderChunkInfoMixin.invokeInit(gottenRenderChunk, (Direction) null, 0);
+                LevelRenderer.RenderChunkInfo info = pInfoMap.get(gottenRenderChunk);
+                if (info == null) {
+                    info = RenderChunkInfoMixin.invokeInit(gottenRenderChunk, (Direction) null, 0);
+                    pInfoMap.put(gottenRenderChunk, info);
+                }
                 pChunkInfos.add(info);
-                pInfoMap.put(gottenRenderChunk, info);
             }
         }
 
@@ -90,7 +93,7 @@ public abstract class LevelRendererMixin {
             if (renderChunk != null) {
                 LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
 
-                if (!settedFrustum.contains(info) && info != null)
+                if (info != null && !settedFrustum.contains(info))
                     this.renderChunksInFrustum.add(info);
             }
         }
