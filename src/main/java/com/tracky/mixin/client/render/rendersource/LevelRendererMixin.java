@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Matrix4f;
 import com.tracky.TrackyAccessor;
 import com.tracky.api.RenderSource;
+import com.tracky.util.list.ObjectUnionList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -16,12 +17,10 @@ import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.world.phys.Vec3;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
@@ -44,6 +43,7 @@ public class LevelRendererMixin {
 	
 	@Shadow
 	@Final
+	@Mutable
 	private ObjectArrayList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum;
 	
 	@Shadow
@@ -57,12 +57,42 @@ public class LevelRendererMixin {
 	@Unique
 	List<LevelRenderer.RenderChunkInfo> chunksToRender = new ObjectArrayList<>();
 	
+	@Redirect(at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunksInFrustum:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"), method = "renderLevel")
+	public ObjectArrayList<LevelRenderer.RenderChunkInfo> preRenderBEs(LevelRenderer instance) {
+		//noinspection unchecked
+		ObjectUnionList<LevelRenderer.RenderChunkInfo> copy = new ObjectUnionList<>(renderChunksInFrustum);
+		
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
+			for (RenderSource source : value.get()) {
+				if (!source.canDraw(
+						Minecraft.getInstance().gameRenderer.getMainCamera(),
+						capturedFrustum == null ? cullingFrustum : capturedFrustum
+				)) continue;
+				
+				ArrayList<LevelRenderer.RenderChunkInfo> infos = new ArrayList<>();
+				for (int i = 0; i < source.getChunksInFrustum().size(); i++) {
+					LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(source.getChunksInFrustum().get(i));
+					if (info != null)
+						infos.add(info);
+				}
+				
+				if (!infos.isEmpty())
+					copy.addList(infos);
+			}
+		}
+		
+		return copy;
+	}
+	
 	/* force chunk mesh rebaking on dirty chunks */
 	@Inject(at = @At("HEAD"), method = "compileChunks")
 	public void preCompileChunks(Camera p_194371_, CallbackInfo ci) {
 		HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet<>(this.renderChunksInFrustum);
 		
 		int initialSize = settedFrustum.size();
+		
+		//noinspection unchecked
+		renderChunksInFrustum = new ObjectUnionList<>(renderChunksInFrustum);
 		
 		out:
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
@@ -87,8 +117,10 @@ public class LevelRendererMixin {
 	/* remove the chunks which were forced from the in frustum list */
 	@Inject(at = @At("TAIL"), method = "compileChunks")
 	public void postCompileChunks(Camera p_194371_, CallbackInfo ci) {
-		// TODO: find a way of preventing new render chunks from rendering
-//		renderChunksInFrustum.removeAll(chunksToRender);
+		//noinspection rawtypes
+		if (renderChunksInFrustum instanceof ObjectUnionList list)
+			//noinspection unchecked
+			renderChunksInFrustum = (ObjectArrayList<LevelRenderer.RenderChunkInfo>) list.getList(0);
 		chunksToRender.clear();
 	}
 	
@@ -135,7 +167,8 @@ public class LevelRendererMixin {
 				if (source.canDraw(
 						Minecraft.getInstance().gameRenderer.getMainCamera(),
 						capturedFrustum == null ? cullingFrustum : capturedFrustum
-				)) source.draw(pPoseStack, viewArea, instance, pRenderType, pCamX, pCamY, pCamZ);
+				)) //noinspection ConstantConditions
+					source.draw(pPoseStack, viewArea, instance, pRenderType, pCamX, pCamY, pCamZ);
 			}
 		}
 	}
