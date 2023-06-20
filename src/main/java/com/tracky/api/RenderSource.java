@@ -27,6 +27,8 @@ public class RenderSource {
 	protected List<ChunkRenderDispatcher.RenderChunk> chunksInSource = new ArrayList<>();
 	protected final List<ChunkRenderDispatcher.RenderChunk> chunksInFrustum = new ObjectArrayList<>();
 	
+	protected boolean forceCulling = false;
+	
 	protected Queue<SectionPos> newSections = new ArrayDeque<>();
 	
 	public RenderSource(Collection<SectionPos> sections) {
@@ -54,7 +56,6 @@ public class RenderSource {
 					}
 				}
 				chunksInSource.remove(target);
-				chunksInFrustum.remove(target);
 			}
 		}
 	}
@@ -79,6 +80,11 @@ public class RenderSource {
 		return sections.contains(pos);
 	}
 	
+	public void doFrustumUpdate(Camera camera, Frustum frustum) {
+		forceCulling = false;
+		updateFrustum(camera, frustum);
+	}
+	
 	/**
 	 * called when vanilla updates the frustum, if the render source is visible
 	 * ideally, mods would do some reprojected frustum checking on each of the sections
@@ -86,9 +92,13 @@ public class RenderSource {
 	 * @param camera  the game camera
 	 * @param frustum the frustum to use
 	 */
-	public void updateFrustum(Camera camera, Frustum frustum) {
+	protected void updateFrustum(Camera camera, Frustum frustum) {
 		chunksInFrustum.clear();
 		chunksInFrustum.addAll(chunksInSource);
+	}
+	
+	public boolean needsCulling() {
+		return forceCulling;
 	}
 	
 	/**
@@ -216,7 +226,6 @@ public class RenderSource {
 	 */
 	public void refresh() {
 		chunksInSource.clear();
-		chunksInFrustum.clear();
 		
 		newSections.addAll(sections);
 	}
@@ -252,6 +261,9 @@ public class RenderSource {
 			lx = Integer.MIN_VALUE;
 			ly = Integer.MIN_VALUE;
 			lz = Integer.MIN_VALUE;
+			
+			// force a culling check
+			forceCulling = true;
 		}
 		
 		for (ChunkRenderDispatcher.RenderChunk renderChunk : chunksInFrustum) {
@@ -299,9 +311,9 @@ public class RenderSource {
 		
 		if (
 				type == RenderType.translucent() &&
-						lx != camX ||
-						ly != camY ||
-						lz != camZ
+						(lx != (int) camX ||
+								ly != (int) camY ||
+								lz != (int) camZ)
 		) {
 			resort(camX, camY, camZ);
 			lx = (int) camX;

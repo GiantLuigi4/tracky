@@ -43,7 +43,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	public abstract LevelLightEngine getLightEngine();
 
 	@Shadow
-	private volatile ClientChunkCache.Storage storage;
+	volatile ClientChunkCache.Storage storage;
 	@Unique
 	HashMap<ChunkPos, LevelChunk> chunks = new HashMap<>();
 

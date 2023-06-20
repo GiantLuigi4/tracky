@@ -70,8 +70,8 @@ public class LevelRendererMixin {
 				)) continue;
 				
 				ArrayList<LevelRenderer.RenderChunkInfo> infos = new ArrayList<>();
-				for (int i = 0; i < source.getChunksInFrustum().size(); i++) {
-					LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(source.getChunksInFrustum().get(i));
+				for (ChunkRenderDispatcher.RenderChunk renderChunk : source.getChunksInFrustum()) {
+					LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
 					if (info != null)
 						infos.add(info);
 				}
@@ -155,20 +155,30 @@ public class LevelRendererMixin {
 	public void postApplyFrustum(Frustum pFrustrum, CallbackInfo ci) {
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
 			for (RenderSource source : value.get())
-				source.updateFrustum(Minecraft.getInstance().getBlockEntityRenderDispatcher().camera, pFrustrum);
+				source.doFrustumUpdate(Minecraft.getInstance().getBlockEntityRenderDispatcher().camera, pFrustrum);
 	}
 	
 	/* invokes rendering of render sources */
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"), method = "renderChunkLayer")
 	public void postRenderBlocks(RenderType pRenderType, PoseStack pPoseStack, double pCamX, double pCamY, double pCamZ, Matrix4f pProjectionMatrix, CallbackInfo ci) {
+		ShaderInstance instance = RenderSystem.getShader();
+		
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
 			for (RenderSource source : value.get()) {
-				ShaderInstance instance = RenderSystem.getShader();
 				if (source.canDraw(
 						Minecraft.getInstance().gameRenderer.getMainCamera(),
 						capturedFrustum == null ? cullingFrustum : capturedFrustum
-				)) //noinspection ConstantConditions
+				)) {
+					if (source.needsCulling()) {
+						source.doFrustumUpdate(
+								Minecraft.getInstance().gameRenderer.getMainCamera(),
+								capturedFrustum == null ? cullingFrustum : capturedFrustum
+						);
+					}
+					
+					//noinspection ConstantConditions
 					source.draw(pPoseStack, viewArea, instance, pRenderType, pCamX, pCamY, pCamZ);
+				}
 			}
 		}
 	}
