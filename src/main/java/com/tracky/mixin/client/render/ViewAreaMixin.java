@@ -22,6 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -43,13 +45,13 @@ public abstract class ViewAreaMixin implements ExtendedViewArea {
     @Shadow protected int chunkGridSizeX;
     @Shadow public ChunkRenderDispatcher.RenderChunk[] chunks;
     @Unique
-    private HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> tracky$renderChunkCache = new HashMap<>();
+    private Map<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> tracky$renderChunkCache = new ConcurrentHashMap<>();
 
     @Unique
     private ChunkRenderDispatcher tracky$chunkRenderDispatcher;
     
     @Override
-    public HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> getTracky$renderChunkCache() {
+    public Map<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> getTracky$renderChunkCache() {
         return tracky$renderChunkCache;
     }
     

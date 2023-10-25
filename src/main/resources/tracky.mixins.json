@@ -5,7 +5,7 @@
   "compatibilityLevel": "JAVA_16",
   "refmap": "tracky.refmap.json",
   "mixins": [
-    "ChunkManagerMixin",
+    "ChunkMapMixin",
     "PlayerListMixin",
     "ServerPlayerMixin",
     "dummy.WorldMixin"

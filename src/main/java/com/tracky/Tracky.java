@@ -67,13 +67,9 @@ public class Tracky {
 	}
 
 	public static Set<ChunkPos> collapse(Collection<SectionPos> x) {
-		Set<ChunkPos> y = new HashSet<>();
-
-		for (SectionPos sectionPos : x) {
-			ChunkPos c = sectionToChunk(sectionPos);
-
-			y.add(c);
-		}
-		return y;
+		ArrayList<ChunkPos> ps = new ArrayList<>(x.size());
+		for (SectionPos sectionPos : x)
+			ps.add(sectionToChunk(sectionPos));
+		return new HashSet<>(ps);
 	}
 }

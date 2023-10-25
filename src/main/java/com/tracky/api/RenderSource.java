@@ -167,7 +167,7 @@ public class RenderSource {
 		
 		// directly accessing the extended map, as the chunks are guaranteed to be within it if they have been created
 		ExtendedViewArea extendedArea = (ExtendedViewArea) viewArea;
-		HashMap<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> map = extendedArea.getTracky$renderChunkCache();
+		Map<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> map = extendedArea.getTracky$renderChunkCache();
 		
 		ChunkPos ckPos = new ChunkPos(sectionPos.getX(), sectionPos.getZ());
 		ChunkRenderDispatcher.RenderChunk[] renderChunks = map.get(ckPos);

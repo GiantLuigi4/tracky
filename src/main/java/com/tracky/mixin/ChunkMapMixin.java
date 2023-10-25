@@ -34,7 +34,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 @Mixin(ChunkMap.class)
-public abstract class ChunkManagerMixin {
+public abstract class ChunkMapMixin {
 	
 	@Shadow
 	@Final
@@ -56,12 +56,19 @@ public abstract class ChunkManagerMixin {
 		// messy iteration but no way to avoid with our structure
 		for (ServerPlayer player : level.getPlayers((p) -> true)) {
 			for (Function<Player, Collection<SectionPos>> func : map.values()) {
-				final Set<ChunkPos> chunks = Tracky.collapse(func.apply(player));
+//				final Set<ChunkPos> chunks = Tracky.collapse(func.apply(player));
 				
-				if (chunks.contains(chunkPos)) {
-					// send the packet if the player is tracking it
-					players.add(player);
-					isTrackedByAny = true;
+				// it seems Tracky#collapse hinders performance
+				// unsure if this is true for all sizes of render source, but it's definitely true for large ones
+				Collection<SectionPos> poses = func.apply(player);
+				
+				for (SectionPos pose : poses) {
+					if (pose.x() == chunkPos.x && pose.z() == chunkPos.z) {
+						// send the packet if the player is tracking it
+						players.add(player);
+						isTrackedByAny = true;
+						break;
+					}
 				}
 			}
 		}
