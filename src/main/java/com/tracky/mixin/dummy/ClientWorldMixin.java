@@ -63,12 +63,12 @@ public class ClientWorldMixin implements ClientMapHolder {
 //			}};
 //		});
 		
-		TestSource source = new TestSource();
-		// new
-		TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
-				Tracky.getDefaultUUID("tracky", "testing"),
-				() -> Arrays.asList(source)
-		);
+//		TestSource source = new TestSource();
+//		// new
+//		TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
+//				Tracky.getDefaultUUID("tracky", "testing"),
+//				() -> Arrays.asList(source)
+//		);
 	}
 	
 	@Override
