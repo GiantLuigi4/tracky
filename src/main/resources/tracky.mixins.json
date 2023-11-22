@@ -15,6 +15,7 @@
     "client.ChunkBorderRendererMixin",
     "client.ChunkStorageAccessor",
     "client.ClientChunkProviderMixin",
+    "client.RenderDocker",
     "client.SectionChangePacketMixin",
     "client.render.FogRendererMixin",
     "client.render.LevelRendererAccessor",

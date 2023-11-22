@@ -73,48 +73,29 @@ public abstract class ViewAreaMixin implements ExtendedViewArea {
      * Populate & set dirty chunks in tracky$chunkRenderDispatcher
      */
     @Inject(method = "setDirty", at = @At("HEAD"), cancellable = true)
-    protected void setDirty(int x, int y, int z, boolean important, CallbackInfo ci) {
-        int preY = y;
-        y = Math.floorMod(y - this.level.getMinSection(), this.chunkGridSizeY);
+    public void setDirty(int pSectionX, int pSectionY, int pSectionZ, boolean pReRenderOnMainThread, CallbackInfo ci) {
+        int i = pSectionX << 4;
+        int j = Math.floorMod(pSectionY - this.level.getMinSection(), this.chunkGridSizeY);
+//        int j = pSectionY << 4;
+        int k = pSectionZ << 4;
 
-        if (y >= 0 && y < this.chunkGridSizeY) {
-            ChunkPos cpos = new ChunkPos(x, z);
-            SectionPos spos = SectionPos.of(x, preY, z);
-            Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
+        Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
+        SectionPos spos = SectionPos.of(pSectionX, pSectionY, pSectionZ);
+        if (Tracky.sourceContains(level, spos) || trackyRenderedChunksList.contains(spos)) {
+            ChunkPos chunk = new ChunkPos(pSectionX, pSectionZ);
 
-            if (Tracky.sourceContains(level, spos) || trackyRenderedChunksList.contains(spos)) {
-                Function<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> newBlankRenderChunks = idk -> new ChunkRenderDispatcher.RenderChunk[this.chunkGridSizeY];
-                ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.computeIfAbsent(cpos, newBlankRenderChunks);
-    
-                // TODO: reuse vanilla chunks?
-//                {
-//                    int i = Math.floorMod(x, this.chunkGridSizeX);
-//                    int j = Math.floorMod(y - this.level.getMinSection(), this.chunkGridSizeY);
-//                    int k = Math.floorMod(z, this.chunkGridSizeZ);
-//
-//                    int index = this.getChunkIndex(i, j, k);
-//
-//                    ChunkRenderDispatcher.RenderChunk chunkrenderdispatcher$renderchunk = this.chunks[index];
-//                    if (chunkrenderdispatcher$renderchunk != null) {
-//                        renderChunks[y] = chunkrenderdispatcher$renderchunk;
-//                    }
-//                }
-                
-                if (renderChunks[y] == null) {
-                    int chunkIndex = getChunkIndex(x, y, z);
-                    final ChunkRenderDispatcher.RenderChunk renderChunk = tracky$chunkRenderDispatcher.new RenderChunk(chunkIndex, x << 4, preY << 4, z << 4);
-                    renderChunks[y] = renderChunk;
-                    
-                    renderChunks[y].setDirty(important);
-                    ((RenderChunkAccessor) renderChunks[y]).setPlayerChanged(true);
-                }
-
-                renderChunks[y].setDirty(important);
-                ((RenderChunkAccessor) renderChunks[y]).setPlayerChanged(true);
-                ci.cancel();
+            Function<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> newBlankRenderChunks = idk -> new ChunkRenderDispatcher.RenderChunk[this.chunkGridSizeY];
+            ChunkRenderDispatcher.RenderChunk[] renderChunks = tracky$renderChunkCache.computeIfAbsent(chunk, newBlankRenderChunks);
+            ChunkRenderDispatcher.RenderChunk chunkrenderdispatcher$renderchunk = renderChunks[j];
+            if (chunkrenderdispatcher$renderchunk == null) {
+                int i1 = this.getChunkIndex(i, j, k);
+                chunkrenderdispatcher$renderchunk = renderChunks[j] = tracky$chunkRenderDispatcher.new RenderChunk(i1, pSectionX << 4, pSectionY << 4, pSectionZ << 4);
             }
-        }
 
+            chunkrenderdispatcher$renderchunk.setDirty(pReRenderOnMainThread);
+//            ((RenderChunkAccessor) chunkrenderdispatcher$renderchunk).setPlayerChanged(true);
+            ci.cancel();
+        }
     }
 
     /**

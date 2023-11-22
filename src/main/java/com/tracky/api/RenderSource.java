@@ -349,12 +349,12 @@ public class RenderSource {
 				uniform.upload();
 			}
 
-			buffer.getFormat().setupBufferState();
+//			buffer.getFormat().setupBufferState();
 
 			buffer.bind();
 			buffer.draw();
 		}
-		
+
 		if (uniform != null) uniform.set(0f, 0, 0);
 	}
 }
