@@ -15,6 +15,6 @@ public interface VertexBufferAccessor {
     @Accessor
     VertexFormat.Mode getMode();
 
-`    @Accessor
+    @Accessor
     VertexFormat.IndexType getIndexType();
 }

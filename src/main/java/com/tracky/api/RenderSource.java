@@ -1,6 +1,7 @@
 package com.tracky.api;
 
 import com.mojang.blaze3d.shaders.Uniform;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.tracky.access.ExtendedViewArea;
@@ -164,7 +165,7 @@ public class RenderSource {
 	 */
 	protected boolean handleAdd(Collection<ChunkRenderDispatcher.RenderChunk> dst, HashSet<ChunkRenderDispatcher.RenderChunk> existing, ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap, SectionPos sectionPos) {
 		if (sectionPos == null) return true;
-		
+
 		// directly accessing the extended map, as the chunks are guaranteed to be within it if they have been created
 		ExtendedViewArea extendedArea = (ExtendedViewArea) viewArea;
 		Map<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> map = extendedArea.getTracky$renderChunkCache();
@@ -229,7 +230,9 @@ public class RenderSource {
 		
 		newSections.addAll(sections);
 	}
-	
+
+	boolean awaitingUpdates = false;
+
 	/**
 	 * updates render chunks for when new sections are added to the render source
 	 *
@@ -239,31 +242,38 @@ public class RenderSource {
 	 */
 	public void updateChunks(ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap) {
 		if (!newSections.isEmpty()) {
-			List<SectionPos> toKeep = new ObjectArrayList<>();
-			// update chunks is called on the main thread, while everything else that might use it is called from the render thread
-			// so if I don't copy this list, the game will crash
-			List<ChunkRenderDispatcher.RenderChunk> tmp = new ArrayList<>(chunksInSource);
-			HashSet<ChunkRenderDispatcher.RenderChunk> known = new HashSet<>(tmp);
-			int i = 0;
-			// run updates
-			while (!newSections.isEmpty() && i < 1000) {
-				SectionPos newSection = newSections.poll();
-				if (!handleAdd(tmp, known, viewArea, chunkInfos, infoMap, newSection))
-					toKeep.add(newSection);
-				i++;
+			if (!awaitingUpdates) {
+				awaitingUpdates = true;
+				RenderSystem.recordRenderCall(()->{
+					List<SectionPos> toKeep = new ObjectArrayList<>();
+					// update chunks is called on the main thread, while everything else that might use it is called from the render thread
+					// so if I don't copy this list, the game will crash
+					List<ChunkRenderDispatcher.RenderChunk> tmp = new ArrayList<>(chunksInSource);
+					HashSet<ChunkRenderDispatcher.RenderChunk> known = new HashSet<>(tmp);
+
+					int i = 0;
+					// run updates
+					while (!newSections.isEmpty() && i < 1000) {
+						SectionPos newSection = newSections.poll();
+						if (!handleAdd(tmp, known, viewArea, chunkInfos, infoMap, newSection))
+							toKeep.add(newSection);
+						i++;
+					}
+					awaitingUpdates = false;
+
+					// move data
+					chunksInSource = tmp;
+					newSections.addAll(toKeep);
+
+					// force resort
+					lx = Integer.MIN_VALUE;
+					ly = Integer.MIN_VALUE;
+					lz = Integer.MIN_VALUE;
+
+					// force a culling check
+					forceCulling = true;
+				});
 			}
-			
-			// move data
-			chunksInSource = tmp;
-			newSections.addAll(toKeep);
-			
-			// force resort
-			lx = Integer.MIN_VALUE;
-			ly = Integer.MIN_VALUE;
-			lz = Integer.MIN_VALUE;
-			
-			// force a culling check
-			forceCulling = true;
 		}
 		
 		for (ChunkRenderDispatcher.RenderChunk renderChunk : chunksInFrustum) {
