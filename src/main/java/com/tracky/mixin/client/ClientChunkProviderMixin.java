@@ -15,6 +15,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraftforge.event.level.ChunkEvent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -66,7 +67,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 //		if (!TrackyAccessor.isMainTracky()) return;
 		LevelChunk chunk = chunks.remove(new ChunkPos(pX, pZ));
 		if (chunk != null) {
-			net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload(chunk));
+			net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new ChunkEvent.Unload(chunk));
 			this.level.unload(chunk);
 			ci.cancel();
 		}
@@ -93,13 +94,13 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		}
 
 		this.level.onChunkLoaded(pos);
-		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(chunk));
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(chunk, false));
 		cir.setReturnValue(chunk);
 	}
 
 	@Unique
 	public LevelChunk getChunk(ChunkPos pos) {
-		return chunks.getOrDefault(pos, null);
+		return chunks.get(pos);
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,15 +16,16 @@ import java.util.HashMap;
 
 @Mixin(LevelRenderer.RenderInfoMap.class)
 public class RenderInfoMapMixin implements RenderInfoMapExtensions {
+	@Unique
 	HashMap<Vec3i, LevelRenderer.RenderChunkInfo> map = new HashMap<>();
 
 	@Inject(at = @At("HEAD"), method = "put", cancellable = true)
 	public void prePut(ChunkRenderDispatcher.RenderChunk pRenderChunk, LevelRenderer.RenderChunkInfo pInfo, CallbackInfo ci) {
 		Vec3i vec = pRenderChunk.getOrigin();
 
-		int x = Mth.intFloorDiv((int) vec.getX(), 16);
-		int y = Mth.intFloorDiv((int) vec.getY(), 16);
-		int z = Mth.intFloorDiv((int) vec.getZ(), 16);
+		int x = Mth.floorDiv((int) vec.getX(), 16);
+		int y = Mth.floorDiv((int) vec.getY(), 16);
+		int z = Mth.floorDiv((int) vec.getZ(), 16);
 
 		vec = new Vec3i(x, y, z);
 		map.put(vec, pInfo);
@@ -34,9 +36,9 @@ public class RenderInfoMapMixin implements RenderInfoMapExtensions {
 	public void preGet(ChunkRenderDispatcher.RenderChunk pRenderChunk, CallbackInfoReturnable<LevelRenderer.RenderChunkInfo> cir) {
 		Vec3i vec = pRenderChunk.getOrigin();
 
-		int x = Mth.intFloorDiv((int) vec.getX(), 16);
-		int y = Mth.intFloorDiv((int) vec.getY(), 16);
-		int z = Mth.intFloorDiv((int) vec.getZ(), 16);
+		int x = Mth.floorDiv((int) vec.getX(), 16);
+		int y = Mth.floorDiv((int) vec.getY(), 16);
+		int z = Mth.floorDiv((int) vec.getZ(), 16);
 
 		vec = new Vec3i(x, y, z);
 		cir.setReturnValue(map.get(vec));

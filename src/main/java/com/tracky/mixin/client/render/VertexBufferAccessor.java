@@ -15,9 +15,6 @@ public interface VertexBufferAccessor {
     @Accessor
     VertexFormat.Mode getMode();
 
-    @Invoker
-    void invokeBindVertexArray();
-
-    @Accessor
+`    @Accessor
     VertexFormat.IndexType getIndexType();
 }

@@ -1,7 +1,6 @@
 package com.tracky.mixin.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Matrix4f;
 import com.tracky.access.ClientMapHolder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
@@ -17,6 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -76,15 +76,13 @@ public abstract class LevelRendererMixin {
                 pChunkInfos.add(info);
             }
         }
-
-
     }
 
     @Inject(method = "applyFrustum", at = @At("TAIL"))
     private void applyFrustum(Frustum pFrustrum, CallbackInfo ci) {
         Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
 
-        HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet(this.renderChunksInFrustum);
+        HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet<>(this.renderChunksInFrustum);
 
         // for every tracky chunk the player should be rendering
         for (SectionPos chunk : trackyRenderedChunksList) {

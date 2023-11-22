@@ -8,7 +8,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
@@ -39,16 +39,16 @@ public class Tracky {
 		return false;
 	}
 	
-	public void onUnloadWorld(WorldEvent.Unload event) {
-		ServerTracking.onUnloadLevel(event.getWorld());
+	public void onUnloadWorld(LevelEvent.Unload event) {
+		ServerTracking.onUnloadLevel(event.getLevel());
 		if (FMLEnvironment.dist.isClient())
-			ClientTracking.onUnloadLevel(event.getWorld());
+			ClientTracking.onUnloadLevel(event.getLevel());
 	}
 	
 	public void onRemovePlayer(PlayerEvent.PlayerLoggedOutEvent event) {
-		ServerTracking.onRemovePlayer(event.getPlayer());
+		ServerTracking.onRemovePlayer(event.getEntity());
 		if (FMLEnvironment.dist.isClient())
-			ClientTracking.onRemovePlayer(event.getPlayer());
+			ClientTracking.onRemovePlayer(event.getEntity());
 	}
 	
 	/*

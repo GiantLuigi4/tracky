@@ -24,9 +24,9 @@ public abstract class RenderChunkMixin {
     protected void getDistToPlayerSqr(CallbackInfoReturnable<Double> cir) {
         BlockPos origin = this.getOrigin();
 
-        int x = Mth.intFloorDiv(origin.getX(), 16);
-        int y = Mth.intFloorDiv(origin.getY(), 16);
-        int z = Mth.intFloorDiv(origin.getZ(), 16);
+        int x = Mth.floorDiv(origin.getX(), 16);
+        int y = Mth.floorDiv(origin.getY(), 16);
+        int z = Mth.floorDiv(origin.getZ(), 16);
 
         Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder)Minecraft.getInstance().level).trackyGetRenderChunksC();
     

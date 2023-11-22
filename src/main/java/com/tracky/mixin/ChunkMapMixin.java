@@ -200,7 +200,8 @@ public abstract class ChunkMapMixin {
 		boolean anyFailed = false;
 		
 		ChunkPos playerChunk = pPlayer.chunkPosition();
-		ChunkPos center = new ChunkPos(new BlockPos(origin.x, origin.y, origin.z));
+		ChunkPos center = new ChunkPos(new BlockPos((int) Math.floor(origin.x), (int) Math.floor(origin.y),
+			(int) Math.floor(origin.z)));
 		Vec3 pChunkPos = new Vec3(playerChunk.x, 0, playerChunk.z);
 		
 		for (int x = -viewDistance; x <= viewDistance; x++) {

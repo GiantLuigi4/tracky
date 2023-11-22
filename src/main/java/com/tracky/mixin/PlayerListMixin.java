@@ -45,9 +45,9 @@ public abstract class PlayerListMixin {
 		ServerLevel level = server.getLevel(pDimension);
 		
 		if (level != null) {
-			int x = Mth.intFloorDiv((int) pX, 16);
-			int y = Mth.intFloorDiv((int) pY, 16);
-			int z = Mth.intFloorDiv((int) pZ, 16);
+			int x = Mth.floorDiv((int) pX, 16);
+			int y = Mth.floorDiv((int) pY, 16);
+			int z = Mth.floorDiv((int) pZ, 16);
 			
 			final ChunkPos pos = new ChunkPos(x, z);
 			

@@ -1,14 +1,16 @@
 package com.tracky.debug;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Quaternion;
-import com.mojang.math.Vector3f;
 import com.tracky.api.BoxRenderSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import org.joml.AxisAngle4d;
+import org.joml.AxisAngle4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public class TestSource extends BoxRenderSource {
 	public TestSource() {
@@ -34,18 +36,16 @@ public class TestSource extends BoxRenderSource {
 		if (instance.MODEL_VIEW_MATRIX != null) {
 			matrix.pushPose();
 			matrix.translate(-camX, -camY + 16, -camZ);
-			matrix.mulPose(new Quaternion(
-					0, 45, 0, true
-			));
-			
+			matrix.mulPose(new Quaternionf(new AxisAngle4f((float) Math.toRadians(45), 0, 1, 0)));
+
 			instance.MODEL_VIEW_MATRIX.set(matrix.last().pose());
 			instance.MODEL_VIEW_MATRIX.upload();
-			
+
 			matrix.popPose();
 		}
-		
+
 		super.draw(matrix, area, instance, type, camX, camY, camZ);
-		
+
 		if (instance.MODEL_VIEW_MATRIX != null) {
 			instance.MODEL_VIEW_MATRIX.set(matrix.last().pose());
 			instance.MODEL_VIEW_MATRIX.upload();

@@ -3,6 +3,7 @@ package com.tracky.mixin.dummy;
 import com.tracky.access.ServerMapHolder;
 import com.tracky.util.MapWrapper;
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
@@ -21,7 +22,9 @@ import java.util.function.Supplier;
 @Mixin(Level.class)
 public class WorldMixin implements ServerMapHolder {
 	@Inject(at = @At("TAIL"), method = "<init>")
-	public void postInit(WritableLevelData p_204149_, ResourceKey p_204150_, Holder p_204151_, Supplier p_204152_, boolean p_204153_, boolean p_204154_, long p_204155_, CallbackInfo ci) {
+	public void postInit(WritableLevelData pLevelData, ResourceKey pDimension, RegistryAccess pRegistryAccess,
+						 Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug,
+						 long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
 		trackyForcedChunks = new MapWrapper<>(new HashMap<>());
 		trackyForcedPlayers = new MapWrapper<>(new HashMap<>());
 

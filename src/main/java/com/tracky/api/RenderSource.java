@@ -3,7 +3,6 @@ package com.tracky.api;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.mojang.math.Vector3f;
 import com.tracky.access.ExtendedViewArea;
 import com.tracky.mixin.client.render.RenderChunkInfoMixin;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -19,6 +18,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
+import org.joml.Vector3f;
 
 import java.util.*;
 
@@ -338,8 +338,11 @@ public class RenderSource {
 				uniform.set(vec.x(), vec.y(), vec.z());
 				uniform.upload();
 			}
-			
-			buffer.drawChunkLayer();
+
+			buffer.getFormat().setupBufferState();
+
+			buffer.bind();
+			buffer.draw();
 		}
 		
 		if (uniform != null) uniform.set(0f, 0, 0);
