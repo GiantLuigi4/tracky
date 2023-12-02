@@ -4,7 +4,8 @@ import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.access.ClientMapHolder;
 import com.tracky.api.RenderSource;
-import com.tracky.debug.TestSource;
+import com.tracky.debug.
+		TestSource;
 import com.tracky.util.MapWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -22,19 +23,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.*;
 import java.util.function.Supplier;
 
-@Mixin(ClientLevel.class)
+@Mixin(value = ClientLevel.class, priority = 500)
 public class ClientWorldMixin implements ClientMapHolder {
 	@Unique
 	private Map<UUID, Supplier<Collection<SectionPos>>> trackyRenderedChunks;
 	@Unique
 	private Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources;
-	
+
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
 		trackyRenderedChunks = new MapWrapper<>(new HashMap<>());
 		trackyRenderSources = new MapWrapper<>(new HashMap<>());
 		sectionPosSet = new HashSet<>();
-		
+
 		// legacy
 //		ArrayList<SectionPos> positions = new ArrayList<>();
 //
@@ -62,33 +63,35 @@ public class ClientWorldMixin implements ClientMapHolder {
 //				}
 //			}};
 //		});
-		
-//		TestSource source = new TestSource();
-//		// new
-//		TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
-//				Tracky.getDefaultUUID("tracky", "testing"),
-//				() -> Arrays.asList(source)
-//		);
+
+		if (Tracky.ENABLE_TEST) {
+			// new
+			TestSource source = new TestSource();
+			TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
+					Tracky.getDefaultUUID("tracky", "testing"),
+					() -> List.of(source)
+			);
+		}
 	}
-	
+
 	@Override
 	public Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC() {
 		return trackyRenderedChunks;
 	}
-	
+
 	@Unique
 	private Collection<SectionPos> sectionPosSet;
-	
+
 	@Override
 	public Collection<SectionPos> trackyGetRenderChunksC() {
 		return sectionPosSet;
 	}
-	
+
 	@Override
 	public void trackySetRenderChunksC(Collection<SectionPos> positions) {
 		sectionPosSet = positions;
 	}
-	
+
 	@Override
 	public Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources() {
 		return trackyRenderSources;

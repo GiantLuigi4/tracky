@@ -49,7 +49,7 @@ public class ObjectUnionList<T> extends ObjectArrayList<T> {
 	public void size(int size) {
 		super.size(size);
 	}
-	
+
 	@Override
 	public ObjectListIterator<T> listIterator(int index) {
 		return new ObjectListIterator<T>() {

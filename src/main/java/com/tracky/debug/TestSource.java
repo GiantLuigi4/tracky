@@ -35,7 +35,7 @@ public class TestSource extends BoxRenderSource {
 	public void draw(PoseStack matrix, ViewArea area, ShaderInstance instance, RenderType type, double camX, double camY, double camZ) {
 		if (instance.MODEL_VIEW_MATRIX != null) {
 			matrix.pushPose();
-			matrix.translate(-camX, -camY + 16, -camZ);
+			matrix.translate(-camX, -camY + 64, -camZ);
 			matrix.mulPose(new Quaternionf(new AxisAngle4f((float) Math.toRadians(45), 0, 1, 0)));
 
 			instance.MODEL_VIEW_MATRIX.set(matrix.last().pose());

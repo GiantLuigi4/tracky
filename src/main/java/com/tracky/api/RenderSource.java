@@ -1,16 +1,12 @@
 package com.tracky.api;
 
 import com.mojang.blaze3d.shaders.Uniform;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.tracky.access.ExtendedViewArea;
-import com.tracky.mixin.client.render.RenderChunkInfoMixin;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.ViewArea;
@@ -19,29 +15,36 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
+import org.jetbrains.annotations.ApiStatus;
 import org.joml.Vector3f;
+import org.joml.Vector3i;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class RenderSource {
+
 	protected final Collection<SectionPos> sections;
 	protected List<ChunkRenderDispatcher.RenderChunk> chunksInSource = new ArrayList<>();
 	protected final List<ChunkRenderDispatcher.RenderChunk> chunksInFrustum = new ObjectArrayList<>();
-	
+
 	protected boolean forceCulling = false;
-	
+
 	protected Queue<SectionPos> newSections = new ArrayDeque<>();
-	
+
+	protected final Vector3i lastSortPos = new Vector3i(Integer.MIN_VALUE);
+	protected List<ChunkRenderDispatcher.RenderChunk> sorted = new LinkedList<>();
+
 	public RenderSource(Collection<SectionPos> sections) {
-		this.sections = sections;
-		newSections.addAll(sections);
+		this.sections = new HashSet<>(sections);
 	}
-	
+
 	public void addSection(SectionPos pos) {
-		if (sections.add(pos))
-			newSections.add(pos);
+		if (this.sections.add(pos)) {
+			this.newSections.add(pos);
+		}
 	}
-	
+
 	public void removeSection(SectionPos pos) {
 		if (sections.remove(pos)) {
 			if (!newSections.remove(pos)) {
@@ -60,16 +63,16 @@ public class RenderSource {
 			}
 		}
 	}
-	
+
 	/**
 	 * used by tracky to figure out what chunks to force redrawing of
 	 *
 	 * @return the list of render chunks which are currently in the frustum, or a list of only dirty render chunks if you have a way to keep track of that
 	 */
 	public List<ChunkRenderDispatcher.RenderChunk> getChunksInFrustum() {
-		return chunksInFrustum;
+		return this.chunksInFrustum;
 	}
-	
+
 	/**
 	 * Tests if the render source contains a section
 	 * This is used by various hooks to vanilla code to know if tracky should use it's own caches or if it should use vanilla's ones
@@ -78,14 +81,15 @@ public class RenderSource {
 	 * @return if the render source has it in its list of sections
 	 */
 	public boolean containsSection(SectionPos pos) {
-		return sections.contains(pos);
+		return this.sections.contains(pos);
 	}
-	
-	public void doFrustumUpdate(Camera camera, Frustum frustum) {
-		forceCulling = false;
-		updateFrustum(camera, frustum);
+
+	@ApiStatus.Internal
+	public final void doFrustumUpdate(Camera camera, Frustum frustum) {
+		this.forceCulling = false;
+		this.updateFrustum(camera, frustum);
 	}
-	
+
 	/**
 	 * called when vanilla updates the frustum, if the render source is visible
 	 * ideally, mods would do some reprojected frustum checking on each of the sections
@@ -94,14 +98,14 @@ public class RenderSource {
 	 * @param frustum the frustum to use
 	 */
 	protected void updateFrustum(Camera camera, Frustum frustum) {
-		chunksInFrustum.clear();
-		chunksInFrustum.addAll(chunksInSource);
+		this.chunksInFrustum.clear();
+		this.chunksInFrustum.addAll(this.chunksInSource);
 	}
-	
+
 	public boolean needsCulling() {
-		return forceCulling;
+		return this.forceCulling;
 	}
-	
+
 	/**
 	 * defaults to true
 	 * generally mods will want to do a frustum cull on the AABB of whatever is creating the render source
@@ -113,7 +117,7 @@ public class RenderSource {
 	public boolean canDraw(Camera camera, Frustum frustum) {
 		return true;
 	}
-	
+
 	/**
 	 * used for transparency sorting
 	 *
@@ -128,13 +132,9 @@ public class RenderSource {
 		return
 				(center.x() - camX) * (center.x() - camX) +
 						(center.y() - camY) * (center.y() - camY) +
-						(center.z() - camZ) * (center.z() - camZ)
-				;
+						(center.z() - camZ) * (center.z() - camZ);
 	}
-	
-	protected int lx = Integer.MIN_VALUE, ly = Integer.MIN_VALUE, lz = Integer.MIN_VALUE;
-	protected Collection<ChunkRenderDispatcher.RenderChunk> sorted = chunksInFrustum;
-	
+
 	/**
 	 * does transparency sorting
 	 *
@@ -144,147 +144,153 @@ public class RenderSource {
 	 */
 	public void resort(double camX, double camY, double camZ) {
 		Vector3f vec = new Vector3f();
-		
-		// TODO: heavy optimization is needed here
-		sorted = new ArrayList<>(new ObjectRBTreeSet<>(
-				chunksInFrustum.toArray(new ChunkRenderDispatcher.RenderChunk[0]),
-				Comparator.comparingDouble(left -> {
-					vec.set(left.getOrigin().getX() + 8, left.getOrigin().getY() + 8, left.getOrigin().getZ() + 8);
-					// TODO: caching?
-					return calculateDistance(camX, camY, camZ, vec);
-				})
-		));
+
+		this.sorted.clear();
+		this.sorted.addAll(this.chunksInFrustum);
+		this.sorted.sort(Comparator.comparingDouble(left -> {
+			vec.set(left.getOrigin().getX() + 8, left.getOrigin().getY() + 8, left.getOrigin().getZ() + 8);
+			return this.calculateDistance(camX, camY, camZ, vec);
+		}));
+
+		ChunkRenderDispatcher dispatcher = Minecraft.getInstance().levelRenderer.getChunkRenderDispatcher();
+		for (ChunkRenderDispatcher.RenderChunk chunk : this.chunksInFrustum) {
+			// We don't bother adding in vanilla "improvements" because we want these chunks to ACTUALLY be resorted when they should be
+			chunk.resortTransparency(RenderType.translucent(), dispatcher);
+		}
+
+//		// TODO: heavy optimization is needed here
+//		sorted = new ArrayList<>(new ObjectRBTreeSet<>(
+//				chunksInFrustum.toArray(new ChunkRenderDispatcher.RenderChunk[0]),
+//				Comparator.comparingDouble(left -> {
+//					vec.set(left.getOrigin().getX() + 8, left.getOrigin().getY() + 8, left.getOrigin().getZ() + 8);
+//					// TODO: caching?
+//					return calculateDistance(camX, camY, camZ, vec);
+//				})
+//		));
 	}
-	
+
 	/**
 	 * @param viewArea   the view area which contains RenderChunks
-	 * @param chunkInfos unused, unsure what this does or if it's necessary at all
-	 * @param infoMap    the map of existing chunk infos
 	 * @param sectionPos the position of the section being added
 	 * @return if the render chunk got added
 	 */
-	protected boolean handleAdd(Collection<ChunkRenderDispatcher.RenderChunk> dst, HashSet<ChunkRenderDispatcher.RenderChunk> existing, ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap, SectionPos sectionPos) {
+	protected boolean handleAdd(Consumer<ChunkRenderDispatcher.RenderChunk> dst, ViewArea viewArea, SectionPos sectionPos) {
 		if (sectionPos == null) return true;
 
 		// directly accessing the extended map, as the chunks are guaranteed to be within it if they have been created
 		ExtendedViewArea extendedArea = (ExtendedViewArea) viewArea;
 		Map<ChunkPos, ChunkRenderDispatcher.RenderChunk[]> map = extendedArea.getTracky$renderChunkCache();
-		
+
 		ChunkPos ckPos = new ChunkPos(sectionPos.getX(), sectionPos.getZ());
 		ChunkRenderDispatcher.RenderChunk[] renderChunks = map.get(ckPos);
-		
+
 		if (renderChunks == null) {
-			viewArea.setDirty(
-					sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(),
-					false
-			);
+			viewArea.setDirty(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(), false);
 			renderChunks = map.get(ckPos);
 		}
-		
+
 		if (renderChunks == null) return false;
-		
+
 		// calculate y-index
 		int y = Math.floorMod(sectionPos.getY() - Minecraft.getInstance().level.getMinSection(), Minecraft.getInstance().level.getSectionsCount());
 		ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y];
-		
-		if (renderChunk != null) {
-			// without this, the render sections can get messed up if this gets called before the chunks are synced
-			if (
-					!renderChunk.getOrigin().equals(sectionPos.origin())
-			) {
-				viewArea.setDirty(
-						sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(),
-						false
-				);
-				renderChunk = renderChunks[y];
-				
-				if (renderChunk == null || renderChunk.getOrigin().equals(sectionPos.origin()))
-					return false;
-			}
-			
-			if (infoMap.get(renderChunk) == null) {
-				LevelRenderer.RenderChunkInfo info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
-				infoMap.put(renderChunk, info);
-			}
-			
-			if (!existing.contains(renderChunk))
-				dst.add(renderChunk);
-			
-			return true;
-		} else {
-			viewArea.setDirty(
-					sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(),
-					false
-			);
+
+		if (renderChunk == null) {
+			viewArea.setDirty(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(), false);
+			return false;
 		}
-		
-		return false;
+
+		// without this, the render sections can get messed up if this gets called before the chunks are synced
+		if (!renderChunk.getOrigin().equals(sectionPos.origin())) {
+			viewArea.setDirty(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(), false);
+			renderChunk = renderChunks[y];
+
+			if (renderChunk == null || renderChunk.getOrigin().equals(sectionPos.origin())) {
+				return false;
+			}
+		}
+
+		dst.accept(renderChunk);
+		return true;
 	}
-	
+
+	/**
+	 * Forces the renderer to resort translucent chunks next frame.
+	 */
+	public void resort() {
+		this.sorted.clear();
+		this.lastSortPos.set(Integer.MIN_VALUE);
+	}
+
 	/**
 	 * clears out the RenderChunk caches and marks them to be updated
 	 * used to account for F3+A
 	 */
 	public void refresh() {
-		chunksInSource.clear();
-		
-		newSections.addAll(sections);
+		// We can't draw the chunks that were in the frustum
+		this.chunksInFrustum.clear();
+		this.forceCulling = true;
+		this.resort();
+
+		this.chunksInSource.clear();
+		this.newSections.clear();
+		this.newSections.addAll(this.sections);
 	}
 
-	boolean awaitingUpdates = false;
+	/**
+	 * Deletes any extra resources associated with this source. This is called every time the level is changed.
+	 */
+	public void free() {
+	}
+
+	/**
+	 * Updates the render status of the specified render chunk. This is called after the chunk has been compiled and can now be rendered.
+	 *
+	 * @param chunk The chunk that finished compiling
+	 */
+	public void updateCompiledChunk(ChunkRenderDispatcher.RenderChunk chunk) {
+		// Don't bother trying to render the chunk at all if it can't be rendered
+		if (chunk.getCompiledChunk().hasNoRenderableLayers()) {
+			return;
+		}
+
+		this.chunksInSource.add(chunk);
+		// The new chunk should be checked to see if it's in the frustum
+		this.forceCulling = true;
+	}
 
 	/**
 	 * updates render chunks for when new sections are added to the render source
 	 *
-	 * @param viewArea   the view area which contains the RenderChunks
-	 * @param chunkInfos the list of chunk infos, unsure what this actually does
-	 * @param infoMap    the map of existing chunk infos
+	 * @param viewArea the view area which contains the RenderChunks
 	 */
-	public void updateChunks(ViewArea viewArea, LinkedHashSet<LevelRenderer.RenderChunkInfo> chunkInfos, LevelRenderer.RenderInfoMap infoMap) {
-		if (!newSections.isEmpty()) {
-			if (!awaitingUpdates) {
-				awaitingUpdates = true;
-				RenderSystem.recordRenderCall(()->{
-					List<SectionPos> toKeep = new ObjectArrayList<>();
-					// update chunks is called on the main thread, while everything else that might use it is called from the render thread
-					// so if I don't copy this list, the game will crash
-					List<ChunkRenderDispatcher.RenderChunk> tmp = new ArrayList<>(chunksInSource);
-					HashSet<ChunkRenderDispatcher.RenderChunk> known = new HashSet<>(tmp);
-
-					int i = 0;
-					// run updates
-					while (!newSections.isEmpty() && i < 1000) {
-						SectionPos newSection = newSections.poll();
-						if (!handleAdd(tmp, known, viewArea, chunkInfos, infoMap, newSection))
-							toKeep.add(newSection);
-						i++;
-					}
-					awaitingUpdates = false;
-
-					// move data
-					chunksInSource = tmp;
-					newSections.addAll(toKeep);
-
-					// force resort
-					lx = Integer.MIN_VALUE;
-					ly = Integer.MIN_VALUE;
-					lz = Integer.MIN_VALUE;
-
-					// force a culling check
-					forceCulling = true;
-				});
-			}
+	public void updateChunks(ViewArea viewArea, Consumer<ChunkRenderDispatcher.RenderChunk> toCompile) {
+		if (this.newSections.isEmpty()) {
+			return;
 		}
-		
-		for (ChunkRenderDispatcher.RenderChunk renderChunk : chunksInFrustum) {
-			LevelRenderer.RenderChunkInfo info = infoMap.get(renderChunk);
-			if (info == null) {
-				info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
-				infoMap.put(renderChunk, info);
+
+		List<SectionPos> toKeep = new ObjectArrayList<>();
+
+		int i = 0;
+		// run updates
+		while (!this.newSections.isEmpty() && i < 1000) {
+			SectionPos newSection = this.newSections.poll();
+			if (!this.handleAdd(toCompile, viewArea, newSection)) {
+				toKeep.add(newSection);
 			}
+			i++;
 		}
+
+		// try adding failed sections to next iteration
+		this.newSections.addAll(toKeep);
+
+		// force resort
+		this.resort();
+
+		// force a culling check
+		this.forceCulling = true;
 	}
-	
+
 	/**
 	 * calculates the render offset of a chunk relative to the render origin
 	 *
@@ -294,15 +300,11 @@ public class RenderSource {
 	 * @param camZ the camera's Z position
 	 */
 	public void calculateChunkOffset(Vector3f vec, double camX, double camY, double camZ) {
-		vec.set(
-				(float) (vec.x() - camX),
-				(float) (vec.y() - camY),
-				(float) (vec.z() - camZ)
-		);
+		vec.sub((float) camX, (float) camY, (float) camZ);
 	}
-	
+
 	// TODO: probably shouldn't be giving direct access to the shader instance
-	
+
 	/**
 	 * draws the chunks in the render source
 	 * if you want to apply transformations to the rendering, see {@link com.tracky.debug.TestSource}
@@ -318,43 +320,38 @@ public class RenderSource {
 	 */
 	public void draw(PoseStack stack, ViewArea area, ShaderInstance instance, RenderType type, double camX, double camY, double camZ) {
 		Uniform uniform = instance.CHUNK_OFFSET;
-		
-		if (
-				type == RenderType.translucent() &&
-						(lx != (int) camX ||
-								ly != (int) camY ||
-								lz != (int) camZ)
-		) {
-			resort(camX, camY, camZ);
-			lx = (int) camX;
-			ly = (int) camY;
-			lz = (int) camZ;
+
+		// Copy logic from LevelRenderer to determine if the chunk should be resorted
+		if (type == RenderType.translucent() && this.lastSortPos.distanceSquared((int) camX, (int) camY, (int) camZ) > 1.0) {
+			this.resort(camX, camY, camZ);
+			this.lastSortPos.set((int) camX, (int) camY, (int) camZ);
 		}
-		
-		Vector3f vec = new Vector3f();
-		
-		for (
-				ChunkRenderDispatcher.RenderChunk renderChunk :
-				(type == RenderType.translucent() ? sorted : chunksInFrustum)
-		) {
-			if (renderChunk.getCompiledChunk().isEmpty(type))
+
+		Vector3f chunkOffset = new Vector3f();
+
+		Collection<ChunkRenderDispatcher.RenderChunk> chunks = type == RenderType.translucent() ? this.sorted : this.chunksInFrustum;
+		for (ChunkRenderDispatcher.RenderChunk renderChunk : chunks) {
+			if (renderChunk.getCompiledChunk().isEmpty(type)) {
 				continue;
-			
+			}
+
 			VertexBuffer buffer = renderChunk.getBuffer(type);
 			BlockPos blockpos = renderChunk.getOrigin();
 			if (uniform != null) {
-				vec.set(blockpos.getX(), blockpos.getY(), blockpos.getZ());
-				calculateChunkOffset(vec, camX, camY, camZ);
-				uniform.set(vec.x(), vec.y(), vec.z());
+				chunkOffset.set(blockpos.getX(), blockpos.getY(), blockpos.getZ());
+				this.calculateChunkOffset(chunkOffset, camX, camY, camZ);
+				uniform.set(chunkOffset.x(), chunkOffset.y(), chunkOffset.z());
 				uniform.upload();
 			}
-
-//			buffer.getFormat().setupBufferState();
 
 			buffer.bind();
 			buffer.draw();
 		}
 
-		if (uniform != null) uniform.set(0f, 0, 0);
+		if (uniform != null) {
+			uniform.set(0f, 0f, 0f);
+		}
+
+		// VertexBuffer#unbind is called after this inject
 	}
 }

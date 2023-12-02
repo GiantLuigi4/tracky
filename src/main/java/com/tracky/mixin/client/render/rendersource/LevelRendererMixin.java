@@ -3,9 +3,12 @@ package com.tracky.mixin.client.render.rendersource;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.tracky.TrackyAccessor;
+import com.tracky.access.RenderChunkExtensions;
 import com.tracky.api.RenderSource;
+import com.tracky.util.TrackyChunkInfoMap;
 import com.tracky.util.list.ObjectUnionList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -15,6 +18,8 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
@@ -22,163 +27,199 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 @Mixin(LevelRenderer.class)
-public class LevelRendererMixin {
+public abstract class LevelRendererMixin {
+
 	@Shadow
 	@Nullable
 	private ViewArea viewArea;
-	
+
 	@Shadow
 	private Frustum cullingFrustum;
-	
+
 	@Shadow
 	@Nullable
 	private Frustum capturedFrustum;
-	
+
 	@Shadow
 	@Final
 	@Mutable
 	private ObjectArrayList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum;
-	
-	@Shadow
-	@Final
-	private AtomicReference<LevelRenderer.RenderChunkStorage> renderChunkStorage;
-	
+
 	@Shadow
 	@Nullable
 	private ClientLevel level;
-	
+
+	@Shadow
+	@Final
+	private Minecraft minecraft;
+
 	@Unique
-	List<LevelRenderer.RenderChunkInfo> chunksToRender = new ObjectArrayList<>();
-	
+	private final TrackyChunkInfoMap tracky$chunkInfoMap = new TrackyChunkInfoMap();
+
+	@Unique
+	private final Set<ChunkRenderDispatcher.RenderChunk> tracky$chunksToRender = new ObjectArraySet<>();
+
+	@SuppressWarnings("unchecked")
 	@Redirect(at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunksInFrustum:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"), method = "renderLevel")
 	public ObjectArrayList<LevelRenderer.RenderChunkInfo> preRenderBEs(LevelRenderer instance) {
-		//noinspection unchecked
-		ObjectUnionList<LevelRenderer.RenderChunkInfo> copy = new ObjectUnionList<>(renderChunksInFrustum);
-		
-		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
+		ObjectUnionList<LevelRenderer.RenderChunkInfo> copy = new ObjectUnionList<>(this.renderChunksInFrustum);
+		Camera mainCamera = this.minecraft.gameRenderer.getMainCamera();
+		Frustum frustum = this.capturedFrustum == null ? this.cullingFrustum : this.capturedFrustum;
+
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
-				if (!source.canDraw(
-						Minecraft.getInstance().gameRenderer.getMainCamera(),
-						capturedFrustum == null ? cullingFrustum : capturedFrustum
-				)) continue;
-				
-				ArrayList<LevelRenderer.RenderChunkInfo> infos = new ArrayList<>();
-				for (ChunkRenderDispatcher.RenderChunk renderChunk : source.getChunksInFrustum()) {
-					LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
-					if (info != null)
-						infos.add(info);
+				if (!source.canDraw(mainCamera, frustum)) {
+					continue;
 				}
-				
-				if (!infos.isEmpty())
-					copy.addList(infos);
-			}
-		}
-		
-		return copy;
-	}
-	
-	/* force chunk mesh rebaking on dirty chunks */
-	@Inject(at = @At("HEAD"), method = "compileChunks")
-	public void preCompileChunks(Camera p_194371_, CallbackInfo ci) {
-		HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet<>(this.renderChunksInFrustum);
-		
-		int initialSize = settedFrustum.size();
-		
-		//noinspection unchecked
-		renderChunksInFrustum = new ObjectUnionList<>(renderChunksInFrustum);
-		
-		out:
-		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
-			for (RenderSource source : value.get()) {
+
+				ArrayList<LevelRenderer.RenderChunkInfo> infos = null;
 				for (ChunkRenderDispatcher.RenderChunk renderChunk : source.getChunksInFrustum()) {
-					if (settedFrustum.size() > (initialSize + 1000)) break out;
-					
-					if (renderChunk != null && renderChunk.isDirty()) {
-						LevelRenderer.RenderChunkInfo info = renderChunkStorage.get().renderInfoMap.get(renderChunk);
-						
-						if (info != null && !settedFrustum.contains(info)) {
-							this.renderChunksInFrustum.add(info);
-							chunksToRender.add(info);
-							settedFrustum.add(info);
+					LevelRenderer.RenderChunkInfo info = this.tracky$chunkInfoMap.get(renderChunk);
+					if (info != null) {
+						if (infos == null) {
+							infos = new ArrayList<>();
 						}
+						infos.add(info);
 					}
 				}
+
+				if (infos != null) {
+					copy.addList(infos);
+				}
+			}
+		}
+
+		return copy;
+	}
+
+	/* force chunk mesh rebaking on dirty chunks */
+	@SuppressWarnings("unchecked")
+	@Inject(at = @At("HEAD"), method = "compileChunks")
+	public void preCompileChunks(Camera p_194371_, CallbackInfo ci) {
+		// No point trying to compile render source chunks if nothing needs to be compiled
+		if (this.tracky$chunksToRender.isEmpty()) {
+			return;
+		}
+
+		// TODO only compile render chunks that are in the frustum
+
+		// This is a fast way to inject the render source chunks into the list for future iteration
+		this.renderChunksInFrustum = new ObjectUnionList<>(this.renderChunksInFrustum);
+		HashSet<LevelRenderer.RenderChunkInfo> settedFrustum = new HashSet<>();
+		Iterator<ChunkRenderDispatcher.RenderChunk> iterator = this.tracky$chunksToRender.iterator();
+
+		// TODO Do we need to set a max limit on the number of render source chunks that can be compiled at once?
+		while (iterator.hasNext() && settedFrustum.size() < 1000) {
+			ChunkRenderDispatcher.RenderChunk renderChunk = iterator.next();
+
+			if (renderChunk.isDirty()) {
+				LevelRenderer.RenderChunkInfo info = this.tracky$chunkInfoMap.getOrCreate(renderChunk);
+				if (settedFrustum.add(info)) {
+					this.renderChunksInFrustum.add(info);
+				}
+			}
+
+			// We successfully processed the chunk, so we don't have to check it anymore
+			iterator.remove();
+		}
+	}
+
+	/* remove the chunks which were forced from the in frustum list */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	@Inject(at = @At("RETURN"), method = "compileChunks")
+	public void postCompileChunks(Camera p_194371_, CallbackInfo ci) {
+		if (this.renderChunksInFrustum instanceof ObjectUnionList list) {
+			this.renderChunksInFrustum = (ObjectArrayList<LevelRenderer.RenderChunkInfo>) list.getList(0);
+		}
+	}
+
+	/* allow sources to request baking of new sections and also get the new sections added to the list of existing render chunks */
+	@Inject(method = "setupRender", at = @At(value = "TAIL"))
+	private void updateRenderChunks(Camera pCamera, Frustum pFrustum, boolean pHasCapturedFrustum, boolean pIsSpectator, CallbackInfo ci) {
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
+			for (RenderSource source : value.get()) {
+				source.updateChunks(this.viewArea, renderChunk -> {
+					((RenderChunkExtensions) renderChunk).setRenderSource(source);
+					this.tracky$chunksToRender.add(renderChunk);
+				});
 			}
 		}
 	}
-	
-	/* remove the chunks which were forced from the in frustum list */
-	@Inject(at = @At("TAIL"), method = "compileChunks")
-	public void postCompileChunks(Camera p_194371_, CallbackInfo ci) {
-		//noinspection rawtypes
-		if (renderChunksInFrustum instanceof ObjectUnionList list)
-			//noinspection unchecked
-			renderChunksInFrustum = (ObjectArrayList<LevelRenderer.RenderChunkInfo>) list.getList(0);
-		chunksToRender.clear();
+
+	/* updates the valid render chunks in view for a render source */
+	@Inject(method = "setupRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer$RenderInfoMap;get(Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;)Lnet/minecraft/client/renderer/LevelRenderer$RenderChunkInfo;", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD)
+	private void updateCompiledChunks(Camera pCamera, Frustum pFrustum, boolean pHasCapturedFrustum, boolean pIsSpectator, CallbackInfo ci, Vec3 vec3, double d0, double d1, double d2, int i, int j, int k, BlockPos blockpos, double d3, double d4, double d5, boolean flag, LevelRenderer.RenderChunkStorage levelrenderer$renderchunkstorage, Queue<LevelRenderer.RenderChunkInfo> queue, ChunkRenderDispatcher.RenderChunk renderChunk) {
+		RenderSource renderSource = ((RenderChunkExtensions) renderChunk).tracky$getRenderSource();
+		if (renderSource != null) {
+			renderSource.updateCompiledChunk(renderChunk);
+		}
 	}
-	
-	/* allow sources to request baking of new sections and also get the new sections added to the list of existing render chunks */
-	@Inject(method = "updateRenderChunks", at = @At(value = "TAIL"))
-	private void updateRenderChunks(LinkedHashSet<LevelRenderer.RenderChunkInfo> pChunkInfos, LevelRenderer.RenderInfoMap pInfoMap, Vec3 pViewVector, Queue<LevelRenderer.RenderChunkInfo> pInfoQueue, boolean pShouldCull, CallbackInfo ci) {
-		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource source : value.get())
-				source.updateChunks(viewArea, pChunkInfos, pInfoMap);
-	}
-	
+
 	/* allows sources to dump their chunk lists and request updates */
 	@Inject(at = @At("TAIL"), method = "allChanged")
 	public void postChanged(CallbackInfo ci) {
-		if (level != null) // level can be null here
-			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
-				for (RenderSource source : value.get())
+		// These chunks are no longer valid, so the render sources have to re-submit them
+		this.tracky$chunkInfoMap.clear();
+		this.tracky$chunksToRender.clear();
+
+		if (this.level != null) { // level can be null here
+			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
+				for (RenderSource source : value.get()) {
 					source.refresh();
+				}
+			}
+		}
 	}
-	
-	/* allows sources to dump their chunk lists and request updates */
-	@Inject(at = @At("TAIL"), method = "setLevel")
-	public void postSetLevel(ClientLevel pLevel, CallbackInfo ci) {
-		if (pLevel != null) // ???
-			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(pLevel).values())
-				for (RenderSource source : value.get())
-					source.refresh();
+
+	/* allows sources to delete any resources they have allocated */
+	@Inject(at = @At("HEAD"), method = "setLevel")
+	public void freeSources(ClientLevel level, CallbackInfo ci) {
+		if (this.level != null && this.level != level) { // The level is about to be changed to something else, so free render sources
+			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
+				for (RenderSource source : value.get()) {
+					source.free();
+				}
+			}
+		}
 	}
-	
+
 	/* allows render sources to perform frustum culling when vanilla does */
 	@Inject(at = @At("TAIL"), method = "applyFrustum")
 	public void postApplyFrustum(Frustum pFrustrum, CallbackInfo ci) {
-		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values())
-			for (RenderSource source : value.get())
-				source.doFrustumUpdate(Minecraft.getInstance().getBlockEntityRenderDispatcher().camera, pFrustrum);
+		ProfilerFiller profiler = this.minecraft.getProfiler();
+
+		profiler.push("tracky_apply_frustum");
+		Camera camera = this.minecraft.getBlockEntityRenderDispatcher().camera;
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
+			for (RenderSource source : value.get()) {
+				source.doFrustumUpdate(camera, pFrustrum);
+			}
+		}
+		profiler.pop();
 	}
-	
+
 	/* invokes rendering of render sources */
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"), method = "renderChunkLayer")
-	public void postRenderBlocks(RenderType pRenderType, PoseStack pPoseStack, double pCamX, double pCamY, double pCamZ,
-								 Matrix4f pProjectionMatrix, CallbackInfo ci) {
-		ShaderInstance instance = RenderSystem.getShader();
-		
-		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
+	public void postRenderBlocks(RenderType renderType, PoseStack stack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo ci) {
+		ShaderInstance instance = Objects.requireNonNull(RenderSystem.getShader(), "shader");
+		Camera mainCamera = this.minecraft.gameRenderer.getMainCamera();
+		Frustum frustum = this.capturedFrustum == null ? this.cullingFrustum : this.capturedFrustum;
+
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
-				if (source.canDraw(
-						Minecraft.getInstance().gameRenderer.getMainCamera(),
-						capturedFrustum == null ? cullingFrustum : capturedFrustum
-				)) {
+				if (source.canDraw(mainCamera, frustum)) {
 					if (source.needsCulling()) {
-						source.doFrustumUpdate(
-								Minecraft.getInstance().gameRenderer.getMainCamera(),
-								capturedFrustum == null ? cullingFrustum : capturedFrustum
-						);
+						source.doFrustumUpdate(mainCamera, frustum);
 					}
-					
-					//noinspection ConstantConditions
-					source.draw(pPoseStack, viewArea, instance, pRenderType, pCamX, pCamY, pCamZ);
+
+					source.draw(stack, this.viewArea, instance, renderType, camX, camY, camZ);
 				}
 			}
 		}

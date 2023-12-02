@@ -17,17 +17,23 @@ import java.util.function.Supplier;
 
 @Mod("tracky")
 public class Tracky {
+
+	public static final boolean ENABLE_TEST = true;
+
 	public Tracky() {
 //		FMLJavaModLoadingContext.get().getModEventBus();
 //		MinecraftForge.EVENT_BUS;
 
 		MinecraftForge.EVENT_BUS.addListener(this::onUnloadWorld);
 		MinecraftForge.EVENT_BUS.addListener(this::onRemovePlayer);
-		System.out.println("Default UUID Tests: \n" +
-				"- " + getDefaultUUID("tracky", "sampleuuid") + "\n" +
-				"- " + getDefaultUUID("tracky", "sampleUUID") + "\n" +
-				"- " + getDefaultUUID("landlord", "worldshell")
-		);
+
+		if (ENABLE_TEST) {
+			System.out.println("Default UUID Tests: \n" +
+					"- " + getDefaultUUID("tracky", "sampleuuid") + "\n" +
+					"- " + getDefaultUUID("tracky", "sampleUUID") + "\n" +
+					"- " + getDefaultUUID("landlord", "worldshell")
+			);
+		}
 	}
 	
 	public static boolean sourceContains(Level level, SectionPos pos) {
