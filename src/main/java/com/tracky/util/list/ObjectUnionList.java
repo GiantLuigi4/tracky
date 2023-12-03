@@ -23,6 +23,10 @@ public class ObjectUnionList<T> extends ObjectArrayList<T> {
 	public List<T> getList(int index) {
 		return lists.get(index);
 	}
+
+	public int listSize() {
+		return this.lists.size();
+	}
 	
 	@Override
 	public T get(int index) {

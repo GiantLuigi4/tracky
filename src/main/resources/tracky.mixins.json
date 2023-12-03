@@ -18,14 +18,22 @@
     "client.KeyboardHandlerMixin",
     "client.RenderDocker",
     "client.SectionChangePacketMixin",
+    "client.impl.sodium.OcclusionCullerMixin",
+    "client.impl.sodium.RenderSectionManagerAccessor",
+    "client.impl.sodium.RenderSectionManagerMixin",
+    "client.impl.sodium.RenderSectionMixin",
+    "client.impl.sodium.SodiumWorldRendererMixin",
+    "client.impl.vanilla.LevelRendererMixin",
+    "client.impl.vanilla.RebuildTaskMixin",
+    "client.impl.vanilla.ResortTransparencyTaskMixin",
+    "client.impl.vanilla.UniformAccessor",
     "client.render.FogRendererMixin",
-    "client.render.LevelRendererMixin",
-    "client.render.RebuildTaskMixin",
+    "client.render.LevelRendererAccessor",
     "client.render.RenderChunkInfoMixin",
     "client.render.RenderChunkMixin",
-    "client.render.ResortTransparencyTaskMixin",
     "dummy.ClientWorldMixin"
   ],
+  "plugin": "com.tracky.mixin.TrackyMixinPlugin",
   "injectors": {
     "defaultRequire": 1
   }

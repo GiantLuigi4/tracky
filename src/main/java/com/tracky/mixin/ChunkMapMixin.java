@@ -54,7 +54,7 @@ public abstract class ChunkMapMixin {
 		
 		// for all players in the level send the relevant chunks
 		// messy iteration but no way to avoid with our structure
-		for (ServerPlayer player : level.getPlayers((p) -> true)) {
+		for (ServerPlayer player : this.level.getPlayers((p) -> true)) {
 			for (Function<Player, Collection<SectionPos>> func : map.values()) {
 //				final Set<ChunkPos> chunks = Tracky.collapse(func.apply(player));
 				
@@ -118,13 +118,13 @@ public abstract class ChunkMapMixin {
 	protected abstract void scheduleUnload(long pChunkPos, ChunkHolder pChunkHolder);
 	
 	@Unique
-	ArrayList<ChunkPos> trackyForced = new ArrayList<>();
+	private final List<ChunkPos> tracky$Forced = new ArrayList<>();
 	
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) throws ExecutionException, InterruptedException {
-		ArrayList<Player> playersChecked = new ArrayList<>();
+		List<Player> playersChecked = new ArrayList<>();
 		Map<UUID, Function<Player, Collection<SectionPos>>> function = TrackyAccessor.getForcedChunks(level);
-		ArrayList<ChunkPos> poses = new ArrayList<>();
+		List<ChunkPos> poses = new ArrayList<>();
 		for (List<Player> value : TrackyAccessor.getPlayersLoadingChunks(level).values()) {
 			for (Player player : value) {
 				if (playersChecked.contains(player)) continue;
@@ -132,7 +132,7 @@ public abstract class ChunkMapMixin {
 				playersChecked.add(player);
 				for (Function<Player, Collection<SectionPos>> playerIterableFunction : function.values()) {
 					for (ChunkPos chunkPos : Tracky.collapse(playerIterableFunction.apply(player))) {
-						if (!trackyForced.remove(chunkPos) && !poses.contains(chunkPos)) {
+						if (!tracky$Forced.remove(chunkPos) && !poses.contains(chunkPos)) {
 							level.setChunkForced(chunkPos.x, chunkPos.z, true);
 							poses.add(chunkPos);
 						}
@@ -141,11 +141,11 @@ public abstract class ChunkMapMixin {
 			}
 		}
 		
-		for (ChunkPos chunkPos : trackyForced) {
+		for (ChunkPos chunkPos : tracky$Forced) {
 			level.setChunkForced(chunkPos.x, chunkPos.z, false);
 		}
 		
-		trackyForced.addAll(poses);
+		tracky$Forced.addAll(poses);
 	}
 	
 	

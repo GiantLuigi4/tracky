@@ -1,19 +1,12 @@
 package com.tracky.api;
 
-import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.tracky.util.TrackyViewArea;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.world.level.ChunkPos;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -25,18 +18,18 @@ import java.util.function.Consumer;
 public class RenderSource {
 
 	protected final Collection<SectionPos> sections;
-	protected List<ChunkRenderDispatcher.RenderChunk> chunksInSource = new ArrayList<>();
-	protected final List<ChunkRenderDispatcher.RenderChunk> chunksInFrustum = new ObjectArrayList<>();
+	protected List<TrackyRenderChunk> chunksInSource = new ArrayList<>();
+	protected final List<TrackyRenderChunk> chunksInFrustum = new ObjectArrayList<>();
 
 	protected boolean forceCulling = false;
 
 	protected Queue<SectionPos> newSections = new ArrayDeque<>();
 
 	protected final Vector3i lastSortPos = new Vector3i(Integer.MIN_VALUE);
-	protected List<ChunkRenderDispatcher.RenderChunk> sorted = new LinkedList<>();
+	protected List<TrackyRenderChunk> sorted = new LinkedList<>();
 
 	public RenderSource(Collection<SectionPos> sections) {
-		this.sections = new HashSet<>(sections);
+		this.sections = sections;
 	}
 
 	public void addSection(SectionPos pos) {
@@ -46,20 +39,13 @@ public class RenderSource {
 	}
 
 	public void removeSection(SectionPos pos) {
-		if (sections.remove(pos)) {
-			if (!newSections.remove(pos)) {
-				ChunkRenderDispatcher.RenderChunk target = null;
-				for (ChunkRenderDispatcher.RenderChunk renderChunk : chunksInSource) {
-					if (
-							renderChunk.getOrigin().getX() == pos.minBlockX() &&
-									renderChunk.getOrigin().getY() == pos.minBlockY() &&
-									renderChunk.getOrigin().getZ() == pos.minBlockZ()
-					) {
-						target = renderChunk;
-						break;
-					}
+		if (this.sections.remove(pos) && !this.newSections.remove(pos)) {
+			for (TrackyRenderChunk renderChunk : this.chunksInSource) {
+				BlockPos origin = renderChunk.getChunkOrigin();
+				if (origin.getX() == pos.minBlockX() && origin.getY() == pos.minBlockY() && origin.getZ() == pos.minBlockZ()) {
+					this.chunksInSource.remove(renderChunk);
+					return;
 				}
-				chunksInSource.remove(target);
 			}
 		}
 	}
@@ -69,7 +55,7 @@ public class RenderSource {
 	 *
 	 * @return the list of render chunks which are currently in the frustum, or a list of only dirty render chunks if you have a way to keep track of that
 	 */
-	public List<ChunkRenderDispatcher.RenderChunk> getChunksInFrustum() {
+	public List<TrackyRenderChunk> getChunksInFrustum() {
 		return this.chunksInFrustum;
 	}
 
@@ -102,7 +88,7 @@ public class RenderSource {
 		this.chunksInFrustum.addAll(this.chunksInSource);
 	}
 
-	public boolean needsCulling() {
+	public boolean needsFrustumUpdate() {
 		return this.forceCulling;
 	}
 
@@ -136,17 +122,16 @@ public class RenderSource {
 
 		this.sorted.clear();
 		this.sorted.addAll(this.chunksInFrustum);
-		this.sorted.sort(Comparator.<ChunkRenderDispatcher.RenderChunk>comparingDouble(left -> {
-			center.set(left.getOrigin().getX() + 8, left.getOrigin().getY() + 8, left.getOrigin().getZ() + 8);
-			this.calculateChunkOffset(center, camX, camY, camZ);
+		this.sorted.sort(Comparator.<TrackyRenderChunk>comparingDouble(left -> {
+			BlockPos origin = left.getChunkOrigin();
+			center.set(origin.getX() + 8 - camX, origin.getY() + 8 - camY, origin.getZ() + 8 - camZ);
 			matrix.transformPosition(center);
 			return center.lengthSquared();
 		}).reversed());
 
-		ChunkRenderDispatcher dispatcher = Minecraft.getInstance().levelRenderer.getChunkRenderDispatcher();
-		for (ChunkRenderDispatcher.RenderChunk chunk : this.chunksInFrustum) {
+		for (TrackyRenderChunk chunk : this.chunksInFrustum) {
 			// We don't bother adding in vanilla "improvements" because we want these chunks to ACTUALLY be resorted when they should be
-			chunk.resortTransparency(RenderType.translucent(), dispatcher);
+			chunk.resort(RenderType.translucent());
 		}
 	}
 
@@ -155,35 +140,22 @@ public class RenderSource {
 	 * @param sectionPos the position of the section being added
 	 * @return if the render chunk got added
 	 */
-	protected boolean handleAdd(Consumer<ChunkRenderDispatcher.RenderChunk> dst, TrackyViewArea viewArea, SectionPos sectionPos) {
+	protected boolean handleAdd(Consumer<TrackyRenderChunk> dst, TrackyViewArea viewArea, SectionPos sectionPos) {
 		if (sectionPos == null) return true;
 
 		// directly accessing the extended map, as the chunks are guaranteed to be within it if they have been created
-		ChunkPos ckPos = new ChunkPos(sectionPos.getX(), sectionPos.getZ());
-		ChunkRenderDispatcher.RenderChunk[] renderChunks = viewArea.getRenderChunkColumn(ckPos);
-
-		if (renderChunks == null) {
-			viewArea.setDirty(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(), false);
-			renderChunks = viewArea.getRenderChunkColumn(ckPos);
-		}
-
-		if (renderChunks == null) return false;
-
-		// calculate y-index
-		int y = Math.floorMod(sectionPos.getY() - Minecraft.getInstance().level.getMinSection(), Minecraft.getInstance().level.getSectionsCount());
-		ChunkRenderDispatcher.RenderChunk renderChunk = renderChunks[y];
-
+		TrackyRenderChunk renderChunk = viewArea.tryCreateRenderChunk(sectionPos);
 		if (renderChunk == null) {
-			viewArea.setDirty(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(), false);
+			viewArea.setDirty(sectionPos, false);
 			return false;
 		}
 
 		// without this, the render sections can get messed up if this gets called before the chunks are synced
-		if (!renderChunk.getOrigin().equals(sectionPos.origin())) {
-			viewArea.setDirty(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ(), false);
-			renderChunk = renderChunks[y];
+		if (!renderChunk.getChunkOrigin().equals(sectionPos.origin())) {
+			viewArea.setDirty(sectionPos, false);
+			renderChunk = viewArea.getRenderChunk(sectionPos);
 
-			if (renderChunk == null || renderChunk.getOrigin().equals(sectionPos.origin())) {
+			if (renderChunk == null || renderChunk.getChunkOrigin().equals(sectionPos.origin())) {
 				return false;
 			}
 		}
@@ -226,18 +198,13 @@ public class RenderSource {
 	 *
 	 * @param chunk The chunk that finished compiling
 	 */
-	public void updateCompiledChunk(ChunkRenderDispatcher.RenderChunk chunk) {
-		// Don't bother trying to render the chunk at all if it can't be rendered
-		if (chunk.getCompiledChunk().hasNoRenderableLayers()) {
-			return;
-		}
-
+	public void updateCompiledChunk(TrackyRenderChunk chunk) {
 		this.chunksInSource.add(chunk);
 
 		// The new chunk should be checked to see if it's in the frustum
 		this.forceCulling = true;
 
-		if (!chunk.getCompiledChunk().isEmpty(RenderType.translucent())) {
+		if (chunk.needsSorting()) {
 			this.sort();
 		}
 	}
@@ -247,7 +214,7 @@ public class RenderSource {
 	 *
 	 * @param viewArea the view area which contains the RenderChunks
 	 */
-	public void updateChunks(TrackyViewArea viewArea, Consumer<ChunkRenderDispatcher.RenderChunk> toCompile) {
+	public void updateChunks(TrackyViewArea viewArea, Consumer<TrackyRenderChunk> toCompile) {
 		if (this.newSections.isEmpty()) {
 			return;
 		}
@@ -275,88 +242,39 @@ public class RenderSource {
 	}
 
 	/**
-	 * calculates the render offset of a chunk relative to the render origin
-	 *
-	 * @param vec  the origin of the chunk in global space
-	 * @param camX the camera's X position
-	 * @param camY the camera's Y position
-	 * @param camZ the camera's Z position
-	 */
-	public void calculateChunkOffset(Vector3f vec, double camX, double camY, double camZ) {
-		vec.sub((float) camX, (float) camY, (float) camZ);
-	}
-
-	/**
-	 * Transforms the specified stack. The transformation should be in local chunk space. {@link #calculateChunkOffset(Vector3f, double, double, double)} transforms the chunk from the player position to the camera.
+	 * Transforms the whole render source to a new position. The individual chunks in the source are not allowed to be transformed.
 	 *
 	 * @param matrix the matrix to transform the space
 	 */
 	public void transform(PoseStack matrix, double camX, double camY, double camZ) {
 	}
 
-	// TODO: probably shouldn't be giving direct access to the shader instance
-
 	/**
 	 * draws the chunks in the render source
 	 * if you want to apply transformations to the rendering, see {@link com.tracky.debug.TestSource}
 	 * most mods will want to override this, do some setup before calling super, and then do some teardown afterwards
 	 *
-	 * @param matrix   the active pose stack
-	 * @param area     the view area
-	 * @param instance the shader being used
-	 * @param type     the render type being drawn
-	 * @param camX     the camera's X position
-	 * @param camY     the camera's Y position
-	 * @param camZ     the camera's Z position
+	 * @param matrix the active pose stack
+	 * @param area   the view area
+	 * @param layer  the render type being drawn
+	 * @param camX   the camera's X position
+	 * @param camY   the camera's Y position
+	 * @param camZ   the camera's Z position
 	 */
-	public void draw(PoseStack matrix, TrackyViewArea area, ShaderInstance instance, RenderType type, double camX, double camY, double camZ) {
-		if (instance.MODEL_VIEW_MATRIX != null) {
-			matrix.pushPose();
-			matrix.translate(-camX, -camY, -camZ);
-			this.transform(matrix, camX, camY, camZ);
-			matrix.translate(camX, camY, camZ);
-			instance.MODEL_VIEW_MATRIX.set(matrix.last().pose());
-			instance.MODEL_VIEW_MATRIX.upload();
-			matrix.popPose();
-		}
-
-		Uniform uniform = instance.CHUNK_OFFSET;
+	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrix, TrackyViewArea area, RenderType layer, double camX, double camY, double camZ) {
+		matrix.pushPose();
+		matrix.translate(-camX, -camY, -camZ);
+		this.transform(matrix, camX, camY, camZ);
+		matrix.translate(camX, camY, camZ);
+		chunkRenderer.setModelViewMatrix(matrix.last().pose());
+		matrix.popPose();
 
 		// Copy logic from LevelRenderer to determine if the chunk should be resorted
-		if (type == RenderType.translucent() && this.lastSortPos.distanceSquared((int) camX, (int) camY, (int) camZ) > 1.0) {
+		if (layer == RenderType.translucent() && this.lastSortPos.distanceSquared((int) camX, (int) camY, (int) camZ) > 1.0) {
 			this.sort(camX, camY, camZ);
 			this.lastSortPos.set((int) camX, (int) camY, (int) camZ);
 		}
 
-		Vector3f chunkOffset = new Vector3f();
-
-		Collection<ChunkRenderDispatcher.RenderChunk> chunks = type == RenderType.translucent() ? this.sorted : this.chunksInFrustum;
-		for (ChunkRenderDispatcher.RenderChunk renderChunk : chunks) {
-			if (renderChunk.getCompiledChunk().isEmpty(type)) {
-				continue;
-			}
-
-			VertexBuffer buffer = renderChunk.getBuffer(type);
-			BlockPos blockpos = renderChunk.getOrigin();
-			if (uniform != null) {
-				chunkOffset.set(blockpos.getX(), blockpos.getY(), blockpos.getZ());
-				this.calculateChunkOffset(chunkOffset, camX, camY, camZ);
-				uniform.set(chunkOffset.x(), chunkOffset.y(), chunkOffset.z());
-				uniform.upload();
-			}
-
-			buffer.bind();
-			buffer.draw();
-		}
-
-		if (uniform != null) {
-			uniform.set(0f, 0f, 0f);
-		}
-
-		if (instance.MODEL_VIEW_MATRIX != null) {
-			instance.MODEL_VIEW_MATRIX.set(matrix.last().pose());
-		}
-
-		// VertexBuffer#unbind is called after this inject
+		chunkRenderer.render(layer == RenderType.translucent() ? this.sorted : this.chunksInFrustum, layer);
 	}
 }

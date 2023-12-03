@@ -2,8 +2,9 @@ package com.tracky.mixin.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexSorting;
-import com.tracky.access.RenderChunkExtensions;
 import com.tracky.api.RenderSource;
+import com.tracky.api.TrackyRenderChunk;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
@@ -20,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
-public abstract class RenderChunkMixin implements RenderChunkExtensions {
+public abstract class RenderChunkMixin implements TrackyRenderChunk {
 
 	@Shadow
 	@Final
@@ -31,28 +32,39 @@ public abstract class RenderChunkMixin implements RenderChunkExtensions {
 
 	@Shadow
 	@Final
-	private BlockPos.MutableBlockPos origin;
-	@Unique
-	private RenderSource tracky$renderSource;
+	BlockPos.MutableBlockPos origin;
+
+	@Shadow
+	public abstract void releaseBuffers();
+
+	@Shadow
+	public abstract boolean resortTransparency(RenderType pType, ChunkRenderDispatcher pDispatcher);
+
+	@Shadow
+	public abstract void setDirty(boolean pReRenderOnMainThread);
+
+	@Shadow
+	public abstract AABB getBoundingBox();
+
+	@Shadow
+	public abstract boolean isDirtyFromPlayer();
+
+	@Shadow
+	public abstract boolean isDirty();
+
+	@Shadow
+	public abstract ChunkRenderDispatcher.CompiledChunk getCompiledChunk();
 
 	@Unique
-	private Matrix4f tracky$getTransformation() {
-		Vec3 cameraPosition = this.this$0.getCameraPosition();
-		PoseStack stack = new PoseStack();
-		stack.translate(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
-		this.tracky$renderSource.transform(stack, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-		stack.translate(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-		return stack.last().pose();
-	}
+	private RenderSource tracky$renderSource;
 
 	@Inject(method = "getDistToPlayerSqr", at = @At("HEAD"), cancellable = true)
 	protected void getDistToPlayerSqr(CallbackInfoReturnable<Double> cir) {
 		if (this.tracky$renderSource != null) {
 			Vec3 cameraPosition = this.this$0.getCameraPosition();
 			Vector3f center = new Vector3f();
-			center.set(this.bb.minX + 8.0D, this.bb.minY + 8.0D, this.bb.minZ + 8.0D);
-			this.tracky$renderSource.calculateChunkOffset(center, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-			this.tracky$getTransformation().transformPosition(center);
+			center.set(this.bb.minX + 8.0D - cameraPosition.x, this.bb.minY + 8.0D - cameraPosition.y, this.bb.minZ + 8.0D - cameraPosition.z);
+			this.getTransformation().transformPosition(center);
 			cir.setReturnValue((double) center.lengthSquared());
 		}
 	}
@@ -66,26 +78,59 @@ public abstract class RenderChunkMixin implements RenderChunkExtensions {
 	}
 
 	@Override
-	public @Nullable RenderSource tracky$getRenderSource() {
+	public Matrix4f getTransformation() {
+		Vec3 cameraPosition = this.this$0.getCameraPosition();
+		PoseStack stack = new PoseStack();
+		stack.translate(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+		this.tracky$renderSource.transform(stack, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+		stack.translate(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+		return stack.last().pose();
+	}
+
+	@Override
+	public @Nullable RenderSource getRenderSource() {
 		return this.tracky$renderSource;
 	}
 
 	@Override
-	public void tracky$setRenderSource(@Nullable RenderSource renderSource) {
+	public void setRenderSource(@Nullable RenderSource renderSource) {
 		this.tracky$renderSource = renderSource;
 	}
 
 	@Override
-	public VertexSorting tracky$getSorting() {
+	public VertexSorting createVertexSorting() {
 		Vec3 vec = this.this$0.getCameraPosition();
 		Vector3f cameraPosition = new Vector3f();
-		this.tracky$getTransformation().invert().transformPosition(cameraPosition);
+		this.getTransformation().invert().transformPosition(cameraPosition);
 		cameraPosition.add((float) vec.x, (float) vec.y, (float) vec.z);
 
 		Vector3f center = new Vector3f();
 		center.set(this.origin.getX(), this.origin.getY(), this.origin.getZ());
-		this.tracky$renderSource.calculateChunkOffset(center, 0, 0, 0);
 		return VertexSorting.byDistance(cameraPosition.sub(center));
-//		return VertexSorting.byDistance(center.sub((float) cameraPosition.x, (float) cameraPosition.y, (float) cameraPosition.z));
+	}
+
+	@Override
+	public boolean resort(RenderType layer) {
+		return this.resortTransparency(layer, this.this$0);
+	}
+
+	@Override
+	public boolean needsSorting() {
+		return !this.getCompiledChunk().isEmpty(RenderType.translucent());
+	}
+
+	@Override
+	public void markDirty(boolean reRenderOnMainThread) {
+		this.setDirty(reRenderOnMainThread);
+	}
+
+	@Override
+	public BlockPos getChunkOrigin() {
+		return this.origin;
+	}
+
+	@Override
+	public void free() {
+		this.releaseBuffers();
 	}
 }

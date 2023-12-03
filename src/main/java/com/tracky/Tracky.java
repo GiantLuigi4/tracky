@@ -1,5 +1,6 @@
 package com.tracky;
 
+import com.mojang.logging.LogUtils;
 import com.tracky.api.ClientTracking;
 import com.tracky.api.RenderSource;
 import com.tracky.api.ServerTracking;
@@ -11,6 +12,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -19,6 +21,7 @@ import java.util.function.Supplier;
 public class Tracky {
 
 	public static final boolean ENABLE_TEST = true;
+	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {
 //		FMLJavaModLoadingContext.get().getModEventBus();

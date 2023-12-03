@@ -1,10 +1,11 @@
-package com.tracky.util;
+package com.tracky.impl;
 
 import com.tracky.mixin.client.render.RenderChunkInfoMixin;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 import org.joml.Vector3ic;
@@ -12,8 +13,9 @@ import org.joml.Vector3ic;
 import java.util.HashMap;
 
 /**
- * This class is NOT thread safe.
+ * This class is not thread safe.
  */
+@ApiStatus.Internal
 public class TrackyChunkInfoMap {
 
 	private final HashMap<Vector3ic, LevelRenderer.RenderChunkInfo> tracky$map = new HashMap<>();

@@ -1,21 +1,20 @@
-package com.tracky.mixin.client.render;
+package com.tracky.mixin.client.impl.vanilla;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.tracky.TrackyAccessor;
-import com.tracky.access.RenderChunkExtensions;
 import com.tracky.api.RenderSource;
-import com.tracky.util.TrackyChunkInfoMap;
-import com.tracky.util.TrackyViewArea;
+import com.tracky.api.TrackyRenderChunk;
+import com.tracky.impl.TrackyChunkInfoMap;
+import com.tracky.impl.TrackyVanillaViewArea;
+import com.tracky.impl.VanillaChunkRenderer;
 import com.tracky.util.list.ObjectUnionList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
@@ -25,7 +24,6 @@ import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
@@ -59,6 +57,7 @@ public abstract class LevelRendererMixin {
 	@Shadow
 	@Nullable
 	private ChunkRenderDispatcher chunkRenderDispatcher;
+
 	@Unique
 	private final TrackyChunkInfoMap tracky$chunkInfoMap = new TrackyChunkInfoMap();
 
@@ -66,26 +65,28 @@ public abstract class LevelRendererMixin {
 	private final Set<ChunkRenderDispatcher.RenderChunk> tracky$chunksToRender = new ObjectArraySet<>();
 
 	@Unique
-	private TrackyViewArea tracky$ViewArea;
+	private TrackyVanillaViewArea tracky$ViewArea;
+
+	@Unique
+	private final VanillaChunkRenderer chunkRenderer = new VanillaChunkRenderer();
 
 	// FIXME Sometimes the chunks don't seem to fully load when the level is first set. It's inconsistent, so it might be a threading issue
 
 	@SuppressWarnings("unchecked")
-	@Redirect(at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunksInFrustum:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"), method = "renderLevel")
-	public ObjectArrayList<LevelRenderer.RenderChunkInfo> preRenderBEs(LevelRenderer instance) {
-		ObjectUnionList<LevelRenderer.RenderChunkInfo> copy = new ObjectUnionList<>(this.renderChunksInFrustum);
-		Camera mainCamera = this.minecraft.gameRenderer.getMainCamera();
+	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunksInFrustum:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;", shift = At.Shift.BEFORE))
+	public void preRenderBEs(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera camera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
+		ObjectUnionList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum = new ObjectUnionList<>(this.renderChunksInFrustum);
 		Frustum frustum = this.capturedFrustum == null ? this.cullingFrustum : this.capturedFrustum;
 
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
-				if (!source.canDraw(mainCamera, frustum)) {
+				if (!source.canDraw(camera, frustum)) {
 					continue;
 				}
 
-				ArrayList<LevelRenderer.RenderChunkInfo> infos = null;
-				for (ChunkRenderDispatcher.RenderChunk renderChunk : source.getChunksInFrustum()) {
-					LevelRenderer.RenderChunkInfo info = this.tracky$chunkInfoMap.get(renderChunk);
+				List<LevelRenderer.RenderChunkInfo> infos = null;
+				for (TrackyRenderChunk renderChunk : source.getChunksInFrustum()) {
+					LevelRenderer.RenderChunkInfo info = this.tracky$chunkInfoMap.get((ChunkRenderDispatcher.RenderChunk) renderChunk);
 					if (info != null) {
 						if (infos == null) {
 							infos = new ArrayList<>();
@@ -95,12 +96,22 @@ public abstract class LevelRendererMixin {
 				}
 
 				if (infos != null) {
-					copy.addList(infos);
+					renderChunksInFrustum.addList(infos);
 				}
 			}
 		}
 
-		return copy;
+		if (renderChunksInFrustum.listSize() > 1) {
+			this.renderChunksInFrustum = renderChunksInFrustum;
+		}
+	}
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
+	public void postRenderBEs(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera camera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
+		if (this.renderChunksInFrustum instanceof ObjectUnionList list) {
+			this.renderChunksInFrustum = (ObjectArrayList<LevelRenderer.RenderChunkInfo>) list.getList(0);
+		}
 	}
 
 	/* force chunk mesh rebaking on dirty chunks */
@@ -150,8 +161,8 @@ public abstract class LevelRendererMixin {
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
 				source.updateChunks(this.tracky$ViewArea, renderChunk -> {
-					((RenderChunkExtensions) renderChunk).tracky$setRenderSource(source);
-					this.tracky$chunksToRender.add(renderChunk);
+					renderChunk.setRenderSource(source);
+					this.tracky$chunksToRender.add((ChunkRenderDispatcher.RenderChunk) renderChunk);
 				});
 			}
 		}
@@ -160,24 +171,25 @@ public abstract class LevelRendererMixin {
 	/* updates the valid render chunks in view for a render source */
 	@Inject(method = "setupRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer$RenderInfoMap;get(Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;)Lnet/minecraft/client/renderer/LevelRenderer$RenderChunkInfo;", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD)
 	private void updateCompiledChunks(Camera pCamera, Frustum pFrustum, boolean pHasCapturedFrustum, boolean pIsSpectator, CallbackInfo ci, Vec3 vec3, double d0, double d1, double d2, int i, int j, int k, BlockPos blockpos, double d3, double d4, double d5, boolean flag, LevelRenderer.RenderChunkStorage levelrenderer$renderchunkstorage, Queue<LevelRenderer.RenderChunkInfo> queue, ChunkRenderDispatcher.RenderChunk renderChunk) {
-		RenderSource renderSource = ((RenderChunkExtensions) renderChunk).tracky$getRenderSource();
-		if (renderSource != null) {
-			renderSource.updateCompiledChunk(renderChunk);
+		RenderSource renderSource = ((TrackyRenderChunk) renderChunk).getRenderSource();
+		// Don't bother trying to render the chunk at all if it can't be rendered
+		if (renderSource != null && !renderChunk.getCompiledChunk().hasNoRenderableLayers()) {
+			renderSource.updateCompiledChunk((TrackyRenderChunk) renderChunk);
 		}
 	}
 
 	/* allows sources to dump their chunk lists and request updates */
 	@Inject(at = @At("TAIL"), method = "allChanged")
-	public void postChanged(CallbackInfo ci) {
+	public void refresh(CallbackInfo ci) {
 		// These chunks are no longer valid, so the render sources have to re-submit them
 		this.tracky$chunkInfoMap.clear();
 		this.tracky$chunksToRender.clear();
 
 		if (this.level != null) { // level can be null here
 			if (this.tracky$ViewArea != null) {
-				this.tracky$ViewArea.releaseBuffers();
+				this.tracky$ViewArea.free();
 			}
-			this.tracky$ViewArea = new TrackyViewArea(this.chunkRenderDispatcher, this.level, this.tracky$chunksToRender);
+			this.tracky$ViewArea = new TrackyVanillaViewArea(this.chunkRenderDispatcher, this.level, this.tracky$chunksToRender::add);
 
 			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 				for (RenderSource source : value.get()) {
@@ -191,7 +203,7 @@ public abstract class LevelRendererMixin {
 	@Inject(at = @At("HEAD"), method = "setLevel")
 	public void freeSources(ClientLevel level, CallbackInfo ci) {
 		if (level == null && this.tracky$ViewArea != null) {
-			this.tracky$ViewArea.releaseBuffers();
+			this.tracky$ViewArea.free();
 			this.tracky$ViewArea = null;
 		}
 		if (this.level != null && this.level != level) { // The level is about to be changed to something else, so free render sources
@@ -203,6 +215,7 @@ public abstract class LevelRendererMixin {
 		}
 	}
 
+	/* Updates the tracky view area */
 	@Inject(method = "setSectionDirty(IIIZ)V", at = @At("TAIL"))
 	public void setSectionDirty(int sectionX, int sectionY, int sectionZ, boolean reRenderOnMainThread, CallbackInfo ci) {
 		this.tracky$ViewArea.setDirty(sectionX, sectionY, sectionZ, reRenderOnMainThread);
@@ -210,7 +223,7 @@ public abstract class LevelRendererMixin {
 
 	/* allows render sources to perform frustum culling when vanilla does */
 	@Inject(at = @At("TAIL"), method = "applyFrustum")
-	public void postApplyFrustum(Frustum pFrustrum, CallbackInfo ci) {
+	public void applyFrustumUpdate(Frustum pFrustrum, CallbackInfo ci) {
 		ProfilerFiller profiler = this.minecraft.getProfiler();
 
 		profiler.push("tracky_apply_frustum");
@@ -225,7 +238,7 @@ public abstract class LevelRendererMixin {
 
 	/* invokes rendering of render sources */
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"), method = "renderChunkLayer")
-	public void postRenderBlocks(RenderType renderType, PoseStack stack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo ci) {
+	public void renderSources(RenderType renderType, PoseStack stack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo ci) {
 		ShaderInstance instance = Objects.requireNonNull(RenderSystem.getShader(), "shader");
 		Camera mainCamera = this.minecraft.gameRenderer.getMainCamera();
 		Frustum frustum = this.capturedFrustum == null ? this.cullingFrustum : this.capturedFrustum;
@@ -233,11 +246,13 @@ public abstract class LevelRendererMixin {
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
 				if (source.canDraw(mainCamera, frustum)) {
-					if (source.needsCulling()) {
+					if (source.needsFrustumUpdate()) {
 						source.doFrustumUpdate(mainCamera, frustum);
 					}
 
-					source.draw(stack, this.tracky$ViewArea, instance, renderType, camX, camY, camZ);
+					this.chunkRenderer.prepare(instance, camX, camY, camZ);
+					source.draw(this.chunkRenderer, stack, this.tracky$ViewArea, renderType, camX, camY, camZ);
+					this.chunkRenderer.reset();
 				}
 			}
 		}

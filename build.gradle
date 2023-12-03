@@ -131,7 +131,13 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     mavenCentral()
-
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
     maven {
         url "https://www.cursemaven.com"
         content {
@@ -141,13 +147,6 @@ repositories {
     if (new File("libs").exists()) {
         flatDir { dirs 'libs' }
     }
-    // Put repositories for dependencies here
-    // ForgeGradle automatically adds the Forge maven and Maven Central for you
-
-    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so:
-    // flatDir {
-    //     dir 'libs'
-    // }
 }
 
 dependencies {
@@ -183,6 +182,8 @@ dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
 //    implementation fg.deobf("curse.maven:modernfix-790626:4582474")
+//    compileOnly fg.deobf("maven.modrinth:rubidium:0.7.1")
+    implementation fg.deobf("maven.modrinth:rubidium:0.7.1")
 }
 
 // Example for how to get properties into the manifest for reading at runtime.
