@@ -108,7 +108,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		return chunks.values().toArray(new LevelChunk[0]);
 	}
 
-	HashMap<ChunkPos, Long> lastUpdates = new HashMap<>();
+	final HashMap<ChunkPos, Long> lastUpdates = new HashMap<>();
 
 	@Override
 	public void setUpdated(int x, int z) {
