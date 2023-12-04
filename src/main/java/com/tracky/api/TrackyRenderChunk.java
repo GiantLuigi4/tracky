@@ -23,11 +23,7 @@ public interface TrackyRenderChunk extends NativeResource {
 		return SectionPos.of(this.getChunkOrigin());
 	}
 
-	Matrix4f getTransformation();
-
 	@Nullable RenderSource getRenderSource();
-
-	VertexSorting createVertexSorting();
 
 	@ApiStatus.Internal
 	void setRenderSource(@Nullable RenderSource renderSource);

@@ -1,4 +1,4 @@
-package com.tracky.access;
+package com.tracky.access.sodium;
 
 import com.tracky.api.RenderSource;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;

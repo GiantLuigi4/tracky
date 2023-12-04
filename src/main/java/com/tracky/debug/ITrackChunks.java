@@ -2,13 +2,17 @@ package com.tracky.debug;
 
 import net.minecraft.world.level.ChunkPos;
 
-import java.util.ArrayList;
+import java.util.Set;
 
 public interface ITrackChunks {
-	ArrayList<ChunkPos> trackedChunks();
-	ArrayList<ChunkPos> oldTrackedChunks();
-	
+
+	Set<ChunkPos> trackedChunks();
+
+	Set<ChunkPos> oldTrackedChunks();
+
 	void tickTracking();
+
 	boolean setDoUpdate(boolean val);
+
 	boolean shouldUpdate();
 }

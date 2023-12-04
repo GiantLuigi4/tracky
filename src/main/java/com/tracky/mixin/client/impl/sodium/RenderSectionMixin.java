@@ -1,20 +1,15 @@
 package com.tracky.mixin.client.impl.sodium;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexSorting;
-import com.tracky.access.ExtendedRenderSection;
+import com.tracky.access.sodium.ExtendedRenderSection;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyRenderChunk;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -36,9 +31,6 @@ public abstract class RenderSectionMixin implements TrackyRenderChunk, ExtendedR
 	private BlockPos tracky$origin;
 
 	@Shadow
-	public abstract void delete();
-
-	@Shadow
 	@Final
 	private int chunkX;
 
@@ -50,14 +42,29 @@ public abstract class RenderSectionMixin implements TrackyRenderChunk, ExtendedR
 	@Final
 	private int chunkZ;
 
+	@Shadow
+	public abstract void delete();
+
+	@Shadow
+	public abstract SectionPos getPosition();
+
+	@Shadow
+	public abstract int getOriginX();
+
+	@Shadow
+	public abstract int getOriginY();
+
+	@Shadow
+	public abstract int getOriginZ();
+
 	@Inject(method = "<init>", at = @At("TAIL"))
 	public void init(RenderRegion region, int chunkX, int chunkY, int chunkZ, CallbackInfo ci) {
-		this.tracky$origin = new BlockPos(chunkX, chunkY, chunkZ);
+		this.tracky$origin = new BlockPos(this.getOriginX(), this.getOriginY(), this.getOriginZ());
 	}
 
 	@Override
 	public boolean needsSorting() {
-		return false; // TODO sorting?
+		return false;
 	}
 
 	@Override
@@ -71,28 +78,18 @@ public abstract class RenderSectionMixin implements TrackyRenderChunk, ExtendedR
 	}
 
 	@Override
-	public Matrix4f getTransformation() {
-		Vec3 cameraPosition = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-		PoseStack stack = new PoseStack();
-		stack.translate(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
-		this.tracky$renderSource.transform(stack, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-		stack.translate(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-		return stack.last().pose();
-	}
-
-	@Override
 	public BlockPos getChunkOrigin() {
 		return this.tracky$origin;
 	}
 
 	@Override
-	public @Nullable RenderSource getRenderSource() {
-		return this.tracky$renderSource;
+	public SectionPos getSectionPos() {
+		return this.getPosition();
 	}
 
 	@Override
-	public VertexSorting createVertexSorting() {
-		return null;
+	public @Nullable RenderSource getRenderSource() {
+		return this.tracky$renderSource;
 	}
 
 	@Override

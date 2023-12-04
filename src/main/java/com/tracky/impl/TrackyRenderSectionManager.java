@@ -3,7 +3,7 @@ package com.tracky.impl;
 import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.tracky.access.ExtendedOcclusionCuller;
+import com.tracky.access.sodium.ExtendedOcclusionCuller;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyChunkRenderer;
 import com.tracky.api.TrackyRenderChunk;
@@ -34,7 +34,6 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 	private final float[] fogColor = new float[4];
 	private final Vector3f cameraPos = new Vector3f();
 
-	private Matrix4fc regionTransform;
 	private float fogStart;
 	private float fogEnd;
 	private FogShape fogShape;
@@ -108,11 +107,11 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		this.fogShape = RenderSystem.getShaderFogShape();
 		System.arraycopy(RenderSystem.getShaderFogColor(), 0, this.fogColor, 0, 4);
 
-		PoseStack poseStack = new PoseStack();
-		poseStack.translate(-cameraX, -cameraY, -cameraZ);
-		source.transform(poseStack, cameraX, cameraY, cameraZ);
-		poseStack.translate(cameraX, cameraY, cameraZ);
-		this.regionTransform = poseStack.last().pose();
+//		PoseStack poseStack = new PoseStack();
+//		poseStack.translate(-cameraX, -cameraY, -cameraZ);
+//		source.transform(poseStack, cameraX, cameraY, cameraZ);
+//		poseStack.translate(cameraX, cameraY, cameraZ);
+//		this.regionTransform = poseStack.last().pose();
 	}
 
 	public void reset() {
@@ -121,6 +120,6 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		RenderSystem.setShaderFogEnd(this.fogEnd);
 		RenderSystem.setShaderFogShape(this.fogShape);
 		System.arraycopy(this.fogColor, 0, RenderSystem.getShaderFogColor(), 0, 4);
-		this.regionTransform = null;
+//		this.regionTransform = null;
 	}
 }

@@ -70,15 +70,4 @@ public class Tracky {
 				new Random(name.hashCode() + 32874L * modid.length()).nextLong() * 10623261L
 		);
 	}
-
-	public static ChunkPos sectionToChunk(SectionPos sectionPos) {
-		return new ChunkPos(sectionPos.x(), sectionPos.z());
-	}
-
-	public static Set<ChunkPos> collapse(Collection<SectionPos> x) {
-		ArrayList<ChunkPos> ps = new ArrayList<>(x.size());
-		for (SectionPos sectionPos : x)
-			ps.add(sectionToChunk(sectionPos));
-		return new HashSet<>(ps);
-	}
 }

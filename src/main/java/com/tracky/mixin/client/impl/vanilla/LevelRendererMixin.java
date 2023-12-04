@@ -2,25 +2,35 @@ package com.tracky.mixin.client.impl.vanilla;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import com.tracky.TrackyAccessor;
+import com.tracky.access.ExtendedBlockEntityRenderDispatcher;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyRenderChunk;
 import com.tracky.impl.TrackyChunkInfoMap;
 import com.tracky.impl.TrackyVanillaViewArea;
 import com.tracky.impl.VanillaChunkRenderer;
 import com.tracky.util.list.ObjectUnionList;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -58,6 +68,19 @@ public abstract class LevelRendererMixin {
 	@Nullable
 	private ChunkRenderDispatcher chunkRenderDispatcher;
 
+	@Shadow
+	@Final
+	private Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress;
+
+	@Shadow
+	public abstract boolean shouldShowEntityOutlines();
+
+	@Shadow
+	@Final
+	private BlockEntityRenderDispatcher blockEntityRenderDispatcher;
+	@Shadow
+	@Final
+	private RenderBuffers renderBuffers;
 	@Unique
 	private final TrackyChunkInfoMap tracky$chunkInfoMap = new TrackyChunkInfoMap();
 
@@ -68,15 +91,42 @@ public abstract class LevelRendererMixin {
 	private TrackyVanillaViewArea tracky$ViewArea;
 
 	@Unique
-	private final VanillaChunkRenderer chunkRenderer = new VanillaChunkRenderer();
+	private final VanillaChunkRenderer tracky$chunkRenderer = new VanillaChunkRenderer();
 
 	// FIXME Sometimes the chunks don't seem to fully load when the level is first set. It's inconsistent, so it might be a threading issue
 
-	@SuppressWarnings("unchecked")
-	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunksInFrustum:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;", shift = At.Shift.BEFORE))
-	public void preRenderBEs(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera camera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
-		ObjectUnionList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum = new ObjectUnionList<>(this.renderChunksInFrustum);
+	private void renderBlockEntity(Collection<BlockEntity> blockEntities, PoseStack poseStack, float partialTick, double cameraX, double cameraY, double cameraZ) {
+		for (BlockEntity blockEntity : blockEntities) {
+//				if(!frustum.isVisible(blockentity1.getRenderBoundingBox())) continue;
+			BlockPos pos = blockEntity.getBlockPos();
+			MultiBufferSource source = this.renderBuffers.bufferSource();
+			poseStack.pushPose();
+			poseStack.translate((double) pos.getX() - cameraX, (double) pos.getY() - cameraY, (double) pos.getZ() - cameraZ);
+			SortedSet<BlockDestructionProgress> destructionProgresses = this.destructionProgress.get(pos.asLong());
+			if (destructionProgresses != null && !destructionProgresses.isEmpty()) {
+				int progress = destructionProgresses.last().getProgress();
+				if (progress >= 0) {
+					PoseStack.Pose posestack$pose = poseStack.last();
+					VertexConsumer vertexconsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(progress)), posestack$pose.pose(), posestack$pose.normal(), 1.0F);
+					source = type -> {
+						VertexConsumer consumer = this.renderBuffers.bufferSource().getBuffer(type);
+						return type.affectsCrumbling() ? VertexMultiConsumer.create(vertexconsumer, consumer) : consumer;
+					};
+				}
+			}
+
+			this.blockEntityRenderDispatcher.render(blockEntity, partialTick, poseStack, source);
+			poseStack.popPose();
+		}
+	}
+
+	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
+	public void preRenderBEs(PoseStack matrices, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera camera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
 		Frustum frustum = this.capturedFrustum == null ? this.cullingFrustum : this.capturedFrustum;
+		Vec3 cameraPos = camera.getPosition();
+		double x = cameraPos.x();
+		double y = cameraPos.y();
+		double z = cameraPos.z();
 
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
@@ -84,34 +134,31 @@ public abstract class LevelRendererMixin {
 					continue;
 				}
 
-				List<LevelRenderer.RenderChunkInfo> infos = null;
-				for (TrackyRenderChunk renderChunk : source.getChunksInFrustum()) {
-					LevelRenderer.RenderChunkInfo info = this.tracky$chunkInfoMap.get((ChunkRenderDispatcher.RenderChunk) renderChunk);
-					if (info != null) {
-						if (infos == null) {
-							infos = new ArrayList<>();
-						}
-						infos.add(info);
+				for (TrackyRenderChunk chunk : source.getChunksInFrustum()) {
+					ChunkRenderDispatcher.RenderChunk renderChunk = (ChunkRenderDispatcher.RenderChunk) chunk;
+					List<BlockEntity> blockEntities = renderChunk.getCompiledChunk().getRenderableBlockEntities();
+					if (blockEntities.isEmpty()) {
+						continue;
 					}
-				}
 
-				if (infos != null) {
-					renderChunksInFrustum.addList(infos);
+					Matrix4f transformation = source.getTransformation(x, y, z);
+
+					matrices.pushPose();
+					matrices.mulPoseMatrix(transformation);
+
+					Vector3f cameraPosition = new Vector3f();
+					transformation.invert().transformPosition(cameraPosition);
+					cameraPosition.add((float) x, (float) y, (float) z);
+					((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition));
+
+					this.renderBlockEntity(blockEntities, matrices, pPartialTick, x, y, z);
+
+					matrices.popPose();
 				}
 			}
 		}
 
-		if (renderChunksInFrustum.listSize() > 1) {
-			this.renderChunksInFrustum = renderChunksInFrustum;
-		}
-	}
-
-	@SuppressWarnings({"unchecked", "rawtypes"})
-	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-	public void postRenderBEs(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera camera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
-		if (this.renderChunksInFrustum instanceof ObjectUnionList list) {
-			this.renderChunksInFrustum = (ObjectArrayList<LevelRenderer.RenderChunkInfo>) list.getList(0);
-		}
+		((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(null);
 	}
 
 	/* force chunk mesh rebaking on dirty chunks */
@@ -250,9 +297,9 @@ public abstract class LevelRendererMixin {
 						source.doFrustumUpdate(mainCamera, frustum);
 					}
 
-					this.chunkRenderer.prepare(instance, camX, camY, camZ);
-					source.draw(this.chunkRenderer, stack, this.tracky$ViewArea, renderType, camX, camY, camZ);
-					this.chunkRenderer.reset();
+					this.tracky$chunkRenderer.prepare(instance, camX, camY, camZ);
+					source.draw(this.tracky$chunkRenderer, stack, this.tracky$ViewArea, renderType, camX, camY, camZ);
+					this.tracky$chunkRenderer.reset();
 				}
 			}
 		}

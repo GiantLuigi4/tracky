@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 public class RenderSource {
 
 	protected final Collection<SectionPos> sections;
-	protected List<TrackyRenderChunk> chunksInSource = new ArrayList<>();
+	protected Set<TrackyRenderChunk> chunksInSource = new HashSet<>();
 	protected final List<TrackyRenderChunk> chunksInFrustum = new ObjectArrayList<>();
 
 	protected boolean forceCulling = false;
@@ -155,7 +155,7 @@ public class RenderSource {
 			viewArea.setDirty(sectionPos, false);
 			renderChunk = viewArea.getRenderChunk(sectionPos);
 
-			if (renderChunk == null || renderChunk.getChunkOrigin().equals(sectionPos.origin())) {
+			if (renderChunk == null || !renderChunk.getChunkOrigin().equals(sectionPos.origin())) {
 				return false;
 			}
 		}
@@ -199,7 +199,9 @@ public class RenderSource {
 	 * @param chunk The chunk that finished compiling
 	 */
 	public void updateCompiledChunk(TrackyRenderChunk chunk) {
-		this.chunksInSource.add(chunk);
+		if (!this.chunksInSource.add(chunk)) {
+			return;
+		}
 
 		// The new chunk should be checked to see if it's in the frustum
 		this.forceCulling = true;
@@ -239,6 +241,14 @@ public class RenderSource {
 
 		// force a culling check
 		this.forceCulling = true;
+	}
+
+	public final Matrix4f getTransformation(double camX, double camY, double camZ) {
+		PoseStack stack = new PoseStack();
+		stack.translate(-camX, -camY, -camZ);
+		this.transform(stack, camX, camY, camZ);
+		stack.translate(camX, camY, camZ);
+		return stack.last().pose();
 	}
 
 	/**

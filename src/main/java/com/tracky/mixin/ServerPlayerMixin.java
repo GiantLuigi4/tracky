@@ -1,67 +1,49 @@
 package com.tracky.mixin;
 
-import com.mojang.authlib.GameProfile;
 import com.tracky.debug.ITrackChunks;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 @Mixin(ServerPlayer.class)
 public class ServerPlayerMixin implements ITrackChunks {
+
 	@Unique
-	boolean doUpdate = false;
+	private boolean tracky$shouldUpdate = false;
 	@Unique
-	private ArrayList<ChunkPos> chunksBeingTracked;
+	private final Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
 	@Unique
-	private ArrayList<ChunkPos> lastChunksBeingTracked;
-	
-	@Inject(at = @At("TAIL"), method = "<init>")
-	public void postInit(MinecraftServer p_143384_, ServerLevel p_143385_, GameProfile p_143386_, CallbackInfo ci) {
-		chunksBeingTracked = new ArrayList<>();
-		lastChunksBeingTracked = new ArrayList<>();
-	}
-	
-	// this prevents chunks from being dropped during the vanilla player move method if it's force tracked
-	@Inject(at = @At("HEAD"), method = "untrackChunk", cancellable = true)
-	public void preUntrackChunk(ChunkPos p_9089_, CallbackInfo ci) {
-		if (chunksBeingTracked.contains(p_9089_)) {
-			ci.cancel();
-		}
-	}
-	
+	private final Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
+
 	@Override
 	public void tickTracking() {
-		lastChunksBeingTracked = chunksBeingTracked;
-		chunksBeingTracked = new ArrayList<>();
+		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
+		this.tracky$chunksBeingTracked.clear();
 	}
-	
+
 	@Override
-	public ArrayList<ChunkPos> oldTrackedChunks() {
-		return lastChunksBeingTracked;
+	public Set<ChunkPos> oldTrackedChunks() {
+		return this.tracky$lastChunksBeingTracked;
 	}
-	
+
 	@Override
-	public ArrayList<ChunkPos> trackedChunks() {
-		return chunksBeingTracked;
+	public Set<ChunkPos> trackedChunks() {
+		return this.tracky$chunksBeingTracked;
 	}
-	
+
 	@Override
-	public boolean setDoUpdate(boolean val) {
-		boolean doUpdate = this.doUpdate;
-		this.doUpdate = val;
-		return doUpdate;
+	public boolean setDoUpdate(boolean update) {
+		boolean old = this.tracky$shouldUpdate;
+		this.tracky$shouldUpdate = update;
+		return old;
 	}
-	
+
 	@Override
 	public boolean shouldUpdate() {
-		return doUpdate;
+		return this.tracky$shouldUpdate;
 	}
 }

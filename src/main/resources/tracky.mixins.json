@@ -11,6 +11,7 @@
     "dummy.LevelMixin"
   ],
   "client": [
+    "client.BlockEntityRenderDispatcherMixin",
     "client.BlockUpdatePacketMixin",
     "client.ChunkBorderRendererMixin",
     "client.ChunkStorageAccessor",
@@ -25,12 +26,11 @@
     "client.impl.sodium.SodiumWorldRendererMixin",
     "client.impl.vanilla.LevelRendererMixin",
     "client.impl.vanilla.RebuildTaskMixin",
+    "client.impl.vanilla.RenderChunkMixin",
     "client.impl.vanilla.ResortTransparencyTaskMixin",
     "client.impl.vanilla.UniformAccessor",
-    "client.render.FogRendererMixin",
     "client.render.LevelRendererAccessor",
     "client.render.RenderChunkInfoMixin",
-    "client.render.RenderChunkMixin",
     "dummy.ClientWorldMixin"
   ],
   "plugin": "com.tracky.mixin.TrackyMixinPlugin",

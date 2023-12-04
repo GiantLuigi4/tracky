@@ -1,6 +1,7 @@
 package com.tracky.mixin.client.impl.vanilla;
 
 import com.mojang.blaze3d.vertex.VertexSorting;
+import com.tracky.access.ExtendedRenderChunk;
 import com.tracky.api.TrackyRenderChunk;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import org.spongepowered.asm.mixin.Final;
@@ -19,6 +20,6 @@ public class ResortTransparencyTaskMixin {
 	@ModifyArg(method = "doTask", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;setQuadSorting(Lcom/mojang/blaze3d/vertex/VertexSorting;)V"))
 	public VertexSorting editSorting(VertexSorting sorting) {
 		TrackyRenderChunk ext = (TrackyRenderChunk) this.this$1;
-		return ext.getRenderSource() != null ? ext.createVertexSorting() : sorting;
+		return ext.getRenderSource() != null ? ((ExtendedRenderChunk) ext).createVertexSorting() : sorting;
 	}
 }

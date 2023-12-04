@@ -1,7 +1,8 @@
-package com.tracky.mixin.client.render;
+package com.tracky.mixin.client.impl.vanilla;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexSorting;
+import com.tracky.access.ExtendedRenderChunk;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyRenderChunk;
 import net.minecraft.client.renderer.RenderType;
@@ -21,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
-public abstract class RenderChunkMixin implements TrackyRenderChunk {
+public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRenderChunk {
 
 	@Shadow
 	@Final
@@ -44,15 +45,6 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk {
 	public abstract void setDirty(boolean pReRenderOnMainThread);
 
 	@Shadow
-	public abstract AABB getBoundingBox();
-
-	@Shadow
-	public abstract boolean isDirtyFromPlayer();
-
-	@Shadow
-	public abstract boolean isDirty();
-
-	@Shadow
 	public abstract ChunkRenderDispatcher.CompiledChunk getCompiledChunk();
 
 	@Unique
@@ -64,7 +56,7 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk {
 			Vec3 cameraPosition = this.this$0.getCameraPosition();
 			Vector3f center = new Vector3f();
 			center.set(this.bb.minX + 8.0D - cameraPosition.x, this.bb.minY + 8.0D - cameraPosition.y, this.bb.minZ + 8.0D - cameraPosition.z);
-			this.getTransformation().transformPosition(center);
+			this.tracky$renderSource.getTransformation(cameraPosition.x, cameraPosition.y, cameraPosition.z).transformPosition(center);
 			cir.setReturnValue((double) center.lengthSquared());
 		}
 	}
@@ -75,16 +67,6 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk {
 			// This makes sure the chunks are built even if vanilla doesn't think they should be
 			cir.setReturnValue(true);
 		}
-	}
-
-	@Override
-	public Matrix4f getTransformation() {
-		Vec3 cameraPosition = this.this$0.getCameraPosition();
-		PoseStack stack = new PoseStack();
-		stack.translate(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
-		this.tracky$renderSource.transform(stack, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-		stack.translate(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-		return stack.last().pose();
 	}
 
 	@Override
@@ -101,7 +83,7 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk {
 	public VertexSorting createVertexSorting() {
 		Vec3 vec = this.this$0.getCameraPosition();
 		Vector3f cameraPosition = new Vector3f();
-		this.getTransformation().invert().transformPosition(cameraPosition);
+		this.tracky$renderSource.getTransformation(vec.x, vec.y, vec.z).invert().transformPosition(cameraPosition);
 		cameraPosition.add((float) vec.x, (float) vec.y, (float) vec.z);
 
 		Vector3f center = new Vector3f();

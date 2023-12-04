@@ -1,6 +1,6 @@
 package com.tracky.mixin.client.impl.sodium;
 
-import com.tracky.access.ExtendedRenderSection;
+import com.tracky.access.sodium.ExtendedRenderSection;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyRenderChunk;
 import com.tracky.api.TrackyViewArea;
@@ -60,7 +60,8 @@ public abstract class RenderSectionManagerMixin implements TrackyViewArea {
 
 	@Override
 	public void setDirty(int sectionX, int sectionY, int sectionZ, boolean reRenderOnMainThread) {
-		if (this.sectionByPosition.containsKey(SectionPos.asLong(sectionX, sectionY, sectionZ))) {
+		RenderSection section = this.sectionByPosition.get(SectionPos.asLong(sectionX, sectionY, sectionZ));
+		if (section != null) {
 			this.scheduleRebuild(sectionX, sectionY, sectionZ, reRenderOnMainThread);
 		} else {
 			this.onSectionAdded(sectionX, sectionY, sectionZ);

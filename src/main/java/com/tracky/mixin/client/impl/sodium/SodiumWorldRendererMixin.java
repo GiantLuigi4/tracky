@@ -2,7 +2,8 @@ package com.tracky.mixin.client.impl.sodium;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.tracky.TrackyAccessor;
-import com.tracky.access.ExtendedSodiumWorldRenderer;
+import com.tracky.access.ExtendedBlockEntityRenderDispatcher;
+import com.tracky.access.sodium.ExtendedSodiumWorldRenderer;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyViewArea;
 import com.tracky.impl.TrackyRenderSectionManager;
@@ -31,6 +32,8 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -218,14 +221,21 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 		double x = cameraPos.x();
 		double y = cameraPos.y();
 		double z = cameraPos.z();
-		BlockEntityRenderDispatcher blockEntityRenderer = Minecraft.getInstance().getBlockEntityRenderDispatcher();
+		BlockEntityRenderDispatcher blockEntityRenderer = this.client.getBlockEntityRenderDispatcher();
 
 		for (RenderSource renderSource : this.tracky$renderSources) {
 			RenderSectionManager sectionManager = this.tracky$getRenderSectionManager(renderSource);
 			Iterator<ChunkRenderList> iterator = sectionManager.getRenderLists().iterator();
+			Matrix4f transformation = renderSource.getTransformation(x, y, z);
 
 			matrices.pushPose();
-			renderSource.transform(matrices, x, y, z);
+			matrices.mulPoseMatrix(transformation);
+
+			Vector3f cameraPosition = new Vector3f();
+			transformation.invert().transformPosition(cameraPosition);
+			cameraPosition.add((float) x, (float) y, (float) z);
+			((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(new Vec3(cameraPosition));
+
 			while (iterator.hasNext()) {
 				ChunkRenderList renderList = iterator.next();
 				RenderRegion renderRegion = renderList.getRegion();
@@ -254,6 +264,8 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			}
 			matrices.popPose();
 		}
+
+		((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(null);
 	}
 
 	@Inject(method = "scheduleRebuildForChunk", at = @At("TAIL"))

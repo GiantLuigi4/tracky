@@ -1,4 +1,4 @@
-package com.tracky.access;
+package com.tracky.access.sodium;
 
 public interface ExtendedOcclusionCuller {
 

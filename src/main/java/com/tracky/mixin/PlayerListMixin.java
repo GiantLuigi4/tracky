@@ -1,7 +1,6 @@
 package com.tracky.mixin;
 
 import com.tracky.TrackyAccessor;
-import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -21,8 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -31,37 +28,30 @@ import java.util.function.Function;
  */
 @Mixin(PlayerList.class)
 public abstract class PlayerListMixin {
-	
+
 	@Shadow
 	@Final
 	private MinecraftServer server;
-	
-	
+
+
 	// is broadcast the right target?
 	@Inject(method = "broadcast", at = @At("HEAD"), cancellable = true)
 	public void broadcast(@Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket, CallbackInfo ci) {
 //		if (!TrackyAccessor.isMainTracky()) return;
-		
+
 		ServerLevel level = server.getLevel(pDimension);
-		
+
 		if (level != null) {
 			int x = Mth.floorDiv((int) pX, 16);
-			int y = Mth.floorDiv((int) pY, 16);
 			int z = Mth.floorDiv((int) pZ, 16);
-			
-			final ChunkPos pos = new ChunkPos(x, z);
-			
-			final Map<UUID, Function<Player, Collection<SectionPos>>> map = TrackyAccessor.getForcedChunks(level);
-			
+
 			// for all players in the level send the relevant chunks
 			// messy iteration but no way to avoid with our structure
 			for (ServerPlayer player : level.getPlayers((p) -> true)) {
 				if (player == pExcept) continue;
-				for (Function<Player, Collection<SectionPos>> func : map.values()) {
-					final Iterable<SectionPos> chunks = func.apply(player);
-					
-					for (SectionPos chunk : chunks) {
-						if (new ChunkPos(chunk.x(), chunk.z()).equals(new ChunkPos(x, z))) {
+				for (Function<Player, Collection<ChunkPos>> func : TrackyAccessor.getForcedChunks(level).values()) {
+					for (ChunkPos chunk : func.apply(player)) {
+						if (chunk.x == x && chunk.z == z) {
 							// send the packet if the player is tracking it
 							player.connection.send(pPacket);
 							ci.cancel();

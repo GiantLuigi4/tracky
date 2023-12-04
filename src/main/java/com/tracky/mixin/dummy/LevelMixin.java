@@ -10,6 +10,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.WritableLevelData;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,15 +27,15 @@ import java.util.function.Supplier;
 public class LevelMixin implements ServerMapHolder {
 
 	@Unique
-	private Map<UUID, Function<Player, Collection<SectionPos>>> trackyForcedChunks;
+	private Map<UUID, Function<Player, Collection<ChunkPos>>> trackyForcedChunks;
 
 	@Unique
 	private Map<UUID, List<Player>> trackyForcedPlayers;
 
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData pLevelData, ResourceKey pDimension, RegistryAccess pRegistryAccess,
-						 Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug,
-						 long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
+	                     Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug,
+	                     long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
 		trackyForcedChunks = new MapWrapper<>(new HashMap<>());
 		trackyForcedPlayers = new MapWrapper<>(new HashMap<>());
 
@@ -42,17 +43,15 @@ public class LevelMixin implements ServerMapHolder {
 			return;
 		}
 
-		ArrayList<SectionPos> positions = new ArrayList<>();
+		ArrayList<ChunkPos> positions = new ArrayList<>();
 
 		// all temp
 		{
 			SectionPos startPos = SectionPos.of(new BlockPos(42, 0, 71));
 			SectionPos endPos = SectionPos.of(new BlockPos(-88, 0, -61));
 			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-						positions.add(SectionPos.of(x, y, z));
-					}
+				for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+					positions.add(new ChunkPos(x, z));
 				}
 			}
 		}
@@ -61,15 +60,13 @@ public class LevelMixin implements ServerMapHolder {
 			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
 			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
 			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-						positions.add(SectionPos.of(x, y, z));
-					}
+				for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
+					positions.add(new ChunkPos(x, z));
 				}
 			}
 		}
 
-		final List<SectionPos> immut = ImmutableList.copyOf(positions);
+		final List<ChunkPos> immut = ImmutableList.copyOf(positions);
 
 		UUID testUUID = Tracky.getDefaultUUID("tracky", "testing");
 		trackyForcedChunks.put(testUUID, (player) -> {
@@ -77,12 +74,12 @@ public class LevelMixin implements ServerMapHolder {
 			return immut;
 		});
 	}
-	
+
 	@Override
-	public Map<UUID, Function<Player, Collection<SectionPos>>> trackyHeldMapS() {
+	public Map<UUID, Function<Player, Collection<ChunkPos>>> trackyHeldMapS() {
 		return trackyForcedChunks;
 	}
-	
+
 	@Override
 	public Map<UUID, List<Player>> trackyPlayerMap() {
 		return trackyForcedPlayers;

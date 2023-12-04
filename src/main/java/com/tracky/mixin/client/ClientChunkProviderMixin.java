@@ -1,6 +1,5 @@
 package com.tracky.mixin.client;
 
-import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
@@ -15,6 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.level.ChunkEvent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,12 +25,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -49,6 +45,17 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	private final Map<ChunkPos, LevelChunk> tracky$chunks = new HashMap<>();
 	@Unique
 	private final Map<ChunkPos, Long> tracky$lastUpdates = new ConcurrentHashMap<>();
+	@Unique
+	private final Set<ChunkPos> tracky$forcedChunks = new HashSet<>();
+	@Unique
+	private boolean tracky$suppressEvent;
+
+	@Unique
+	private void tracky$onRemove(LevelChunk chunk) {
+		this.level.unload(chunk);
+		this.tracky$forcedChunks.remove(chunk.getPos());
+		this.tracky$lastUpdates.remove(chunk.getPos());
+	}
 
 	@Inject(at = @At("RETURN"), method = "getChunk(IILnet/minecraft/world/level/chunk/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/LevelChunk;", cancellable = true)
 	public void preGetChunk0(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load, CallbackInfoReturnable<LevelChunk> cir) {
@@ -58,13 +65,23 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		}
 	}
 
-	@Inject(at = @At("RETURN"), method = "drop")
+	@Inject(method = "drop", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;replace(ILnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/chunk/LevelChunk;)Lnet/minecraft/world/level/chunk/LevelChunk;"))
+	public void a(int pX, int pZ, CallbackInfo ci) {
+		this.tracky$suppressEvent = true;
+	}
+
+	@Inject(at = @At("TAIL"), method = "drop")
 	public void preDropChunk(int pX, int pZ, CallbackInfo ci) {
-		LevelChunk chunk = this.tracky$chunks.remove(new ChunkPos(pX, pZ));
+		ChunkPos pos = new ChunkPos(pX, pZ);
+		LevelChunk chunk = this.tracky$chunks.remove(pos);
 		if (chunk != null) {
-			net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new ChunkEvent.Unload(chunk));
-			this.level.unload(chunk);
+			if (!this.tracky$suppressEvent) {
+				// We don't want this event to be fired twice
+				MinecraftForge.EVENT_BUS.post(new ChunkEvent.Unload(chunk));
+			}
+			this.tracky$onRemove(chunk);
 		}
+		this.tracky$suppressEvent = false;
 	}
 
 	@Inject(at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;warn(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V", shift = At.Shift.BEFORE), method = "replaceWithPacketData", cancellable = true)
@@ -87,14 +104,14 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		}
 
 		this.level.onChunkLoaded(pos);
-		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(chunk, false));
+		MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(chunk, false));
+		this.tracky$forcedChunks.add(pos);
 		cir.setReturnValue(chunk);
 	}
 
 	@Inject(at = @At("TAIL"), method = "replaceWithPacketData")
 	public void trackChunk(int pX, int pZ, FriendlyByteBuf pBuffer, CompoundTag pTag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> pConsumer, CallbackInfoReturnable<LevelChunk> cir) {
-		LevelChunk chunk = cir.getReturnValue();
-		this.tracky$chunks.putIfAbsent(new ChunkPos(pX, pZ), chunk);
+		this.tracky$chunks.putIfAbsent(new ChunkPos(pX, pZ), cir.getReturnValue());
 	}
 
 	@Unique
@@ -117,12 +134,19 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		return this.tracky$lastUpdates.getOrDefault(chunk.getPos(), 0L);
 	}
 
+	@Override
+	public boolean isTrackyForced(LevelChunk chunk) {
+		return this.tracky$forcedChunks.contains(chunk.getPos());
+	}
+
 	@Inject(at = @At("HEAD"), method = "updateViewRadius")
 	public void onUpdateViewDegrees /* GiantLuigi4: sometimes I name things weirdly like this */(int pViewDistance, CallbackInfo ci) {
 		if (pViewDistance != ((ChunkStorageAccessor) (Object) this.storage).getChunkRadius()) {
-			ArrayList<ChunkPos> toRemove = new ArrayList<>();
+			Iterator<ChunkPos> iterator = this.tracky$chunks.keySet().iterator();
+
 			loopChunks:
-			for (ChunkPos chunkPos : tracky$chunks.keySet()) {
+			while (iterator.hasNext()) {
+				ChunkPos chunkPos = iterator.next();
 				LevelChunk levelchunk = tracky$getChunk(chunkPos);
 				if (levelchunk != null) {
 					LocalPlayer player = Minecraft.getInstance().player;
@@ -138,20 +162,16 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 						}
 					}
 
-					for (Function<Player, Collection<SectionPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
-						if (Tracky.collapse(value.apply(player)).contains(chunkPos)) {
+					for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
+						if (value.apply(player).contains(chunkPos)) {
 							continue loopChunks;
 						}
 					}
-				}
-				toRemove.add(chunkPos);
-			}
-			toRemove.forEach(this.tracky$chunks::remove);
-		}
-	}
 
-	@Inject(at = @At("HEAD"), method = "tick")
-	public void preTick(BooleanSupplier hasTimeLeft, boolean tickChunks, CallbackInfo ci) {
-		this.tracky$lastUpdates.keySet().removeIf(chunkPos -> !this.tracky$chunks.containsKey(chunkPos));
+					this.tracky$onRemove(levelchunk);
+				}
+				iterator.remove();
+			}
+		}
 	}
 }

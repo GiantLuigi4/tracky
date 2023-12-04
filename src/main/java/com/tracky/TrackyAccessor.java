@@ -6,6 +6,7 @@ import com.tracky.api.RenderSource;
 import com.tracky.debug.ITrackChunks;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
 import java.util.*;
@@ -21,10 +22,10 @@ public class TrackyAccessor {
 	 * @param level the world to get the force loaded chunks of
 	 * @return the list of force loaded chunks
 	 */
-	public static Map<UUID, Function<Player, Collection<SectionPos>>> getForcedChunks(Level level) {
+	public static Map<UUID, Function<Player, Collection<ChunkPos>>> getForcedChunks(Level level) {
 		return ((ServerMapHolder) level).trackyHeldMapS();
 	}
-	
+
 	/**
 	 * client only
 	 * is a function as QOL
@@ -35,7 +36,7 @@ public class TrackyAccessor {
 	public static Map<UUID, Supplier<Collection<SectionPos>>> getRenderedChunks(Level level) {
 		return ((ClientMapHolder) level).trackyHeldMapC();
 	}
-	
+
 	/**
 	 * client only
 	 * is a function as QOL

@@ -1,6 +1,6 @@
 package com.tracky.mixin.client.impl.sodium;
 
-import com.tracky.access.ExtendedOcclusionCuller;
+import com.tracky.access.sodium.ExtendedOcclusionCuller;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.OcclusionCuller;
