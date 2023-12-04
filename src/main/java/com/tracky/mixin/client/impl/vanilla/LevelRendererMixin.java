@@ -12,7 +12,7 @@ import com.tracky.api.TrackyRenderChunk;
 import com.tracky.impl.TrackyChunkInfoMap;
 import com.tracky.impl.TrackyVanillaViewArea;
 import com.tracky.impl.VanillaChunkRenderer;
-import com.tracky.util.list.ObjectUnionList;
+import com.tracky.util.ObjectUnionList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;

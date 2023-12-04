@@ -1,4 +1,4 @@
-import com.tracky.util.list.ObjectUnionList;
+import com.tracky.util.ObjectUnionList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import java.util.Arrays;

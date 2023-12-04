@@ -11,9 +11,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+@ApiStatus.Internal
 public class LuigiKindaLearnedTesselator {
 	public static void preRender(Minecraft minecraft, PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
 		if (FMLEnvironment.production) return;

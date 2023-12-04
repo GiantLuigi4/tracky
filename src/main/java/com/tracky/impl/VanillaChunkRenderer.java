@@ -97,6 +97,15 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	}
 
 	@Override
+	public void setFogColor(float[] colors) {
+		if (this.shader.FOG_COLOR != null) {
+			this.shader.FOG_COLOR.set(colors);
+			this.shader.FOG_COLOR.upload();
+			this.modified |= FOG_COLOR;
+		}
+	}
+
+	@Override
 	public void render(Collection<TrackyRenderChunk> chunks, RenderType layer) {
 		Uniform uniform = this.shader.CHUNK_OFFSET;
 

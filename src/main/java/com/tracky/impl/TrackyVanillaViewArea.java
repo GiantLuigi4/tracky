@@ -54,7 +54,7 @@ public class TrackyVanillaViewArea implements TrackyViewArea, NativeResource {
 
 	@SuppressWarnings("DataFlowIssue")
 	@Override
-	public void setDirty(int pSectionX, int pSectionY, int pSectionZ, boolean pReRenderOnMainThread) {
+	public void setDirty(int pSectionX, int pSectionY, int pSectionZ, boolean priority) {
 		Collection<SectionPos> trackyRenderedChunksList = ((ClientMapHolder) this.level).trackyGetRenderChunksC();
 		SectionPos spos = SectionPos.of(pSectionX, pSectionY, pSectionZ);
 		if (Tracky.sourceContains(this.level, spos) || trackyRenderedChunksList.contains(spos)) {
@@ -67,7 +67,7 @@ public class TrackyVanillaViewArea implements TrackyViewArea, NativeResource {
 				renderChunks[y] = (TrackyRenderChunk) renderChunk;
 			}
 
-			renderChunk.setDirty(pReRenderOnMainThread);
+			renderChunk.setDirty(priority);
 			this.dirtyChunks.accept(renderChunk);
 		}
 	}

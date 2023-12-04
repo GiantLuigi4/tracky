@@ -24,9 +24,6 @@ public class Tracky {
 	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {
-//		FMLJavaModLoadingContext.get().getModEventBus();
-//		MinecraftForge.EVENT_BUS;
-
 		MinecraftForge.EVENT_BUS.addListener(this::onUnloadWorld);
 		MinecraftForge.EVENT_BUS.addListener(this::onRemovePlayer);
 

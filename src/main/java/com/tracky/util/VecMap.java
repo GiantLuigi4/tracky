@@ -2,11 +2,13 @@ package com.tracky.util;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import net.minecraft.core.Vec3i;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+@ApiStatus.Internal
 public class VecMap<T> {
 	public final int level;
 	

@@ -1,6 +1,7 @@
 package com.tracky.util;
 
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@ApiStatus.Internal
 public class MapWrapper<T, V> implements Map<T, V> {
 	Map<T, V> wrapped;
 	

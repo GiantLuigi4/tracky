@@ -4,8 +4,7 @@ import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.access.ClientMapHolder;
 import com.tracky.api.RenderSource;
-import com.tracky.debug.
-		TestSource;
+import com.tracky.debug.TestSource;
 import com.tracky.util.MapWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -23,8 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.*;
 import java.util.function.Supplier;
 
-@Mixin(value = ClientLevel.class, priority = 500)
+@Mixin(value = ClientLevel.class, priority = 500) // This needs to apply early so other mods can add things in
 public class ClientWorldMixin implements ClientMapHolder {
+
 	@Unique
 	private Map<UUID, Supplier<Collection<SectionPos>>> trackyRenderedChunks;
 	@Unique

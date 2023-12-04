@@ -73,11 +73,6 @@ public abstract class RenderSectionMixin implements TrackyRenderChunk, ExtendedR
 	}
 
 	@Override
-	public void markDirty(boolean reRenderOnMainThread) {
-		this.tracky$renderSectionManager.scheduleRebuild(this.chunkX >> SectionPos.SECTION_BITS, this.chunkY >> SectionPos.SECTION_BITS, this.chunkZ >> SectionPos.SECTION_BITS, reRenderOnMainThread);
-	}
-
-	@Override
 	public BlockPos getChunkOrigin() {
 		return this.tracky$origin;
 	}

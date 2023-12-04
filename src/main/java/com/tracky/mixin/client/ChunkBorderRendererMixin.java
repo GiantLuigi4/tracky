@@ -17,9 +17,9 @@ public class ChunkBorderRendererMixin {
 	@Shadow
 	@Final
 	private Minecraft minecraft;
-	
+
 	@Inject(at = @At("HEAD"), method = "render", cancellable = true)
 	public void preRender(PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
-		LuigiKindaLearnedTesselator.preRender(minecraft, pPoseStack, pBufferSource, pCamX, pCamY, pCamZ, ci);
+		LuigiKindaLearnedTesselator.preRender(this.minecraft, pPoseStack, pBufferSource, pCamX, pCamY, pCamZ, ci);
 	}
 }

@@ -80,6 +80,11 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 	}
 
 	@Override
+	public void setFogColor(float[] colors) {
+		System.arraycopy(colors, 0, RenderSystem.getShaderFogColor(), 0, 4);
+	}
+
+	@Override
 	public void render(Collection<TrackyRenderChunk> chunks, RenderType layer) {
 		SodiumGameOptions.PerformanceSettings config = SodiumClientMod.options().performance;
 		boolean useBlockFaceCulling = config.useBlockFaceCulling;

@@ -1,6 +1,5 @@
 package com.tracky.mixin.client.impl.vanilla;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import com.tracky.access.ExtendedRenderChunk;
 import com.tracky.api.RenderSource;
@@ -11,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -99,11 +97,6 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 	@Override
 	public boolean needsSorting() {
 		return !this.getCompiledChunk().isEmpty(RenderType.translucent());
-	}
-
-	@Override
-	public void markDirty(boolean reRenderOnMainThread) {
-		this.setDirty(reRenderOnMainThread);
 	}
 
 	@Override

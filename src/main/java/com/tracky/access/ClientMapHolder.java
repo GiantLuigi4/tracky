@@ -9,9 +9,12 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public interface ClientMapHolder {
+
 	Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC();
+
 	Collection<SectionPos> trackyGetRenderChunksC();
+
 	void trackySetRenderChunksC(Collection<SectionPos> positions);
-	
+
 	Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources();
 }

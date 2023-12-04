@@ -1,14 +1,16 @@
-package com.tracky.util.list;
+package com.tracky.util;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import it.unimi.dsi.fastutil.objects.ObjectSpliterator;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+@ApiStatus.Internal
 public class ObjectUnionList<T> extends ObjectArrayList<T> {
 	ArrayList<List<T>> lists;
 	

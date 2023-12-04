@@ -59,10 +59,10 @@ public abstract class RenderSectionManagerMixin implements TrackyViewArea {
 	}
 
 	@Override
-	public void setDirty(int sectionX, int sectionY, int sectionZ, boolean reRenderOnMainThread) {
+	public void setDirty(int sectionX, int sectionY, int sectionZ, boolean priority) {
 		RenderSection section = this.sectionByPosition.get(SectionPos.asLong(sectionX, sectionY, sectionZ));
 		if (section != null) {
-			this.scheduleRebuild(sectionX, sectionY, sectionZ, reRenderOnMainThread);
+			this.scheduleRebuild(sectionX, sectionY, sectionZ, priority);
 		} else {
 			this.onSectionAdded(sectionX, sectionY, sectionZ);
 		}
