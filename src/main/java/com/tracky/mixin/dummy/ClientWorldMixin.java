@@ -12,7 +12,6 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,48 +25,18 @@ import java.util.function.Supplier;
 public class ClientWorldMixin implements ClientMapHolder {
 
 	@Unique
-	private Map<UUID, Supplier<Collection<SectionPos>>> trackyRenderedChunks;
+	private final Map<UUID, Supplier<Collection<SectionPos>>> tracky$trackyRenderedChunks = new MapWrapper<>(new HashMap<>());
 	@Unique
-	private Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources;
+	private final Map<UUID, Supplier<Collection<RenderSource>>> tracky$trackyRenderSources = new MapWrapper<>(new HashMap<>());
+	@Unique
+	private final Set<SectionPos> tracky$sectionPosSet = new HashSet<>();
 
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
-		trackyRenderedChunks = new MapWrapper<>(new HashMap<>());
-		trackyRenderSources = new MapWrapper<>(new HashMap<>());
-		sectionPosSet = new HashSet<>();
-
-		// legacy
-//		ArrayList<SectionPos> positions = new ArrayList<>();
-//
-//		// all temp
-//		{
-//			SectionPos startPos = SectionPos.of(new BlockPos(-297 - 200, -63, 296));
-//			SectionPos endPos = SectionPos.of(new BlockPos(-456 - 200, 319, 328));
-//			for (int x = endPos.getX(); x <= startPos.getX(); x++) {
-//				for (int y = startPos.getY(); y <= endPos.getY(); y++) {
-//					for (int z = startPos.getZ(); z <= endPos.getZ(); z++) {
-//						positions.add(SectionPos.of(x, y, z));
-//					}
-//				}
-//			}
-//		}
-////
-////		// all temp
-//		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(Tracky.getDefaultUUID("tracky", "testing"), () -> {
-//			return positions;
-//		});
-//		TrackyAccessor.getRenderedChunks((Level) (Object) this).put(UUID.randomUUID(), () -> {
-//			return new ArrayList<>() {{
-//				for (int i = -2; i < 5; i++) {
-//					add(SectionPos.of(5, i, 5));
-//				}
-//			}};
-//		});
-
 		if (Tracky.ENABLE_TEST) {
 			// new
 			TestSource source = new TestSource();
-			TrackyAccessor.getRenderSources(((Level) (Object) this)).put(
+			TrackyAccessor.getRenderSources(((ClientLevel) (Object) this)).put(
 					Tracky.getDefaultUUID("tracky", "testing"),
 					() -> List.of(source)
 			);
@@ -76,24 +45,24 @@ public class ClientWorldMixin implements ClientMapHolder {
 
 	@Override
 	public Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC() {
-		return trackyRenderedChunks;
+		return this.tracky$trackyRenderedChunks;
 	}
-
-	@Unique
-	private Collection<SectionPos> sectionPosSet;
 
 	@Override
 	public Collection<SectionPos> trackyGetRenderChunksC() {
-		return sectionPosSet;
+		return this.tracky$sectionPosSet;
 	}
 
 	@Override
-	public void trackySetRenderChunksC(Collection<SectionPos> positions) {
-		sectionPosSet = positions;
+	public void trackySetRenderChunksC(ClientLevel level) {
+		this.tracky$sectionPosSet.clear();
+		for (Supplier<Collection<SectionPos>> value : ((ClientMapHolder) level).trackyHeldMapC().values()) {
+			this.tracky$sectionPosSet.addAll(value.get());
+		}
 	}
 
 	@Override
 	public Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources() {
-		return trackyRenderSources;
+		return this.tracky$trackyRenderSources;
 	}
 }

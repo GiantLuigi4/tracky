@@ -1,6 +1,7 @@
 package com.tracky.access;
 
 import com.tracky.api.RenderSource;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 
 import java.util.Collection;
@@ -14,7 +15,7 @@ public interface ClientMapHolder {
 
 	Collection<SectionPos> trackyGetRenderChunksC();
 
-	void trackySetRenderChunksC(Collection<SectionPos> positions);
+	void trackySetRenderChunksC(ClientLevel level);
 
 	Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources();
 }
