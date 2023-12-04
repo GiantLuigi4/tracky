@@ -40,9 +40,6 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 	public abstract boolean resortTransparency(RenderType pType, ChunkRenderDispatcher pDispatcher);
 
 	@Shadow
-	public abstract void setDirty(boolean pReRenderOnMainThread);
-
-	@Shadow
 	public abstract ChunkRenderDispatcher.CompiledChunk getCompiledChunk();
 
 	@Unique
@@ -102,6 +99,11 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 	@Override
 	public BlockPos getChunkOrigin() {
 		return this.origin;
+	}
+
+	@Override
+	public AABB getAABB() {
+		return this.bb;
 	}
 
 	@Override

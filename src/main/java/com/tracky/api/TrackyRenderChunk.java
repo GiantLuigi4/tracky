@@ -3,6 +3,7 @@ package com.tracky.api;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.NativeResource;
@@ -38,6 +39,8 @@ public interface TrackyRenderChunk extends NativeResource {
 	default SectionPos getSectionPos() {
 		return SectionPos.of(this.getChunkOrigin());
 	}
+
+	AABB getAABB();
 
 	/**
 	 * @return The render source this chunk is part of

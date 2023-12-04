@@ -26,6 +26,7 @@ version = '2.0'
 java {
     archivesBaseName = 'tracky'
     toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
 }
 
 minecraft {
@@ -202,11 +203,6 @@ jar {
 }
 
 jar.finalizedBy('reobfJar')
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
 
 publishing {
     publications {

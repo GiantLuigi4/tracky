@@ -176,4 +176,8 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 		this.shader = null;
 		this.modified = 0;
 	}
+
+	public ShaderInstance getShader() {
+		return this.shader;
+	}
 }
