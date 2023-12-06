@@ -207,7 +207,7 @@ public abstract class LevelRendererMixin {
 	private void updateRenderChunks(Camera pCamera, Frustum pFrustum, boolean pHasCapturedFrustum, boolean pIsSpectator, CallbackInfo ci) {
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
-				source.updateChunks(this.tracky$ViewArea, renderChunk -> {
+				source.updateChunks(this.level, this.tracky$ViewArea, renderChunk -> {
 					renderChunk.setRenderSource(source);
 					this.tracky$chunksToRender.add((ChunkRenderDispatcher.RenderChunk) renderChunk);
 				});

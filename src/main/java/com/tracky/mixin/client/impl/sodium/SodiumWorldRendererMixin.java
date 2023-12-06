@@ -151,7 +151,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 				TrackyViewArea viewArea = (TrackyViewArea) renderSectionManager;
 
 				profiler.push("tracky_update_chunks");
-				source.updateChunks(viewArea, renderChunk -> {
+				source.updateChunks(this.world, viewArea, renderChunk -> {
 					renderChunk.setRenderSource(source);
 					viewArea.setDirty(renderChunk.getSectionPos(), updateChunksImmediately);
 				});

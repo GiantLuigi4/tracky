@@ -3,10 +3,12 @@ package com.tracky.api;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -30,6 +32,7 @@ public class RenderSource {
 
 	public RenderSource(Collection<SectionPos> sections) {
 		this.sections = sections;
+		this.newSections.addAll(this.sections);
 	}
 
 	public void addSection(SectionPos pos) {
@@ -212,29 +215,28 @@ public class RenderSource {
 	}
 
 	/**
-	 * updates render chunks for when new sections are added to the render source
+	 * Updates render chunks for when new sections are added to the render source
 	 *
-	 * @param viewArea the view area which contains the RenderChunks
+	 * @param level     The level the render source is in
+	 * @param viewArea  The view area which contains the RenderChunks
+	 * @param toCompile A consumer for all render chunks to compiled
 	 */
-	public void updateChunks(TrackyViewArea viewArea, Consumer<TrackyRenderChunk> toCompile) {
+	public void updateChunks(ClientLevel level, TrackyViewArea viewArea, Consumer<TrackyRenderChunk> toCompile) {
 		if (this.newSections.isEmpty()) {
 			return;
 		}
 
-		List<SectionPos> toKeep = new ObjectArrayList<>();
-
-		int i = 0;
 		// run updates
-		while (!this.newSections.isEmpty() && i < 1000) {
-			SectionPos newSection = this.newSections.poll();
-			if (!this.handleAdd(toCompile, viewArea, newSection)) {
-				toKeep.add(newSection);
+		int i = 0;
+		Iterator<SectionPos> iterator = this.newSections.iterator();
+		LevelLightEngine lightEngine = level.getLightEngine();
+		while (iterator.hasNext() && i < 1000) {
+			SectionPos newSection = iterator.next();
+			if (lightEngine.lightOnInSection(newSection) && this.handleAdd(toCompile, viewArea, newSection)) {
+				iterator.remove();
 			}
 			i++;
 		}
-
-		// try adding failed sections to next iteration
-		this.newSections.addAll(toKeep);
 
 		// force resort
 		this.sort();

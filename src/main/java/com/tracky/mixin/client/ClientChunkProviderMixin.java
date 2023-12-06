@@ -41,6 +41,9 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	@Shadow
 	volatile ClientChunkCache.Storage storage;
 
+	@Shadow
+	@Final
+	private LevelChunk emptyChunk;
 	@Unique
 	private final Map<ChunkPos, LevelChunk> tracky$chunks = new HashMap<>();
 	@Unique
@@ -59,6 +62,10 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 
 	@Inject(at = @At("RETURN"), method = "getChunk(IILnet/minecraft/world/level/chunk/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/LevelChunk;", cancellable = true)
 	public void preGetChunk0(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load, CallbackInfoReturnable<LevelChunk> cir) {
+		if (cir.getReturnValue() != null && cir.getReturnValue() != this.emptyChunk) {
+			return;
+		}
+
 		LevelChunk chunk = this.tracky$getChunk(new ChunkPos(chunkX, chunkZ));
 		if (chunk != null) {
 			cir.setReturnValue(chunk);
