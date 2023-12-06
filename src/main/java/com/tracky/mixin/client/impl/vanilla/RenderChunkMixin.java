@@ -74,6 +74,7 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 		this.tracky$renderSource = renderSource;
 	}
 
+	// FIXME this loses precision at high camera values
 	@Override
 	public VertexSorting createVertexSorting() {
 		Vec3 vec = this.this$0.getCameraPosition();

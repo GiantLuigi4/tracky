@@ -124,31 +124,35 @@ public abstract class LevelRendererMixin {
 	public void preRenderBEs(PoseStack matrices, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera camera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
 		Frustum frustum = this.capturedFrustum == null ? this.cullingFrustum : this.capturedFrustum;
 		Vec3 cameraPos = camera.getPosition();
-		double x = cameraPos.x();
-		double y = cameraPos.y();
-		double z = cameraPos.z();
+		Vector3f cameraPosition = new Vector3f();
 
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
-			for (RenderSource source : value.get()) {
-				if (!source.canDraw(camera, frustum)) {
+			for (RenderSource renderSource : value.get()) {
+				if (!renderSource.canDraw(camera, frustum)) {
 					continue;
 				}
 
-				for (TrackyRenderChunk chunk : source.getChunksInFrustum()) {
+				for (TrackyRenderChunk chunk : renderSource.getChunksInFrustum()) {
 					ChunkRenderDispatcher.RenderChunk renderChunk = (ChunkRenderDispatcher.RenderChunk) chunk;
 					List<BlockEntity> blockEntities = renderChunk.getCompiledChunk().getRenderableBlockEntities();
 					if (blockEntities.isEmpty()) {
 						continue;
 					}
 
-					Matrix4f transformation = source.getTransformation(x, y, z);
+					boolean applyCamera = renderSource.applyCameraChunkOffset();
+					double x = applyCamera ? cameraPos.x : 0;
+					double y = applyCamera ? cameraPos.y : 0;
+					double z = applyCamera ? cameraPos.z : 0;
+
+					Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
 
 					matrices.pushPose();
 					matrices.mulPoseMatrix(transformation);
 
-					Vector3f cameraPosition = new Vector3f();
 					transformation.invert().transformPosition(cameraPosition);
-					cameraPosition.add((float) x, (float) y, (float) z);
+					if (applyCamera) {
+						cameraPosition.add((float) x, (float) y, (float) z);
+					}
 					((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition));
 
 					this.renderBlockEntity(blockEntities, matrices, pPartialTick, x, y, z);

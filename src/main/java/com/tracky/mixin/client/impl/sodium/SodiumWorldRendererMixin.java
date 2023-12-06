@@ -223,26 +223,28 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 	@Inject(method = "renderBlockEntities(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/RenderBuffers;Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;Lnet/minecraft/client/Camera;F)V", at = @At("TAIL"))
 	public void drawRenderSourceBlockEntities(PoseStack matrices, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci) {
 		MultiBufferSource.BufferSource immediate = bufferBuilders.bufferSource();
-		Vec3 cameraPos = camera.getPosition();
 		BlockEntityRenderDispatcher blockEntityRenderer = this.client.getBlockEntityRenderDispatcher();
+		Vec3 cameraPos = camera.getPosition();
+		Vector3f cameraPosition = new Vector3f();
 
 		for (RenderSource renderSource : this.tracky$renderSources) {
 			RenderSectionManager sectionManager = this.tracky$getRenderSectionManager(renderSource);
 			Iterator<ChunkRenderList> iterator = sectionManager.getRenderLists().iterator();
 
 			boolean applyCamera = renderSource.applyCameraChunkOffset();
-			double x = applyCamera ? cameraPos.x() : 0;
-			double y = applyCamera ? cameraPos.y() : 0;
-			double z = applyCamera ? cameraPos.z() : 0;
+			double x = applyCamera ? cameraPos.x : 0;
+			double y = applyCamera ? cameraPos.y : 0;
+			double z = applyCamera ? cameraPos.z : 0;
 
-			Matrix4f transformation = renderSource.getTransformation(x, y, z);
+			Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
 
 			matrices.pushPose();
 			matrices.mulPoseMatrix(transformation);
 
-			Vector3f cameraPosition = new Vector3f();
 			transformation.invert().transformPosition(cameraPosition);
-			cameraPosition.add((float) x, (float) y, (float) z);
+			if (applyCamera) {
+				cameraPosition.add((float) x, (float) y, (float) z);
+			}
 			((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(new Vec3(cameraPosition));
 
 			while (iterator.hasNext()) {
