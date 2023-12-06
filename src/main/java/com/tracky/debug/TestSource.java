@@ -35,6 +35,11 @@ public class TestSource extends BoxRenderSource {
 	}
 
 	@Override
+	public boolean applyCameraChunkOffset() {
+		return false;
+	}
+
+	@Override
 	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrixStack, TrackyViewArea area, RenderType type, double camX, double camY, double camZ) {
 		chunkRenderer.setFogShape(FogShape.SPHERE); // TODO make cylindrical fog work
 		super.draw(chunkRenderer, matrixStack, area, type, camX, camY, camZ);

@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4fc;
-import org.joml.Vector3f;
+import org.joml.Vector3d;
 
 import java.nio.FloatBuffer;
 import java.util.Collection;
@@ -28,7 +28,7 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	private static final int FOG_SHAPE = 0b010000;
 	private static final int FOG_COLOR = 0b10000;
 
-	private final Vector3f cameraPos = new Vector3f();
+	private final Vector3d cameraPos = new Vector3d();
 	private ShaderInstance shader;
 	private int modified;
 
@@ -115,7 +115,7 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 
 			if (uniform != null) {
 				BlockPos pos = renderChunk.getOrigin();
-				uniform.set(pos.getX() - this.cameraPos.x, pos.getY() - this.cameraPos.y, pos.getZ() - this.cameraPos.z);
+				uniform.set((float) ((double) pos.getX() - this.cameraPos.x), (float) ((double) pos.getY() - this.cameraPos.y), (float) ((double) pos.getZ() - this.cameraPos.z));
 				uniform.upload();
 			}
 

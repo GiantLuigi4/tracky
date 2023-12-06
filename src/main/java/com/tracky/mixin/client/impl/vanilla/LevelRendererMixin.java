@@ -297,7 +297,12 @@ public abstract class LevelRendererMixin {
 						source.doFrustumUpdate(mainCamera, frustum);
 					}
 
-					this.tracky$chunkRenderer.prepare(instance, camX, camY, camZ);
+					boolean applyCamera = source.applyCameraChunkOffset();
+					double x = applyCamera ? camX : 0;
+					double y = applyCamera ? camY : 0;
+					double z = applyCamera ? camZ : 0;
+
+					this.tracky$chunkRenderer.prepare(instance, x, y, z);
 					source.draw(this.tracky$chunkRenderer, stack, this.tracky$ViewArea, renderType, camX, camY, camZ);
 					this.tracky$chunkRenderer.reset();
 				}

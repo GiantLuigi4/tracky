@@ -121,9 +121,7 @@ public class RenderSource {
 		Vector3f center = new Vector3f();
 
 		PoseStack stack = new PoseStack();
-		stack.translate(-camX, -camY, -camZ);
 		this.transform(stack, camX, camY, camZ);
-		stack.translate(camX, camY, camZ);
 		Matrix4f matrix = stack.last().pose();
 
 		this.sorted.clear();
@@ -260,6 +258,13 @@ public class RenderSource {
 	 * @param matrixStack the matrix to transform the space
 	 */
 	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
+	}
+
+	/**
+	 * @return Whether to include the camera position in the chunk offset. If <code>false</code>, then {@link #transform(PoseStack, double, double, double)} needs to transform the render source relative to the player
+	 */
+	public boolean applyCameraChunkOffset() {
+		return true;
 	}
 
 	/**

@@ -189,13 +189,19 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 	}
 
 	@Inject(method = "drawChunkLayer", at = @At("TAIL"))
-	public void drawRenderSources(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci) {
+	public void drawRenderSources(RenderType renderLayer, PoseStack matrixStack, double camX, double camY, double camZ, CallbackInfo ci) {
 		if (renderLayer == RenderType.solid() || renderLayer == RenderType.translucent()) {
 			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.world).values()) {
 				for (RenderSource source : value.get()) {
 					TrackyRenderSectionManager sectionManager = (TrackyRenderSectionManager) this.tracky$getRenderSectionManager(source);
+
+					boolean applyCamera = source.applyCameraChunkOffset();
+					double x = applyCamera ? camX : 0;
+					double y = applyCamera ? camY : 0;
+					double z = applyCamera ? camZ : 0;
+
 					sectionManager.setup(source, matrixStack, x, y, z);
-					source.draw(sectionManager, matrixStack, (TrackyViewArea) sectionManager, renderLayer, x, y, z);
+					source.draw(sectionManager, matrixStack, (TrackyViewArea) sectionManager, renderLayer, camX, camY, camZ);
 					sectionManager.reset();
 				}
 			}
@@ -218,14 +224,17 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 	public void drawRenderSourceBlockEntities(PoseStack matrices, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci) {
 		MultiBufferSource.BufferSource immediate = bufferBuilders.bufferSource();
 		Vec3 cameraPos = camera.getPosition();
-		double x = cameraPos.x();
-		double y = cameraPos.y();
-		double z = cameraPos.z();
 		BlockEntityRenderDispatcher blockEntityRenderer = this.client.getBlockEntityRenderDispatcher();
 
 		for (RenderSource renderSource : this.tracky$renderSources) {
 			RenderSectionManager sectionManager = this.tracky$getRenderSectionManager(renderSource);
 			Iterator<ChunkRenderList> iterator = sectionManager.getRenderLists().iterator();
+
+			boolean applyCamera = renderSource.applyCameraChunkOffset();
+			double x = applyCamera ? cameraPos.x() : 0;
+			double y = applyCamera ? cameraPos.y() : 0;
+			double z = applyCamera ? cameraPos.z() : 0;
+
 			Matrix4f transformation = renderSource.getTransformation(x, y, z);
 
 			matrices.pushPose();
