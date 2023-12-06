@@ -1,5 +1,6 @@
 package com.tracky.debug;
 
+import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.tracky.api.BoxRenderSource;
 import com.tracky.api.TrackyChunkRenderer;
@@ -33,7 +34,7 @@ public class TestSource extends BoxRenderSource {
 
 	@Override
 	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrix, TrackyViewArea area, RenderType type, double camX, double camY, double camZ) {
-		chunkRenderer.setFogColor(0.0F, 0.0F, 0.0F, 0.0F);
+		chunkRenderer.setFogShape(FogShape.SPHERE); // TODO make cylindrical fog work
 		super.draw(chunkRenderer, matrix, area, type, camX, camY, camZ);
 		this.sort();
 	}

@@ -28,9 +28,7 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	private static final int FOG_SHAPE = 0b010000;
 	private static final int FOG_COLOR = 0b10000;
 
-	private final Vector3f chunkOffset = new Vector3f();
 	private final Vector3f cameraPos = new Vector3f();
-
 	private ShaderInstance shader;
 	private int modified;
 
@@ -116,9 +114,8 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 			}
 
 			if (uniform != null) {
-				BlockPos blockpos = renderChunk.getOrigin();
-				this.chunkOffset.set(blockpos.getX(), blockpos.getY(), blockpos.getZ()).sub(this.cameraPos);
-				uniform.set(this.chunkOffset.x(), this.chunkOffset.y(), this.chunkOffset.z());
+				BlockPos pos = renderChunk.getOrigin();
+				uniform.set(pos.getX() - this.cameraPos.x, pos.getY() - this.cameraPos.y, pos.getZ() - this.cameraPos.z);
 				uniform.upload();
 			}
 
