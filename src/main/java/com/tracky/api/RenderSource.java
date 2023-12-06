@@ -23,7 +23,7 @@ public class RenderSource {
 	protected Set<TrackyRenderChunk> chunksInSource = new HashSet<>();
 	protected final List<TrackyRenderChunk> chunksInFrustum = new ObjectArrayList<>();
 
-	protected boolean forceCulling = false;
+	protected boolean frustumUpdate = false;
 
 	protected Queue<SectionPos> newSections = new ArrayDeque<>();
 
@@ -75,7 +75,7 @@ public class RenderSource {
 
 	@ApiStatus.Internal
 	public final void doFrustumUpdate(Camera camera, Frustum frustum) {
-		this.forceCulling = false;
+		this.frustumUpdate = false;
 		this.updateFrustum(camera, frustum);
 	}
 
@@ -91,8 +91,11 @@ public class RenderSource {
 		this.chunksInFrustum.addAll(this.chunksInSource);
 	}
 
+	/**
+	 * @return Whether a frustum update needs to be run next frame
+	 */
 	public boolean needsFrustumUpdate() {
-		return this.forceCulling;
+		return this.frustumUpdate;
 	}
 
 	/**
@@ -182,7 +185,7 @@ public class RenderSource {
 	public void refresh() {
 		// We can't draw the chunks that were in the frustum
 		this.chunksInFrustum.clear();
-		this.forceCulling = true;
+		this.frustumUpdate = true;
 		this.sort();
 
 		this.chunksInSource.clear();
@@ -207,7 +210,7 @@ public class RenderSource {
 		}
 
 		// The new chunk should be checked to see if it's in the frustum
-		this.forceCulling = true;
+		this.frustumUpdate = true;
 
 		if (chunk.needsSorting()) {
 			this.sort();
@@ -242,23 +245,21 @@ public class RenderSource {
 		this.sort();
 
 		// force a culling check
-		this.forceCulling = true;
+		this.frustumUpdate = true;
 	}
 
 	public final Matrix4f getTransformation(double camX, double camY, double camZ) {
 		PoseStack stack = new PoseStack();
-		stack.translate(-camX, -camY, -camZ);
 		this.transform(stack, camX, camY, camZ);
-		stack.translate(camX, camY, camZ);
 		return stack.last().pose();
 	}
 
 	/**
 	 * Transforms the whole render source to a new position. The individual chunks in the source are not allowed to be transformed.
 	 *
-	 * @param matrix the matrix to transform the space
+	 * @param matrixStack the matrix to transform the space
 	 */
-	public void transform(PoseStack matrix, double camX, double camY, double camZ) {
+	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
 	}
 
 	/**
@@ -266,20 +267,18 @@ public class RenderSource {
 	 * if you want to apply transformations to the rendering, see {@link com.tracky.debug.TestSource}
 	 * most mods will want to override this, do some setup before calling super, and then do some teardown afterwards
 	 *
-	 * @param matrix the active pose stack
-	 * @param area   the view area
-	 * @param layer  the render type being drawn
-	 * @param camX   the camera's X position
-	 * @param camY   the camera's Y position
-	 * @param camZ   the camera's Z position
+	 * @param matrixStack the active pose stack
+	 * @param area        the view area
+	 * @param layer       the render type being drawn
+	 * @param camX        the camera's X position
+	 * @param camY        the camera's Y position
+	 * @param camZ        the camera's Z position
 	 */
-	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrix, TrackyViewArea area, RenderType layer, double camX, double camY, double camZ) {
-		matrix.pushPose();
-		matrix.translate(-camX, -camY, -camZ);
-		this.transform(matrix, camX, camY, camZ);
-		matrix.translate(camX, camY, camZ);
-		chunkRenderer.setModelViewMatrix(matrix.last().pose());
-		matrix.popPose();
+	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrixStack, TrackyViewArea area, RenderType layer, double camX, double camY, double camZ) {
+		matrixStack.pushPose();
+		this.transform(matrixStack, camX, camY, camZ);
+		chunkRenderer.setModelViewMatrix(matrixStack.last().pose());
+		matrixStack.popPose();
 
 		// Copy logic from LevelRenderer to determine if the chunk should be resorted
 		if (layer == RenderType.translucent() && this.lastSortPos.distanceSquared((int) camX, (int) camY, (int) camZ) > 1.0) {

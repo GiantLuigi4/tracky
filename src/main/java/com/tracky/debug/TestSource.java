@@ -24,18 +24,20 @@ public class TestSource extends BoxRenderSource {
 	}
 
 	@Override
-	public void transform(PoseStack matrix, double camX, double camY, double camZ) {
-		matrix.translate(0, 64, 0);
-		matrix.mulPose(new Quaternionf(new AxisAngle4f((float) Math.toRadians(Minecraft.getInstance().player.tickCount + Minecraft.getInstance().getPartialTick()), 0, 1, 0)));
+	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
+		matrixStack.translate(-camX, -camY, -camZ);
+		matrixStack.translate(0, 64, 0);
+		matrixStack.mulPose(new Quaternionf(new AxisAngle4f((float) Math.toRadians(Minecraft.getInstance().player.tickCount + Minecraft.getInstance().getPartialTick()), 0, 1, 0)));
 		int avgX = (this.min.minBlockX() + this.max.maxBlockX()) / 2;
 		int avgZ = (this.min.minBlockZ() + this.max.maxBlockZ()) / 2;
-		matrix.translate(-avgX, -this.min.minBlockY(), -avgZ);
+		matrixStack.translate(-avgX, -this.min.minBlockY(), -avgZ);
+		matrixStack.translate(camX, camY, camZ);
 	}
 
 	@Override
-	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrix, TrackyViewArea area, RenderType type, double camX, double camY, double camZ) {
+	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrixStack, TrackyViewArea area, RenderType type, double camX, double camY, double camZ) {
 		chunkRenderer.setFogShape(FogShape.SPHERE); // TODO make cylindrical fog work
-		super.draw(chunkRenderer, matrix, area, type, camX, camY, camZ);
+		super.draw(chunkRenderer, matrixStack, area, type, camX, camY, camZ);
 		this.sort();
 	}
 }
