@@ -274,6 +274,8 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 				}
 			}
 			matrices.popPose();
+
+			cameraPosition.set(0, 0, 0);
 		}
 
 		((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(null);

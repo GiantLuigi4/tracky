@@ -1,13 +1,10 @@
 package com.tracky;
 
 import com.mojang.logging.LogUtils;
-import com.tracky.api.ClientTracking;
 import com.tracky.api.RenderSource;
-import com.tracky.api.ServerTracking;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -28,31 +25,12 @@ public class Tracky {
 	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {
-		MinecraftForge.EVENT_BUS.addListener(this::onUnloadWorld);
-		MinecraftForge.EVENT_BUS.addListener(this::onRemovePlayer);
-
 		if (ENABLE_TEST) {
 			System.out.println("Default UUID Tests: \n" +
 					"- " + getDefaultUUID("tracky", "sampleuuid") + "\n" +
 					"- " + getDefaultUUID("tracky", "sampleUUID") + "\n" +
 					"- " + getDefaultUUID("landlord", "worldshell")
 			);
-		}
-	}
-
-	private void onUnloadWorld(LevelEvent.Unload event) {
-		LevelAccessor level = event.getLevel();
-		ServerTracking.onUnloadLevel(level);
-		if (level.isClientSide()) {
-			ClientTracking.onUnloadLevel(level);
-		}
-	}
-
-	private void onRemovePlayer(PlayerEvent.PlayerLoggedOutEvent event) {
-		Player player = event.getEntity();
-		ServerTracking.onRemovePlayer(player);
-		if (FMLEnvironment.dist.isClient()) {
-			ClientTracking.onRemovePlayer(player);
 		}
 	}
 

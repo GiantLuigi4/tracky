@@ -2,6 +2,7 @@ package com.tracky.mixin.client;
 
 import com.tracky.Tracky;
 import net.minecraft.client.KeyboardHandler;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,8 +17,10 @@ public abstract class KeyboardHandlerMixin {
 
 	@Inject(method = "handleDebugKeys", at = @At("HEAD"), cancellable = true)
 	public void addDebugKeys(int pKey, CallbackInfoReturnable<Boolean> cir) {
-		if (Tracky.ENABLE_TEST && this.handleChunkDebugKeys(pKey)) {
-			cir.setReturnValue(true);
+		if (!FMLEnvironment.production) {
+			if (Tracky.ENABLE_TEST && this.handleChunkDebugKeys(pKey)) {
+				cir.setReturnValue(true);
+			}
 		}
 	}
 }
