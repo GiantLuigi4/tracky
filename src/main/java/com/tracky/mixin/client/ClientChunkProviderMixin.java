@@ -1,5 +1,6 @@
 package com.tracky.mixin.client;
 
+import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
@@ -161,13 +162,8 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 						continue;
 					}
 
-					for (Supplier<Collection<SectionPos>> value : TrackyAccessor.getRenderedChunks(this.level).values()) {
-						for (SectionPos sectionPos : value.get()) {
-							if (sectionPos.x() == chunkPos.x && sectionPos.z() == chunkPos.x) {
-								continue loopChunks;
-							}
-						}
-					}
+					if (Tracky.sourceContains(level, chunkPos))
+						continue;
 
 					for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
 						if (value.apply(player).contains(chunkPos)) {

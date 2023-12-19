@@ -2,6 +2,7 @@ package com.tracky.api;
 
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.ChunkPos;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +45,14 @@ public class BoxRenderSource extends RenderSource {
 				pos.getX() <= max.getX() &&
 				pos.getY() <= max.getY() &&
 				pos.getZ() <= max.getZ();
+	}
+
+	@Override
+	public boolean containsChunk(ChunkPos pos) {
+		return pos.x >= min.getX() &&
+				pos.z >= min.getZ() &&
+				pos.x <= max.getX() &&
+				pos.z <= max.getZ();
 	}
 
 	@Override

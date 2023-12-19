@@ -5,6 +5,7 @@ import com.tracky.api.RenderSource;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -45,6 +46,24 @@ public class Tracky {
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
 			for (RenderSource renderSource : value.get()) {
 				if (renderSource.containsSection(pos)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the specified section position is part of a render source in the specified level.
+	 *
+	 * @param level The level to get sources from
+	 * @param pos   The chunk position to check
+	 * @return Whether any source is loading that position
+	 */
+	public static boolean sourceContains(ClientLevel level, ChunkPos pos) {
+		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(level).values()) {
+			for (RenderSource renderSource : value.get()) {
+				if (renderSource.containsChunk(pos)) {
 					return true;
 				}
 			}

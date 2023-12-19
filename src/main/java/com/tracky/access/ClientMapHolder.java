@@ -11,11 +11,11 @@ import java.util.function.Supplier;
 
 public interface ClientMapHolder {
 
-	Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC();
+//	Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC();
 
 	Collection<SectionPos> trackyGetRenderChunksC();
 
-	void trackySetRenderChunksC(ClientLevel level);
+//	void trackySetRenderChunksC(ClientLevel level);
 
 	Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources();
 }

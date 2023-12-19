@@ -32,14 +32,6 @@ public class TrackyAccessor {
 
 	/**
 	 * <p>Client-only is a function as QOL.</p>
-	 * <p>Having it be a supplier allows it to change multiple times per frame without having the dev need to change any variables for every render.</p>
-	 */
-	public static Map<UUID, Supplier<Collection<SectionPos>>> getRenderedChunks(ClientLevel level) {
-		return ((ClientMapHolder) level).trackyHeldMapC();
-	}
-
-	/**
-	 * <p>Client-only is a function as QOL.</p>
 	 * <p>Render sources have a method for determining if they can render, so a supplier is unnecessary here.</p>
 	 */
 	public static Map<UUID, Supplier<Collection<RenderSource>>> getRenderSources(ClientLevel level) {
@@ -54,11 +46,11 @@ public class TrackyAccessor {
 		((ITrackChunks) player).setDoUpdate(true);
 	}
 
-	/**
-	 * <p>Call this whenever you modify your list of tracked chunks.</p>
-	 * <p>this tells tracky that the list has changed, and that new chunks likely have to be sent to the client, or that the client needs to know to drop chunks.</p>
-	 */
-	public static void markForRerender(ClientLevel lvl) {
-		((ClientMapHolder) lvl).trackySetRenderChunksC(lvl);
-	}
+//	/**
+//	 * <p>Call this whenever you modify your list of tracked chunks.</p>
+//	 * <p>this tells tracky that the list has changed, and that new chunks likely have to be sent to the client, or that the client needs to know to drop chunks.</p>
+//	 */
+//	public static void markForRerender(ClientLevel lvl) {
+//		((ClientMapHolder) lvl).trackySetRenderChunksC(lvl);
+//	}
 }

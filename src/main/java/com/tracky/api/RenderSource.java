@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
@@ -54,7 +55,7 @@ public class RenderSource {
 	}
 
 	/**
-	 * used by tracky to figure out what chunks to force redrawing of
+	 * used by Tracky to figure out what chunks to force redrawing of
 	 *
 	 * @return the list of render chunks which are currently in the frustum, or a list of only dirty render chunks if you have a way to keep track of that
 	 */
@@ -65,12 +66,29 @@ public class RenderSource {
 	/**
 	 * Tests if the render source contains a section
 	 * This is used by various hooks to vanilla code to know if tracky should use it's own caches or if it should use vanilla's ones
+	 * HEAVILY advised to override this, as it's slow
 	 *
 	 * @param pos the position of the section
 	 * @return if the render source has it in its list of sections
 	 */
 	public boolean containsSection(SectionPos pos) {
 		return this.sections.contains(pos);
+	}
+
+	/**
+	 * Tests if the render source contains a chunk
+	 * This is used for ensuring that tracked chunks remain loaded when changing render distance
+	 * HEAVILY advised to override this, as it's slow
+	 *
+	 * @param pos the position of the chunk
+	 * @return if the render source has it in its list of sections
+	 */
+	public boolean containsChunk(ChunkPos pos) {
+		for (SectionPos section : sections) {
+			if (section.x() == pos.x && section.z() == pos.z)
+				return true;
+		}
+		return false;
 	}
 
 	@ApiStatus.Internal
