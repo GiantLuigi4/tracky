@@ -2,6 +2,7 @@ package com.tracky.mixin.client;
 
 import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
+import com.tracky.api.TrackingSource;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkCache;
@@ -45,6 +46,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	@Shadow
 	@Final
 	private LevelChunk emptyChunk;
+
 	@Unique
 	private final Map<ChunkPos, LevelChunk> tracky$chunks = new HashMap<>();
 	@Unique
@@ -147,27 +149,51 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		return this.tracky$forcedChunks.contains(chunk.getPos());
 	}
 
+	// couldn't figure out how to reproduce the vanilla behavior, so I just copied this from the server
+	@Unique
+	private static boolean isChunkInRange(int chunkX, int chunkZ, int playerX, int playerZ, int pMaxDistance) {
+		int xOff = Math.max(0, Math.abs(chunkX - playerX) - 1);
+		int zOff = Math.max(0, Math.abs(chunkZ - playerZ) - 1);
+		long d0 = Math.max(0, Math.max(xOff, zOff) - 1);
+		long d1 = Math.min(xOff, zOff);
+		return (d1 * d1 + d0 * d0) < ((long) pMaxDistance * pMaxDistance);
+	}
+
 	@Inject(at = @At("HEAD"), method = "updateViewRadius")
 	public void onUpdateViewDegrees /* GiantLuigi4: sometimes I name things weirdly like this */(int pViewDistance, CallbackInfo ci) {
 		if (pViewDistance != ((ChunkStorageAccessor) (Object) this.storage).getChunkRadius()) {
 			Iterator<ChunkPos> iterator = this.tracky$chunks.keySet().iterator();
+
+			LocalPlayer player = Minecraft.getInstance().player;
+			int sectionX = SectionPos.blockToSectionCoord(player.blockPosition().getX());
+			int sectionZ = SectionPos.blockToSectionCoord(player.blockPosition().getZ());
 
 			loopChunks:
 			while (iterator.hasNext()) {
 				ChunkPos chunkPos = iterator.next();
 				LevelChunk levelchunk = tracky$getChunk(chunkPos);
 				if (levelchunk != null) {
-					LocalPlayer player = Minecraft.getInstance().player;
-					if (chunkPos.getChessboardDistance(player.chunkPosition()) < pViewDistance) {
+
+					if (isChunkInRange(
+							levelchunk.getPos().x, levelchunk.getPos().z,
+							sectionX, sectionZ,
+							pViewDistance
+					)) {
 						continue;
 					}
 
 					if (Tracky.sourceContains(level, chunkPos))
 						continue;
 
-					for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(levelchunk.getLevel()).values()) {
-						if (value.apply(player).contains(chunkPos)) {
-							continue loopChunks;
+					// TODO: actually might be unecessary?
+					//		 need to check this with a mod like dynamic portals
+					for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
+						for (TrackingSource trackingSource : value.get()) {
+							// assumption: chunk render dist will be more computationally expensive than containsChunk when implemented
+							if (trackingSource.containsChunk(chunkPos)) {
+								if (trackingSource.checkRenderDist(player, chunkPos))
+									continue loopChunks;
+							}
 						}
 					}
 
