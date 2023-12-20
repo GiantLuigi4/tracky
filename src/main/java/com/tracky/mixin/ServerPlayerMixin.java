@@ -6,7 +6,6 @@ import net.minecraft.world.level.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,15 +15,14 @@ public class ServerPlayerMixin implements ITrackChunks {
 	@Unique
 	private boolean tracky$shouldUpdate = false;
 	@Unique
-	private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
+	private final Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
 	@Unique
-	private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
+	private final Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
 
 	@Override
 	public void tickTracking() {
-		Set<ChunkPos> c = tracky$lastChunksBeingTracked;
-		tracky$lastChunksBeingTracked = tracky$chunksBeingTracked;
-		tracky$chunksBeingTracked = c;
+		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
+		this.tracky$chunksBeingTracked.clear();
 	}
 
 	@Override

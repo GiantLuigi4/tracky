@@ -1,7 +1,6 @@
 package com.tracky.mixin;
 
 import com.tracky.TrackyAccessor;
-import com.tracky.api.TrackingSource;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -22,7 +21,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Player list is hardcoded to just send to nearby players, causing chunk updates to not be sent
@@ -47,21 +45,16 @@ public abstract class PlayerListMixin {
 			int x = Mth.floorDiv((int) pX, 16);
 			int z = Mth.floorDiv((int) pZ, 16);
 
-			ChunkPos ckPos = new ChunkPos(x, z);
-
 			// for all players in the level send the relevant chunks
 			// messy iteration but no way to avoid with our structure
-			loopPlayers:
 			for (ServerPlayer player : level.getPlayers((p) -> true)) {
 				if (player == pExcept) continue;
-				for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
-					for (TrackingSource trackingSource : value.get()) {
-						if (trackingSource.containsChunk(ckPos)) {
-							if (trackingSource.checkRenderDist(player, ckPos)) {
-								player.connection.send(pPacket);
-								ci.cancel();
-								continue loopPlayers;
-							}
+				for (Function<Player, Collection<ChunkPos>> func : TrackyAccessor.getForcedChunks(level).values()) {
+					for (ChunkPos chunk : func.apply(player)) {
+						if (chunk.x == x && chunk.z == z) {
+							// send the packet if the player is tracking it
+							player.connection.send(pPacket);
+							ci.cancel();
 						}
 					}
 				}

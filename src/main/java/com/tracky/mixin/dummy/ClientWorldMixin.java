@@ -43,10 +43,23 @@ public class ClientWorldMixin implements ClientMapHolder {
 		}
 	}
 
+//	@Override
+//	public Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC() {
+//		return this.tracky$trackyRenderedChunks;
+//	}
+
 	@Override
 	public Collection<SectionPos> trackyGetRenderChunksC() {
 		return this.tracky$sectionPosSet;
 	}
+
+//	@Override
+//	public void trackySetRenderChunksC(ClientLevel level) {
+//		this.tracky$sectionPosSet.clear();
+//		for (Supplier<Collection<SectionPos>> value : ((ClientMapHolder) level).trackyHeldMapC().values()) {
+//			this.tracky$sectionPosSet.addAll(value.get());
+//		}
+//	}
 
 	@Override
 	public Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources() {

@@ -1,7 +1,6 @@
 package com.tracky.mixin;
 
 import com.tracky.TrackyAccessor;
-import com.tracky.api.TrackingSource;
 import com.tracky.debug.ITrackChunks;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -24,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
@@ -33,14 +31,11 @@ public abstract class ChunkMapMixin {
 	@Final
 	ServerLevel level;
 
+	@Unique
+	boolean tracky$success = false;
+
 	@Shadow
 	protected abstract void updateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad);
-
-	@Shadow
-	public static boolean isChunkInRange(int p_200879_, int p_200880_, int p_200881_, int p_200882_, int pMaxDistance){throw new RuntimeException("Whar.");}
-
-	@Shadow
-	int viewDistance;
 
 	@Unique
 	private final List<ChunkPos> tracky$Forced = new ArrayList<>();
@@ -52,23 +47,25 @@ public abstract class ChunkMapMixin {
 	@Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
 //		if (!TrackyAccessor.isMainTracky()) return;
-		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(level);
+		final Map<UUID, Function<Player, Collection<ChunkPos>>> map = TrackyAccessor.getForcedChunks(level);
 
 		final List<ServerPlayer> players = new ArrayList<>();
 		boolean isTrackedByAny = false;
 
 		// for all players in the level send the relevant chunks
 		// messy iteration but no way to avoid with our structure
-		loopPlayers:
 		for (ServerPlayer player : this.level.getPlayers((p) -> true)) {
-			for (Supplier<Collection<TrackingSource>> value : map.values()) {
-				for (TrackingSource trackingSource : value.get()) {
-					if (trackingSource.containsChunk(chunkPos)) {
-						// send the packet if the player is tracking it
-						players.add(player);
-						isTrackedByAny = true;
-						continue loopPlayers;
-					}
+			for (Function<Player, Collection<ChunkPos>> func : map.values()) {
+//				final Set<ChunkPos> chunks = Tracky.collapse(func.apply(player));
+
+				// it seems Tracky#collapse hinders performance
+				// unsure if this is true for all sizes of render source, but it's definitely true for large ones
+				Collection<ChunkPos> poses = func.apply(player);
+
+				if (poses.contains(chunkPos)) {
+					// send the packet if the player is tracking it
+					players.add(player);
+					isTrackedByAny = true;
 				}
 			}
 		}
@@ -88,26 +85,19 @@ public abstract class ChunkMapMixin {
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
 		Set<Player> playersChecked = new HashSet<>();
-		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(level);
+		Map<UUID, Function<Player, Collection<ChunkPos>>> function = TrackyAccessor.getForcedChunks(this.level);
 		List<ChunkPos> poses = new ArrayList<>();
-		for (ServerPlayer player : level.getPlayers((player) -> true)) {
-			if (!playersChecked.add(player)) {
-				continue;
-			}
+		for (List<Player> value : TrackyAccessor.getPlayersLoadingChunks(this.level).values()) {
+			for (Player player : value) {
+				if (!playersChecked.add(player)) {
+					continue;
+				}
 
-			for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
-				for (TrackingSource trackingSource : collectionSupplier.get()) {
-					// no point in checking the player if they aren't valid for the chunk source
-					if (trackingSource.check(player)) {
-						// check every chunk
-						for (ChunkPos chunkPos : trackingSource.getChunks()) {
-							// chunk must be in loading range in order to be loaded
-							if (trackingSource.checkLoadDist(player, chunkPos)) {
-								if (!this.tracky$Forced.remove(chunkPos) && !poses.contains(chunkPos)) {
-									this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
-									poses.add(chunkPos);
-								}
-							}
+				for (Function<Player, Collection<ChunkPos>> playerIterableFunction : function.values()) {
+					for (ChunkPos chunkPos : playerIterableFunction.apply(player)) {
+						if (!this.tracky$Forced.remove(chunkPos) && !poses.contains(chunkPos)) {
+							this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
+							poses.add(chunkPos);
 						}
 					}
 				}
@@ -116,7 +106,6 @@ public abstract class ChunkMapMixin {
 
 		for (ChunkPos chunkPos : this.tracky$Forced) {
 			this.level.setChunkForced(chunkPos.x, chunkPos.z, false);
-
 		}
 
 		this.tracky$Forced.addAll(poses);
@@ -131,36 +120,18 @@ public abstract class ChunkMapMixin {
 		if (!chunkTracker.shouldUpdate()) return;
 		chunkTracker.setDoUpdate(false);
 
+		for (Function<Player, Collection<ChunkPos>> value : TrackyAccessor.getForcedChunks(this.level).values()) {
+			for (ChunkPos chunkPos : value.apply(player)) {
+				this.updateChunkTracking(player, chunkPos, new MutableObject<>(), chunkTracker.trackedChunks().contains(chunkPos), true);
+			}
+		}
+
 		chunkTracker.tickTracking();
-
-		for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
-			for (TrackingSource trackingSource : value.get()) {
-				if (trackingSource.check(player)) {
-					trackingSource.forEachValid(false, player, (chunkPos) -> {
-						this.updateChunkTracking(player, chunkPos, new MutableObject<>(), chunkTracker.trackedChunks().contains(chunkPos), true);
-						chunkTracker.trackedChunks().add(chunkPos);
-					});
-				}
-			}
-		}
-
-		int pSectionX = SectionPos.blockToSectionCoord(player.getBlockX());
-		int pSectionZ = SectionPos.blockToSectionCoord(player.getBlockZ());
 		for (ChunkPos trackedChunk : chunkTracker.oldTrackedChunks()) {
-			boolean inVanilla = isChunkInRange(
-					trackedChunk.x, trackedChunk.z,
-					pSectionX, pSectionZ,
-					this.viewDistance
-			);
-
-			if (!inVanilla) {
-				if (!chunkTracker.trackedChunks().contains(trackedChunk)) {
-					this.updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
-				}
+			if (!chunkTracker.trackedChunks().add(trackedChunk)) {
+				this.updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
 			}
 		}
-
-		chunkTracker.oldTrackedChunks().clear();
 	}
 
 	@Inject(at = @At("HEAD"), method = "updatePlayerPos")
@@ -169,14 +140,20 @@ public abstract class ChunkMapMixin {
 	}
 
 	@Inject(method = "updateChunkTracking", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;untrackChunk(Lnet/minecraft/world/level/ChunkPos;)V", shift = At.Shift.BEFORE), cancellable = true)
-	public void markChunkTracked(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
-	}
-
-	@Inject(method = "updateChunkTracking", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;untrackChunk(Lnet/minecraft/world/level/ChunkPos;)V", shift = At.Shift.BEFORE), cancellable = true)
 	public void captureChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
 		// Prevent vanilla from unloading a tracked chunk
 		if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
 			ci.cancel();
 		}
+	}
+
+	@Inject(at = @At("HEAD"), method = "playerLoadedChunk")
+	public void preLoadChunk(ServerPlayer pPlaer, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, LevelChunk pChunk, CallbackInfo ci) {
+		this.tracky$success = true;
+	}
+
+	@Inject(at = @At("HEAD"), method = "updateChunkTracking")
+	public void preUpdateTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
+		this.tracky$success = false;
 	}
 }
