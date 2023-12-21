@@ -16,8 +16,8 @@ public class TestSource extends BoxRenderSource {
 
 	public TestSource() {
 		super(
-				SectionPos.of(new BlockPos(-656, -63, 296)),
-				SectionPos.of(new BlockPos(-497, 319, 328))
+				SectionPos.of(new BlockPos(-656 * 1, -63, 656 * 1)),
+				SectionPos.of(new BlockPos(656 * 1, 319, 656 * 2))
 		);
 	}
 

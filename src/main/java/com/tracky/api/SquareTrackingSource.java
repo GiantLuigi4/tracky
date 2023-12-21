@@ -1,18 +1,10 @@
 package com.tracky.api;
 
-import com.tracky.util.ReadOnlySet;
-import net.minecraft.core.SectionPos;
-import net.minecraft.core.Vec3i;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class SquareTrackingSource extends TrackingSource {
     protected ChunkPos min;
@@ -27,7 +19,7 @@ public class SquareTrackingSource extends TrackingSource {
     }
 
     protected static List<ChunkPos> createList(ChunkPos min, ChunkPos max) {
-        List<ChunkPos> poses = new ArrayList<>((max.x - min.x) * (max.z * min.z));
+        List<ChunkPos> poses = new ArrayList<>((max.x - min.x) * (max.z - min.z));
 
         for (int x = min.x; x <= max.x; x++) {
             for (int z = min.z; z <= max.z; z++) {

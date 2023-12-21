@@ -4,14 +4,8 @@ import com.mojang.logging.LogUtils;
 import com.tracky.api.RenderSource;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -22,7 +16,7 @@ import java.util.function.Supplier;
 @Mod("tracky")
 public class Tracky {
 
-	public static boolean ENABLE_TEST = false;
+	public static boolean ENABLE_TEST = true;
 	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {
