@@ -32,13 +32,13 @@ public abstract class LevelMixin implements ServerMapHolder {
 	@Shadow public abstract long getDayTime();
 
 	@Unique
-	private Map<UUID, Supplier<Collection<TrackingSource>>> trackyTrackingSources;
+	private Map<UUID, Supplier<Collection<TrackingSource>>> tracky$TrackingSources;
 
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData pLevelData, ResourceKey pDimension, RegistryAccess pRegistryAccess,
 	                     Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug,
 	                     long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
-		trackyTrackingSources = new MapWrapper<>(new HashMap<>());
+		this.tracky$TrackingSources = new MapWrapper<>(new HashMap<>());
 
 		if (FMLEnvironment.production)
 			return;
@@ -74,6 +74,6 @@ public abstract class LevelMixin implements ServerMapHolder {
 
 	@Override
 	public Map<UUID, Supplier<Collection<TrackingSource>>> trackyTrackingSources() {
-		return trackyTrackingSources;
+		return this.tracky$TrackingSources;
 	}
 }

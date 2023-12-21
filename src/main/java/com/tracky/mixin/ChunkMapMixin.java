@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.LevelChunk;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.*;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Mixin(ChunkMap.class)
@@ -37,13 +35,15 @@ public abstract class ChunkMapMixin {
 	protected abstract void updateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad);
 
 	@Shadow
-	public static boolean isChunkInRange(int p_200879_, int p_200880_, int p_200881_, int p_200882_, int pMaxDistance){throw new RuntimeException("Whar.");}
+	public static boolean isChunkInRange(int p_200879_, int p_200880_, int p_200881_, int p_200882_, int pMaxDistance) {
+		throw new RuntimeException("Whar.");
+	}
 
 	@Shadow
 	int viewDistance;
 
 	@Unique
-	private final List<ChunkPos> tracky$Forced = new ArrayList<>();
+	private final Set<ChunkPos> tracky$Forced = new HashSet<>();
 
 	/**
 	 * Make the chunk manager send chunk updates to clients tracking tracky-enforced chunks
@@ -52,7 +52,7 @@ public abstract class ChunkMapMixin {
 	@Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
 //		if (!TrackyAccessor.isMainTracky()) return;
-		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(level);
+		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
 
 		final List<ServerPlayer> players = new ArrayList<>();
 		boolean isTrackedByAny = false;
@@ -80,21 +80,21 @@ public abstract class ChunkMapMixin {
 		if (isTrackedByAny) {
 			// add players that are tracking it by vanilla
 			cir.getReturnValue().forEach((player) -> {
-				if (!players.contains(player))
+				if (!players.contains(player)) {
 					players.add(player);
+				}
 			});
 
 			cir.setReturnValue(players);
-			cir.cancel();
 		}
 	}
 
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
 		Set<Player> playersChecked = new HashSet<>();
-		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(level);
-		List<ChunkPos> poses = new ArrayList<>();
-		for (ServerPlayer player : level.getPlayers((player) -> true)) {
+		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
+		Set<ChunkPos> poses = new HashSet<>();
+		for (ServerPlayer player : this.level.getPlayers((player) -> true)) {
 			if (!playersChecked.add(player)) {
 				continue;
 			}
@@ -109,9 +109,8 @@ public abstract class ChunkMapMixin {
 							if (trackingSource.check(player)) {
 								// chunk must be in loading range in order to be loaded
 								if (trackingSource.checkLoadDist(player, chunkPos)) {
-									if (!this.tracky$Forced.remove(chunkPos) && !poses.contains(chunkPos)) {
+									if (!this.tracky$Forced.remove(chunkPos) && poses.add(chunkPos)) {
 										this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
-										poses.add(chunkPos);
 									}
 								}
 							}
@@ -123,7 +122,6 @@ public abstract class ChunkMapMixin {
 
 		for (ChunkPos chunkPos : this.tracky$Forced) {
 			this.level.setChunkForced(chunkPos.x, chunkPos.z, false);
-
 		}
 
 		this.tracky$Forced.addAll(poses);
