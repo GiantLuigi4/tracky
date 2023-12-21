@@ -23,7 +23,7 @@ public class TestSource extends BoxRenderSource {
 
 	@Override
 	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
-		matrixStack.translate( - camX, 128 - camY,  - camZ);
+		matrixStack.translate(-camX, 128 - camY, -camZ);
 
 		int avgX = (this.min.minBlockX() + this.max.maxBlockX()) / 2;
 		int avgZ = (this.min.minBlockZ() + this.max.maxBlockZ()) / 2;
@@ -43,6 +43,10 @@ public class TestSource extends BoxRenderSource {
 		// 		  might be best to leave it up to the mod implementing tracky, given the fact that tracky's supposed to try to be relatively non-invasive?
 		chunkRenderer.setFogShape(FogShape.SPHERE);
 		super.draw(chunkRenderer, matrixStack, area, type, camX, camY, camZ);
-		this.scheduleSort();
+
+		// This constantly tries to resort for testing, but gets unnecessarily slow after about 1k elements
+		if (this.transparentChunksInSource.size() < 1000) {
+			this.scheduleSort();
+		}
 	}
 }
