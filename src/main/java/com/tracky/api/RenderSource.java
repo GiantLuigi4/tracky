@@ -137,19 +137,21 @@ public class RenderSource {
 	 */
 	public void sort(double camX, double camY, double camZ) {
 		Vector3f center = new Vector3f();
-
+		
 		PoseStack stack = new PoseStack();
 		this.transform(stack, camX, camY, camZ);
 		Matrix4f matrix = stack.last().pose();
-
+		
 		this.sorted.clear();
 		this.sorted.addAll(this.chunksInFrustum);
+		if (false) {
 		this.sorted.sort(Comparator.<TrackyRenderChunk>comparingDouble(left -> {
 			BlockPos origin = left.getChunkOrigin();
 			center.set(origin.getX() + 8 - camX, origin.getY() + 8 - camY, origin.getZ() + 8 - camZ);
 			matrix.transformPosition(center);
 			return center.lengthSquared();
 		}).reversed());
+	}
 
 		for (TrackyRenderChunk chunk : this.chunksInFrustum) {
 			// We don't bother adding in vanilla "improvements" because we want these chunks to ACTUALLY be resorted when they should be

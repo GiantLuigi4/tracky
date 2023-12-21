@@ -18,8 +18,6 @@ apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 apply plugin: 'maven-publish'
 
-jarJar.enable()
-
 group = 'com.tracky'
 version = '3.0'
 

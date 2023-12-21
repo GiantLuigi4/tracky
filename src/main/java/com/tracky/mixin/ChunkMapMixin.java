@@ -144,7 +144,7 @@ public abstract class ChunkMapMixin {
 			for (TrackingSource trackingSource : value.get()) {
 				if (trackingSource.check(player)) {
 					trackingSource.forEachValid(false, player, (chunkPos) -> {
-						this.updateChunkTracking(player, chunkPos, new MutableObject<>(), chunkTracker.trackedChunks().contains(chunkPos), true);
+						this.updateChunkTracking(player, chunkPos, new MutableObject<>(), chunkTracker.oldTrackedChunks().contains(chunkPos), true);
 						chunkTracker.trackedChunks().add(chunkPos);
 					});
 				}

@@ -21,8 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
 public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRenderChunk {
-
-	@Shadow
+	
+	@Shadow(aliases = {"this$0"})
 	@Final
 	ChunkRenderDispatcher this$0;
 

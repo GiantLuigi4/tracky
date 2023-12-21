@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 @Mixin(targets = "net.minecraft.client.renderer.chunk.ChunkRenderDispatcher$RenderChunk$RebuildTask")
 public class RebuildTaskMixin {
 
-	@Shadow
+	@Shadow(aliases = {"this$1"})
 	@Final
 	ChunkRenderDispatcher.RenderChunk this$1;
 

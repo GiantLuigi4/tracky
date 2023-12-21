@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(targets = "net.minecraft.client.renderer.chunk.ChunkRenderDispatcher$RenderChunk$ResortTransparencyTask")
 public class ResortTransparencyTaskMixin {
-
-	@Shadow
+	
+	@Shadow(aliases = {"this$1"})
 	@Final
 	ChunkRenderDispatcher.RenderChunk this$1;
 
