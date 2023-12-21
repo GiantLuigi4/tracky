@@ -63,11 +63,15 @@ public abstract class ChunkMapMixin {
 		for (ServerPlayer player : this.level.getPlayers((p) -> true)) {
 			for (Supplier<Collection<TrackingSource>> value : map.values()) {
 				for (TrackingSource trackingSource : value.get()) {
-					if (trackingSource.containsChunk(chunkPos)) {
-						// send the packet if the player is tracking it
-						players.add(player);
-						isTrackedByAny = true;
-						continue loopPlayers;
+					if (trackingSource.check(player)) {
+						if (trackingSource.checkRenderDist(player, chunkPos)) {
+							if (trackingSource.containsChunk(chunkPos)) {
+								// send the packet if the player is tracking it
+								players.add(player);
+								isTrackedByAny = true;
+								continue loopPlayers;
+							}
+						}
 					}
 				}
 			}
@@ -101,11 +105,14 @@ public abstract class ChunkMapMixin {
 					if (trackingSource.check(player)) {
 						// check every chunk
 						for (ChunkPos chunkPos : trackingSource.getChunks()) {
-							// chunk must be in loading range in order to be loaded
-							if (trackingSource.checkLoadDist(player, chunkPos)) {
-								if (!this.tracky$Forced.remove(chunkPos) && !poses.contains(chunkPos)) {
-									this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
-									poses.add(chunkPos);
+							// tracking source must be valid for the player in order to load chunks
+							if (trackingSource.check(player)) {
+								// chunk must be in loading range in order to be loaded
+								if (trackingSource.checkLoadDist(player, chunkPos)) {
+									if (!this.tracky$Forced.remove(chunkPos) && !poses.contains(chunkPos)) {
+										this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
+										poses.add(chunkPos);
+									}
 								}
 							}
 						}

@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 @Mod("tracky")
 public class Tracky {
 
-	public static final boolean ENABLE_TEST = false;
+	public static boolean ENABLE_TEST = false;
 	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {

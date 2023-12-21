@@ -38,7 +38,10 @@ public class TestSource extends BoxRenderSource {
 
 	@Override
 	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrixStack, TrackyViewArea area, RenderType type, double camX, double camY, double camZ) {
-		chunkRenderer.setFogShape(FogShape.SPHERE); // TODO make cylindrical fog work
+		// (ocelot): TODO: make cylindrical fog work
+		// (laz): I've tried playing around with the fog in the past, it's gonna require custom shaders
+		// 		  might be best to leave it up to the mod implementing tracky, given the fact that tracky's supposed to try to be relatively non-invasive?
+		chunkRenderer.setFogShape(FogShape.SPHERE);
 		super.draw(chunkRenderer, matrixStack, area, type, camX, camY, camZ);
 		this.sort();
 	}

@@ -187,15 +187,16 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 
 					// TODO: actually might be unecessary?
 					//		 need to check this with a mod like dynamic portals
-					for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
-						for (TrackingSource trackingSource : value.get()) {
-							// assumption: chunk render dist will be more computationally expensive than containsChunk when implemented
-							if (trackingSource.containsChunk(chunkPos)) {
-								if (trackingSource.checkRenderDist(player, chunkPos))
-									continue loopChunks;
-							}
-						}
-					}
+					// 		 Tracky#sourceContains sorta invalidates this check, but this might have to be a bit more precise, so I'm leaving this in comment code until I can test this a bit better
+//					for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
+//						for (TrackingSource trackingSource : value.get()) {
+//							// assumption: chunk render dist will be more computationally expensive than containsChunk when implemented
+//							if (trackingSource.containsChunk(chunkPos)) {
+//								if (trackingSource.checkRenderDist(player, chunkPos))
+//									continue loopChunks;
+//							}
+//						}
+//					}
 
 					this.tracky$onRemove(levelchunk);
 				}

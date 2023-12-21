@@ -55,10 +55,24 @@ public class TrackingSource {
         return true;
     }
 
+    /**
+     * Checks whether or not a chunk should be synced to a player's client
+     *
+     * @param player the player to check the chunk for
+     * @param pos the chunk position to check; may not always be in the tracking source
+     * @return whether or not the chunk should be synced to the associated client
+     */
     public boolean checkRenderDist(Player player, ChunkPos pos) {
         return true;
     }
 
+    /**
+     * Checks whether or not a chunk should be loaded by a player
+     *
+     * @param player the player to check the chunk for
+     * @param pos the chunk position to check; may not always be in the tracking source
+     * @return whether or not the chunk should be loaded due to the player
+     */
     public boolean checkLoadDist(Player player, ChunkPos pos) {
         return true;
     }

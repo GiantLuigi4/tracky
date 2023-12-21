@@ -10,6 +10,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * A wrapper class which takes several lists, and makes them act as one
+ * For giving the base game the contents of multiple lists to iterate over, this is significantly faster than creating a new ObjectArrayList and adding the contents of all the lists to iterate over
+ *
+ * @param <T> the type of the list
+ */
 @ApiStatus.Internal
 public class ObjectUnionList<T> extends ObjectArrayList<T> {
 	ArrayList<List<T>> lists;

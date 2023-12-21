@@ -281,7 +281,10 @@ public abstract class LevelRendererMixin {
 		Camera camera = this.minecraft.getBlockEntityRenderDispatcher().camera;
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
-				source.doFrustumUpdate(camera, pFrustrum);
+				// no reason to cull individual chunks if none of them are visible
+				if (source.canDraw(camera, pFrustrum)) {
+					source.doFrustumUpdate(camera, pFrustrum);
+				}
 			}
 		}
 		profiler.pop();

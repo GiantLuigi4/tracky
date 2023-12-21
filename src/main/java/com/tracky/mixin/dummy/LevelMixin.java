@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.WritableLevelData;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -38,19 +39,16 @@ public abstract class LevelMixin implements ServerMapHolder {
 	@Shadow public abstract long getDayTime();
 
 	@Unique
-	private Map<UUID, Function<Player, Collection<ChunkPos>>> trackyForcedChunks;
 	private Map<UUID, Supplier<Collection<TrackingSource>>> trackyTrackingSources;
 
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(WritableLevelData pLevelData, ResourceKey pDimension, RegistryAccess pRegistryAccess,
 	                     Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug,
 	                     long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
-		trackyForcedChunks = new MapWrapper<>(new HashMap<>());
 		trackyTrackingSources = new MapWrapper<>(new HashMap<>());
 
-		if (!Tracky.ENABLE_TEST) {
+		if (FMLEnvironment.production)
 			return;
-		}
 
 		SquareTrackingSource source = new SquareTrackingSource(
 				new ChunkPos(new BlockPos(-656, -63, 296)),
@@ -62,18 +60,21 @@ public abstract class LevelMixin implements ServerMapHolder {
 		TrackyAccessor.getTrackingSources(((Level) (Object) this)).put(
 				Tracky.getDefaultUUID("tracky", "testing"),
 				() -> {
-					if (getDayTime() % 200 == 0) {
-						if ((Object) this instanceof ServerLevel svrlvl) {
-							shown[0] = !shown[0];
-							for (ServerPlayer player : svrlvl.getPlayers((p) -> true)) {
-								TrackyAccessor.markForRetracking(player);
+					if (Tracky.ENABLE_TEST) {
+						if (getDayTime() % 200 == 0) {
+							if ((Object) this instanceof ServerLevel svrlvl) {
+								shown[0] = !shown[0];
+								for (ServerPlayer player : svrlvl.getPlayers((p) -> true)) {
+									TrackyAccessor.markForRetracking(player);
+								}
 							}
 						}
+
+						if (!shown[0]) return List.of();
+						return List.of(source);
 					}
 
-					if (!shown[0]) return List.of();
-
-					return List.of(source);
+					return List.of();
 				}
 		);
 	}

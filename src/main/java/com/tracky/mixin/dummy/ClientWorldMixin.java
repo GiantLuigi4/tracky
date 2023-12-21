@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,22 +26,25 @@ import java.util.function.Supplier;
 public class ClientWorldMixin implements ClientMapHolder {
 
 	@Unique
-	private final Map<UUID, Supplier<Collection<SectionPos>>> tracky$trackyRenderedChunks = new MapWrapper<>(new HashMap<>());
-	@Unique
 	private final Map<UUID, Supplier<Collection<RenderSource>>> tracky$trackyRenderSources = new MapWrapper<>(new HashMap<>());
 	@Unique
 	private final Set<SectionPos> tracky$sectionPosSet = new HashSet<>();
 
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
-		if (Tracky.ENABLE_TEST) {
-			// new
-			TestSource source = new TestSource();
-			TrackyAccessor.getRenderSources(((ClientLevel) (Object) this)).put(
-					Tracky.getDefaultUUID("tracky", "testing"),
-					() -> List.of(source)
-			);
-		}
+		if (FMLEnvironment.production)
+			return;
+
+		// new
+		TestSource source = new TestSource();
+		TrackyAccessor.getRenderSources(((ClientLevel) (Object) this)).put(
+				Tracky.getDefaultUUID("tracky", "testing"),
+				() -> {
+					if (Tracky.ENABLE_TEST)
+						return List.of(source);
+					return List.of();
+				}
+		);
 	}
 
 	@Override
