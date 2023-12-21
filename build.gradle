@@ -181,8 +181,8 @@ dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
 //    implementation fg.deobf("curse.maven:modernfix-790626:4582474")
-//    compileOnly fg.deobf("maven.modrinth:rubidium:0.7.1")
-    implementation fg.deobf("maven.modrinth:rubidium:0.7.1")
+    compileOnly fg.deobf("maven.modrinth:rubidium:0.7.1")
+    runtimeOnly fg.deobf("maven.modrinth:embeddium:0.2.13+mc1.20.1")
 }
 
 // Example for how to get properties into the manifest for reading at runtime.
