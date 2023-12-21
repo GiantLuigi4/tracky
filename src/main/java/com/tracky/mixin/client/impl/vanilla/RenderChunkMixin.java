@@ -81,10 +81,7 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 		Vector3f cameraPosition = new Vector3f();
 		this.tracky$renderSource.getTransformation(vec.x, vec.y, vec.z).invert().transformPosition(cameraPosition);
 		cameraPosition.add((float) vec.x, (float) vec.y, (float) vec.z);
-
-		Vector3f center = new Vector3f();
-		center.set(this.origin.getX(), this.origin.getY(), this.origin.getZ());
-		return VertexSorting.byDistance(cameraPosition.sub(center));
+		return VertexSorting.byDistance(cameraPosition.sub(this.origin.getX(), this.origin.getY(), this.origin.getZ()));
 	}
 
 	@Override

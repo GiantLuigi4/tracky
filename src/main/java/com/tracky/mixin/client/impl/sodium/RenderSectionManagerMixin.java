@@ -37,7 +37,7 @@ public abstract class RenderSectionManagerMixin implements TrackyViewArea {
 	@Shadow
 	protected abstract RenderSection getRenderSection(int x, int y, int z);
 
-	@Inject(method = "processChunkBuildResults", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSectionManager;updateSectionInfo(Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;Lme/jellysquid/mods/sodium/client/render/chunk/data/BuiltSectionInfo;)V"), locals = LocalCapture.CAPTURE_FAILHARD)
+	@Inject(method = "processChunkBuildResults", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSectionManager;updateSectionInfo(Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;Lme/jellysquid/mods/sodium/client/render/chunk/data/BuiltSectionInfo;)V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
 	public void updateCompiledChunks(ArrayList<ChunkBuildOutput> results, CallbackInfo ci, List<ChunkBuildOutput> filtered, Iterator<ChunkBuildOutput> iterator, ChunkBuildOutput result) {
 		TrackyRenderChunk renderChunk = (TrackyRenderChunk) result.render;
 		RenderSource renderSource = renderChunk.getRenderSource();

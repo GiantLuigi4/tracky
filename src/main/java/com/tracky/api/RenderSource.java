@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -21,15 +22,16 @@ import java.util.function.Consumer;
 public class RenderSource {
 
 	protected final Collection<SectionPos> sections;
-	protected Set<TrackyRenderChunk> chunksInSource = new HashSet<>();
+	protected final Set<TrackyRenderChunk> chunksInSource = new HashSet<>();
+	protected final Set<TrackyRenderChunk> transparentChunksInSource = new HashSet<>();
 	protected final List<TrackyRenderChunk> chunksInFrustum = new ObjectArrayList<>();
 
 	protected boolean frustumUpdate = false;
 
-	protected Queue<SectionPos> newSections = new ArrayDeque<>();
+	protected final Queue<SectionPos> newSections = new ArrayDeque<>();
 
 	protected final Vector3i lastSortPos = new Vector3i(Integer.MIN_VALUE);
-	protected List<TrackyRenderChunk> sorted = new LinkedList<>();
+	protected final List<TrackyRenderChunk> sorted = new LinkedList<>();
 
 	public RenderSource(Collection<SectionPos> sections) {
 		this.sections = sections;
@@ -48,6 +50,7 @@ public class RenderSource {
 				BlockPos origin = renderChunk.getChunkOrigin();
 				if (origin.getX() == pos.minBlockX() && origin.getY() == pos.minBlockY() && origin.getZ() == pos.minBlockZ()) {
 					this.chunksInSource.remove(renderChunk);
+					this.transparentChunksInSource.remove(renderChunk);
 					return;
 				}
 			}
@@ -84,7 +87,7 @@ public class RenderSource {
 	 * @return if the render source has it in its list of sections
 	 */
 	public boolean containsChunk(ChunkPos pos) {
-		for (SectionPos section : sections) {
+		for (SectionPos section : this.sections) {
 			if (section.x() == pos.x && section.z() == pos.z)
 				return true;
 		}
@@ -136,24 +139,23 @@ public class RenderSource {
 	 * @param camZ the camera's Z position
 	 */
 	public void sort(double camX, double camY, double camZ) {
-		Vector3f center = new Vector3f();
-		
-		PoseStack stack = new PoseStack();
-		this.transform(stack, camX, camY, camZ);
-		Matrix4f matrix = stack.last().pose();
-		
 		this.sorted.clear();
-		this.sorted.addAll(this.chunksInFrustum);
-		if (false) {
+		if (this.transparentChunksInSource.isEmpty()) {
+			return;
+		}
+
+		Vector3f temp = new Vector3f();
+		Vector3f cameraPosition = new Vector3f();
+		this.getTransformation(camX, camY, camZ).invert().transformPosition(cameraPosition);
+		cameraPosition.add((float) camX, (float) camY, (float) camZ);
+
+		this.sorted.addAll(this.transparentChunksInSource);
 		this.sorted.sort(Comparator.<TrackyRenderChunk>comparingDouble(left -> {
 			BlockPos origin = left.getChunkOrigin();
-			center.set(origin.getX() + 8 - camX, origin.getY() + 8 - camY, origin.getZ() + 8 - camZ);
-			matrix.transformPosition(center);
-			return center.lengthSquared();
+			return temp.set(origin.getX() + 8, origin.getY() + 8, origin.getZ() + 8).sub(cameraPosition).lengthSquared();
 		}).reversed());
-	}
 
-		for (TrackyRenderChunk chunk : this.chunksInFrustum) {
+		for (TrackyRenderChunk chunk : this.transparentChunksInSource) {
 			// We don't bother adding in vanilla "improvements" because we want these chunks to ACTUALLY be resorted when they should be
 			chunk.resort(RenderType.translucent());
 		}
@@ -191,7 +193,7 @@ public class RenderSource {
 	/**
 	 * Forces the renderer to resort translucent chunks next frame.
 	 */
-	public void sort() {
+	public void scheduleSort() {
 		this.sorted.clear();
 		this.lastSortPos.set(Integer.MIN_VALUE);
 	}
@@ -204,9 +206,10 @@ public class RenderSource {
 		// We can't draw the chunks that were in the frustum
 		this.chunksInFrustum.clear();
 		this.frustumUpdate = true;
-		this.sort();
+		this.scheduleSort();
 
 		this.chunksInSource.clear();
+		this.transparentChunksInSource.clear();
 		this.newSections.clear();
 		this.newSections.addAll(this.sections);
 	}
@@ -231,7 +234,8 @@ public class RenderSource {
 		this.frustumUpdate = true;
 
 		if (chunk.needsSorting()) {
-			this.sort();
+			this.transparentChunksInSource.add(chunk);
+			this.scheduleSort();
 		}
 	}
 
@@ -260,7 +264,7 @@ public class RenderSource {
 		}
 
 		// force resort
-		this.sort();
+		this.scheduleSort();
 
 		// force a culling check
 		this.frustumUpdate = true;

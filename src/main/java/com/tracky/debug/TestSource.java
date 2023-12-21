@@ -43,6 +43,6 @@ public class TestSource extends BoxRenderSource {
 		// 		  might be best to leave it up to the mod implementing tracky, given the fact that tracky's supposed to try to be relatively non-invasive?
 		chunkRenderer.setFogShape(FogShape.SPHERE);
 		super.draw(chunkRenderer, matrixStack, area, type, camX, camY, camZ);
-		this.sort();
+		this.scheduleSort();
 	}
 }
