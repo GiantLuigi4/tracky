@@ -3,7 +3,6 @@ package com.tracky.mixin.client.impl.sodium;
 import com.tracky.access.sodium.ExtendedOcclusionCuller;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyRenderChunk;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.OcclusionCuller;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
@@ -13,7 +12,7 @@ import net.minecraft.core.SectionPos;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
-import org.spongepowered.asm.mixin.Final;
+import org.joml.Vector3ic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,10 +29,10 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 
 	@Unique
 	private RenderSource tracky$renderSource;
-
-	@Shadow
-	@Final
-	private Long2ReferenceMap<RenderSection> sections;
+	@Unique
+	private Vector3ic tracky$minSection;
+	@Unique
+	private Vector3ic tracky$maxSection;
 
 	@Shadow
 	protected abstract void initWithinWorld(Consumer<RenderSection> visitor, WriteQueue<RenderSection> queue, Viewport viewport, boolean useOcclusionCulling, int frame);
@@ -42,14 +41,7 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 	protected abstract RenderSection getRenderSection(int x, int y, int z);
 
 	@Shadow
-	private static boolean isOutsideRenderDistance(CameraTransform camera, RenderSection section, float maxDistance) {
-		return false;
-	}
-
-	@Shadow
-	public static boolean isOutsideFrustum(Viewport viewport, RenderSection section) {
-		return false;
-	}
+	protected abstract void tryVisitNode(WriteQueue<RenderSection> queue, int x, int y, int z, int direction, int frame, Viewport viewport);
 
 	@ModifyVariable(method = "findVisible", at = @At("HEAD"), argsOnly = true)
 	public Viewport modifyViewport(Viewport viewport) {
@@ -70,16 +62,57 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 		}
 
 		SectionPos origin = viewport.getChunkCoord();
-		RenderSection section = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
+		RenderSection section = this.getRenderSection(origin.x(), origin.y(), origin.z());
 		if (section != null) {
 			this.initWithinWorld(visitor, queue, viewport, useOcclusionCulling, frame);
 		} else {
-			// TODO Allow occlusion culling outside the source
-			this.sections.values().forEach(renderSection -> {
-				if (!isOutsideRenderDistance(viewport.getTransform(), renderSection, searchDistance) && !isOutsideFrustum(viewport, renderSection)) {
-					visitor.accept(renderSection);
+			// In this scenario we need to grab each "plane" of the area and submit it as the start since we can see the entire face
+			CameraTransform transform = viewport.getTransform();
+
+			// down/up
+			if (transform.y < this.tracky$minSection.y() << SectionPos.SECTION_BITS) {
+				for (int x = this.tracky$minSection.x(); x <= this.tracky$maxSection.x(); x++) {
+					for (int z = this.tracky$minSection.z(); z <= this.tracky$maxSection.z(); z++) {
+						this.tryVisitNode(queue, x, this.tracky$minSection.y(), z, 0, frame, viewport);
+					}
 				}
-			});
+			} else if (transform.y > this.tracky$maxSection.y() << SectionPos.SECTION_BITS) {
+				for (int x = this.tracky$minSection.x(); x <= this.tracky$maxSection.x(); x++) {
+					for (int z = this.tracky$minSection.z(); z <= this.tracky$maxSection.z(); z++) {
+						this.tryVisitNode(queue, x, this.tracky$maxSection.y(), z, 1, frame, viewport);
+					}
+				}
+			}
+
+			// north/south
+			if (transform.z < this.tracky$minSection.z() << SectionPos.SECTION_BITS) {
+				for (int x = this.tracky$minSection.x(); x <= this.tracky$maxSection.x(); x++) {
+					for (int y = this.tracky$minSection.y(); y <= this.tracky$maxSection.y(); y++) {
+						this.tryVisitNode(queue, x, y, this.tracky$minSection.z(), 2, frame, viewport);
+					}
+				}
+			} else if (transform.z > this.tracky$maxSection.z() << SectionPos.SECTION_BITS) {
+				for (int x = this.tracky$minSection.x(); x <= this.tracky$maxSection.x(); x++) {
+					for (int y = this.tracky$minSection.y(); y <= this.tracky$maxSection.y(); y++) {
+						this.tryVisitNode(queue, x, y, this.tracky$maxSection.z(), 3, frame, viewport);
+					}
+				}
+			}
+
+			// west/east
+			if (transform.x < this.tracky$minSection.x() << SectionPos.SECTION_BITS) {
+				for (int z = this.tracky$minSection.z(); z <= this.tracky$maxSection.z(); z++) {
+					for (int y = this.tracky$minSection.y(); y <= this.tracky$maxSection.y(); y++) {
+						this.tryVisitNode(queue, this.tracky$minSection.x(), y, z, 4, frame, viewport);
+					}
+				}
+			} else if (transform.x > this.tracky$maxSection.x() << SectionPos.SECTION_BITS) {
+				for (int z = this.tracky$minSection.z(); z <= this.tracky$maxSection.z(); z++) {
+					for (int y = this.tracky$minSection.y(); y <= this.tracky$maxSection.y(); y++) {
+						this.tryVisitNode(queue, this.tracky$maxSection.x(), y, z, 5, frame, viewport);
+					}
+				}
+			}
 		}
 
 		ci.cancel();
@@ -95,5 +128,11 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 	@Override
 	public void tracky$setRenderSource(@Nullable RenderSource source) {
 		this.tracky$renderSource = source;
+	}
+
+	@Override
+	public void tracky$setBounds(Vector3ic minSection, Vector3ic maxSection) {
+		this.tracky$minSection = minSection;
+		this.tracky$maxSection = maxSection;
 	}
 }

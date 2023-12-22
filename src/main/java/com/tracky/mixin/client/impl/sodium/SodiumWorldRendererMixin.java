@@ -173,10 +173,8 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			profiler.popPush("chunk_upload");
 			renderSectionManager.uploadChunks();
 			// Render sources always need to be updated because of their transforms
-//			if (renderSectionManager.needsUpdate()) {
 			profiler.popPush("chunk_render_lists");
 			renderSectionManager.update(camera, viewport, frame, spectator);
-//			}
 
 			if (updateChunksImmediately) {
 				profiler.popPush("chunk_upload_immediately");
@@ -284,7 +282,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 		RenderSectionManager sectionManager = this.tracky$renderSectionManagers.get(source);
 		if (sectionManager == null) {
 			try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-				sectionManager = new TrackyRenderSectionManager(this.world, commandList, source);
+				sectionManager = new TrackyRenderSectionManager(this.world, this.client.options.getEffectiveRenderDistance(), commandList, source);
 				this.tracky$renderSectionManagers.put(source, sectionManager);
 			}
 		}

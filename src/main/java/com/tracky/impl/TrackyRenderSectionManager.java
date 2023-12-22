@@ -22,9 +22,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
-import org.joml.Vector3f;
+import org.joml.*;
 
 import java.util.Collection;
 
@@ -41,10 +39,45 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 	private float fogEnd;
 	private FogShape fogShape;
 
-	public TrackyRenderSectionManager(ClientLevel level, CommandList commandList, @Nullable RenderSource renderSource) {
-		super(level, Integer.MAX_VALUE, commandList);
+	private final Vector3i minSection;
+	private final Vector3i maxSection;
+	private final Vector3f centerSection;
+
+	public TrackyRenderSectionManager(ClientLevel level, int renderDistance, CommandList commandList, @Nullable RenderSource renderSource) {
+		super(level, renderDistance, commandList);
 		this.renderSource = renderSource;
-		((ExtendedOcclusionCuller) ((RenderSectionManagerAccessor) this).getOcclusionCuller()).tracky$setRenderSource(renderSource);
+
+		// I don't want to repeat specific sections, so these are offset by 1 to prevent overflows. This is really just an edge case before any sections are added
+		this.minSection = new Vector3i(Integer.MAX_VALUE - 1);
+		this.maxSection = new Vector3i(Integer.MIN_VALUE + 1);
+		this.centerSection = new Vector3f();
+
+		ExtendedOcclusionCuller culler = (ExtendedOcclusionCuller) ((RenderSectionManagerAccessor) this).getOcclusionCuller();
+		culler.tracky$setRenderSource(renderSource);
+		culler.tracky$setBounds(this.minSection, this.maxSection);
+	}
+
+	private void updateBounds(Vector3ic pos) {
+		this.minSection.min(pos);
+		this.maxSection.max(pos);
+		this.centerSection.set((this.minSection.x + this.maxSection.x) << 3, (this.minSection.y + this.maxSection.y) << 3, (this.minSection.z + this.maxSection.z) << 3);
+		((ExtendedOcclusionCuller) ((RenderSectionManagerAccessor) this).getOcclusionCuller()).tracky$setBounds(this.minSection, this.maxSection);
+	}
+
+	@Override
+	public void onSectionAdded(int x, int y, int z) {
+		super.onSectionAdded(x, y, z);
+		if (this.needsUpdate()) {
+			this.updateBounds(new Vector3i(x, y, z));
+		}
+	}
+
+	@Override
+	public void onSectionRemoved(int x, int y, int z) {
+		super.onSectionRemoved(x, y, z);
+		if (this.needsUpdate()) {
+			this.updateBounds(new Vector3i(x, y, z));
+		}
 	}
 
 	@Override
