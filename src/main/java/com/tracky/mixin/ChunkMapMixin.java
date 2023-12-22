@@ -138,7 +138,7 @@ public abstract class ChunkMapMixin {
 
 		chunkTracker.tickTracking();
 
-		for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
+		for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(this.level).values()) {
 			for (TrackingSource trackingSource : value.get()) {
 				if (trackingSource.check(player)) {
 					trackingSource.forEachValid(false, player, (chunkPos) -> {
@@ -171,10 +171,6 @@ public abstract class ChunkMapMixin {
 	@Inject(at = @At("HEAD"), method = "updatePlayerPos")
 	public void preUpdatePos(ServerPlayer p_140374_, CallbackInfoReturnable<SectionPos> cir) {
 		((ITrackChunks) p_140374_).setDoUpdate(true);
-	}
-
-	@Inject(method = "updateChunkTracking", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;untrackChunk(Lnet/minecraft/world/level/ChunkPos;)V", shift = At.Shift.BEFORE), cancellable = true)
-	public void markChunkTracked(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
 	}
 
 	@Inject(method = "updateChunkTracking", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;untrackChunk(Lnet/minecraft/world/level/ChunkPos;)V", shift = At.Shift.BEFORE), cancellable = true)

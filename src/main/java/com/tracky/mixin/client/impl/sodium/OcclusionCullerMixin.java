@@ -69,6 +69,8 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 			// In this scenario we need to grab each "plane" of the area and submit it as the start since we can see the entire face
 			CameraTransform transform = viewport.getTransform();
 
+			// TODO don't include chunks outside the render distance
+
 			// down/up
 			if (transform.y < this.tracky$minSection.y() << SectionPos.SECTION_BITS) {
 				for (int x = this.tracky$minSection.x(); x <= this.tracky$maxSection.x(); x++) {

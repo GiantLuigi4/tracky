@@ -1,18 +1,15 @@
 package com.tracky.mixin.client;
 
 import com.tracky.Tracky;
-import com.tracky.TrackyAccessor;
-import com.tracky.api.TrackingSource;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -30,8 +27,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Mixin(ClientChunkCache.class)
 public abstract class ClientChunkProviderMixin implements IChunkProviderAttachments {
@@ -97,7 +92,7 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 	@Inject(at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;warn(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V", shift = At.Shift.BEFORE), method = "replaceWithPacketData", cancellable = true)
 	public void preReplaceWithPacket(int pX, int pZ, FriendlyByteBuf pBuffer, CompoundTag pTag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> pConsumer, CallbackInfoReturnable<LevelChunk> cir) {
 		ChunkPos pos = new ChunkPos(pX, pZ);
-		LevelChunk chunk = tracky$getChunk(pos);
+		LevelChunk chunk = this.tracky$getChunk(pos);
 
 		boolean wasPresent = chunk != null;
 		if (!wasPresent) {
@@ -164,26 +159,22 @@ public abstract class ClientChunkProviderMixin implements IChunkProviderAttachme
 		if (pViewDistance != ((ChunkStorageAccessor) (Object) this.storage).getChunkRadius()) {
 			Iterator<ChunkPos> iterator = this.tracky$chunks.keySet().iterator();
 
-			LocalPlayer player = Minecraft.getInstance().player;
-			int sectionX = SectionPos.blockToSectionCoord(player.blockPosition().getX());
-			int sectionZ = SectionPos.blockToSectionCoord(player.blockPosition().getZ());
+			BlockPos playerPos = Minecraft.getInstance().player.blockPosition();
+			int sectionX = SectionPos.blockToSectionCoord(playerPos.getX());
+			int sectionZ = SectionPos.blockToSectionCoord(playerPos.getZ());
 
-			loopChunks:
 			while (iterator.hasNext()) {
 				ChunkPos chunkPos = iterator.next();
-				LevelChunk levelchunk = tracky$getChunk(chunkPos);
+				LevelChunk levelchunk = this.tracky$getChunk(chunkPos);
 				if (levelchunk != null) {
 
-					if (isChunkInRange(
-							levelchunk.getPos().x, levelchunk.getPos().z,
-							sectionX, sectionZ,
-							pViewDistance
-					)) {
+					if (isChunkInRange(levelchunk.getPos().x, levelchunk.getPos().z, sectionX, sectionZ, pViewDistance)) {
 						continue;
 					}
 
-					if (Tracky.sourceContains(level, chunkPos))
+					if (Tracky.sourceContains(this.level, chunkPos)) {
 						continue;
+					}
 
 					// TODO: actually might be unecessary?
 					//		 need to check this with a mod like dynamic portals
