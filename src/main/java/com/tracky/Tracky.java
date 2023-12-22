@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 @Mod("tracky")
 public class Tracky {
 
-	public static boolean ENABLE_TEST = true;
+	public static boolean ENABLE_TEST = System.getProperty("tracky.debug") != null;
 	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {
