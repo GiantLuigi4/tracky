@@ -23,7 +23,8 @@ public class TestSource extends BoxRenderSource {
 
 	@Override
 	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
-		matrixStack.translate(10000-camX, 128 - camY, -camZ);
+//		matrixStack.translate(10000-camX, 128 - camY, -camZ);
+		matrixStack.translate(-camX, 128 - camY, -camZ);
 
 		int avgX = (this.min.minBlockX() + this.max.maxBlockX()) / 2;
 		int avgZ = (this.min.minBlockZ() + this.max.maxBlockZ()) / 2;

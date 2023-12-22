@@ -9,6 +9,7 @@ import com.tracky.TrackyAccessor;
 import com.tracky.access.ExtendedBlockEntityRenderDispatcher;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyRenderChunk;
+import com.tracky.impl.OFChunkRenderer;
 import com.tracky.impl.TrackyChunkInfoMap;
 import com.tracky.impl.TrackyVanillaViewArea;
 import com.tracky.impl.VanillaChunkRenderer;
@@ -23,6 +24,7 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
@@ -73,9 +75,6 @@ public abstract class LevelRendererMixin {
 	private Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress;
 
 	@Shadow
-	public abstract boolean shouldShowEntityOutlines();
-
-	@Shadow
 	@Final
 	private BlockEntityRenderDispatcher blockEntityRenderDispatcher;
 	@Shadow
@@ -91,7 +90,33 @@ public abstract class LevelRendererMixin {
 	private TrackyVanillaViewArea tracky$ViewArea;
 
 	@Unique
-	private final VanillaChunkRenderer tracky$chunkRenderer = new VanillaChunkRenderer();
+	private static boolean OF;
+	
+	// MIXIN
+	// WHY ARE YOU STUPID
+	// HOW IS THIS ANY DIFFERENT FROM JUST "static {"
+	// WHY
+	@Inject(at = @At("TAIL"), method = "<clinit>")
+	private static void postInit(CallbackInfo ci) {
+		boolean present = false;
+		try {
+			Class<?> SHADERS = Class.forName("net.optifine.shaders.Shaders");
+			// pretty sure this null check is unecessary, but I'm just trying to ensure that the class's presence is actually checked
+			//noinspection ConstantValue
+			if (SHADERS != null) present = true;
+		} catch (ClassNotFoundException ignored) {
+		}
+		
+		OF = present;
+	}
+	
+	@Unique
+	private VanillaChunkRenderer tracky$chunkRenderer;
+
+	@Inject(at = @At("TAIL"), method = "<init>")
+	public void postInit(Minecraft pMinecraft, EntityRenderDispatcher pEntityRenderDispatcher, BlockEntityRenderDispatcher pBlockEntityRenderDispatcher, RenderBuffers pRenderBuffers, CallbackInfo ci) {
+		tracky$chunkRenderer = OF ? new OFChunkRenderer() : new VanillaChunkRenderer();
+	}
 
 	// FIXME Sometimes the chunks don't seem to fully load when the level is first set. It's inconsistent, so it might be a threading issue
 

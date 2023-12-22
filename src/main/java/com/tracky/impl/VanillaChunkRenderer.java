@@ -28,9 +28,9 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	private static final int FOG_SHAPE = 0b010000;
 	private static final int FOG_COLOR = 0b10000;
 
-	private final Vector3d cameraPos = new Vector3d();
-	private ShaderInstance shader;
-	private int modified;
+	final Vector3d cameraPos = new Vector3d();
+	ShaderInstance shader;
+	int modified;
 
 	private void set(Uniform uniform, Matrix4fc value) {
 		UniformAccessor accessor = (UniformAccessor) uniform;
@@ -137,6 +137,8 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 
 	public void reset() {
 		if (this.modified == 0) {
+			// added this to be consistent with what happens if modified is not 0
+			this.shader = null;
 			return;
 		}
 
