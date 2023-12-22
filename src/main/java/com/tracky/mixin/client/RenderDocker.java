@@ -10,7 +10,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -46,16 +49,19 @@ public class RenderDocker {
 			tracky$LOGGER.warn("Renderdoc detected, would you like to load it? y/N");
 
 			long start = System.currentTimeMillis();
-			Scanner sc = new Scanner(System.in);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 			while (System.currentTimeMillis() - start <= ENABLE_TIME) {
-				if (sc.hasNextLine()) {
-					String ln = sc.nextLine().trim().toLowerCase(Locale.ROOT);
-					if (ln.startsWith("y")) {
-						doEnable[0] = true;
-						return;
-					} else if (ln.startsWith("n")) {
-						return;
+				try {
+					if (reader.ready()) {
+						String ln = reader.readLine().trim().toLowerCase(Locale.ROOT);
+						if (ln.startsWith("y")) {
+							doEnable[0] = true;
+							return;
+						} else if (ln.startsWith("n")) {
+							return;
+						}
 					}
+				} catch (Exception ignored) {
 				}
 			}
 		}, "Tracky-RenderDocker");
