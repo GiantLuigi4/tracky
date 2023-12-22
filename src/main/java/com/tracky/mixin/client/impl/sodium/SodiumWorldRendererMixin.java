@@ -195,13 +195,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.world).values()) {
 				for (RenderSource source : value.get()) {
 					TrackyRenderSectionManager sectionManager = (TrackyRenderSectionManager) this.tracky$getRenderSectionManager(source);
-
-					boolean applyCamera = source.applyCameraChunkOffset();
-					double x = applyCamera ? camX : 0;
-					double y = applyCamera ? camY : 0;
-					double z = applyCamera ? camZ : 0;
-
-					sectionManager.setup(source, matrixStack, x, y, z);
+					sectionManager.setup(source, matrixStack);
 					source.draw(sectionManager, matrixStack, (TrackyViewArea) sectionManager, renderLayer, camX, camY, camZ);
 					sectionManager.reset();
 				}
@@ -232,20 +226,12 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			RenderSectionManager sectionManager = this.tracky$getRenderSectionManager(renderSource);
 			Iterator<ChunkRenderList> iterator = sectionManager.getRenderLists().iterator();
 
-			boolean applyCamera = renderSource.applyCameraChunkOffset();
-			double x = applyCamera ? cameraPos.x : 0;
-			double y = applyCamera ? cameraPos.y : 0;
-			double z = applyCamera ? cameraPos.z : 0;
-
 			Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
 
 			matrices.pushPose();
 			matrices.mulPoseMatrix(transformation);
 
 			transformation.invert().transformPosition(cameraPosition);
-			if (applyCamera) {
-				cameraPosition.add((float) x, (float) y, (float) z);
-			}
 			((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(new Vec3(cameraPosition));
 
 			while (iterator.hasNext()) {
@@ -259,7 +245,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 						BlockEntity[] blockEntities = renderSection.getCulledBlockEntities();
 						if (blockEntities != null) {
 							for (BlockEntity blockEntity : blockEntities) {
-								renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
+								renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, 0, 0, 0, blockEntityRenderer, blockEntity);
 							}
 						}
 					}
@@ -270,7 +256,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 				BlockEntity[] blockEntities = renderSection.getGlobalBlockEntities();
 				if (blockEntities != null) {
 					for (BlockEntity blockEntity : blockEntities) {
-						renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
+						renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, 0, 0, 0, blockEntityRenderer, blockEntity);
 					}
 				}
 			}

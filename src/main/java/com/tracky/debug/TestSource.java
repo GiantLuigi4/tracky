@@ -33,11 +33,6 @@ public class TestSource extends BoxRenderSource {
 	}
 
 	@Override
-	public boolean applyCameraChunkOffset() {
-		return false;
-	}
-
-	@Override
 	public void draw(TrackyChunkRenderer chunkRenderer, PoseStack matrixStack, TrackyViewArea area, RenderType type, double camX, double camY, double camZ) {
 		// (ocelot): TODO: make cylindrical fog work
 		// (laz): I've tried playing around with the fog in the past, it's gonna require custom shaders

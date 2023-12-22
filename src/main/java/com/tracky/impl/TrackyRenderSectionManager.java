@@ -35,7 +35,6 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 	private final Matrix4f projection = new Matrix4f();
 	private final Matrix4f modelView = new Matrix4f();
 	private final float[] fogColor = new float[4];
-	private final Vector3f cameraPos = new Vector3f();
 
 	private float fogStart;
 	private float fogEnd;
@@ -90,19 +89,18 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 
 		ChunkRenderMatrices matrices = new ChunkRenderMatrices(this.projection, this.modelView);
 		if (layer == RenderType.solid()) {
-			this.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, this.cameraPos.x, this.cameraPos.y, this.cameraPos.z);
-			this.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, this.cameraPos.x, this.cameraPos.y, this.cameraPos.z);
+			this.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, 0, 0, 0);
+			this.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, 0, 0, 0);
 		} else if (layer == RenderType.translucent()) {
-			this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, this.cameraPos.x, this.cameraPos.y, this.cameraPos.z);
+			this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, 0, 0, 0);
 		}
 
 		config.useBlockFaceCulling = useBlockFaceCulling;
 	}
 
-	public void setup(RenderSource source, PoseStack stack, double cameraX, double cameraY, double cameraZ) {
+	public void setup(RenderSource source, PoseStack stack) {
 		this.modelView.set(stack.last().pose());
 		this.projection.set(RenderSystem.getProjectionMatrix());
-		this.cameraPos.set(cameraX, cameraY, cameraZ);
 
 		// Back up fog parameters
 		this.fogStart = RenderSystem.getShaderFogStart();

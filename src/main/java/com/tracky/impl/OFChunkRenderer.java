@@ -113,8 +113,8 @@ public class OFChunkRenderer extends VanillaChunkRenderer {
 	}
 
 	@Override
-	public void prepare(ShaderInstance shader, double cameraX, double cameraY, double cameraZ) {
-		super.prepare(shader, cameraX, cameraY, cameraZ);
+	public void prepare(ShaderInstance shader) {
+		super.prepare(shader);
 		this.shadersActive = OFShadersAccessor.checkShadersActive();
 	}
 

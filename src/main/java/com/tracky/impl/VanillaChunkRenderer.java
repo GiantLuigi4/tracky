@@ -116,7 +116,7 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 
 			if (uniform != null) {
 				BlockPos pos = renderChunk.getOrigin();
-				uniform.set((float) ((double) pos.getX() - this.cameraPos.x), (float) ((double) pos.getY() - this.cameraPos.y), (float) ((double) pos.getZ() - this.cameraPos.z));
+				uniform.set((float) pos.getX(), (float) pos.getY(), (float) pos.getZ());
 				uniform.upload();
 			}
 
@@ -130,10 +130,9 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 		}
 	}
 
-	public void prepare(ShaderInstance shader, double cameraX, double cameraY, double cameraZ) {
+	public void prepare(ShaderInstance shader) {
 		this.shader = shader;
 		this.modified = 0;
-		this.cameraPos.set(cameraX, cameraY, cameraZ);
 	}
 
 	public void reset() {

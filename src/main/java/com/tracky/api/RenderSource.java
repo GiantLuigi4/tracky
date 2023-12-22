@@ -287,13 +287,6 @@ public class RenderSource {
 	}
 
 	/**
-	 * @return Whether to include the camera position in the chunk offset. If <code>false</code>, then {@link #transform(PoseStack, double, double, double)} needs to transform the render source relative to the player
-	 */
-	public boolean applyCameraChunkOffset() {
-		return true;
-	}
-
-	/**
 	 * draws the chunks in the render source
 	 * if you want to apply transformations to the rendering, see {@link com.tracky.debug.TestSource}
 	 * most mods will want to override this, do some setup before calling super, and then do some teardown afterwards

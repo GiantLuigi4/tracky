@@ -77,9 +77,11 @@ public abstract class LevelRendererMixin {
 	@Shadow
 	@Final
 	private BlockEntityRenderDispatcher blockEntityRenderDispatcher;
+
 	@Shadow
 	@Final
 	private RenderBuffers renderBuffers;
+
 	@Unique
 	private final TrackyChunkInfoMap tracky$chunkInfoMap = new TrackyChunkInfoMap();
 
@@ -90,8 +92,8 @@ public abstract class LevelRendererMixin {
 	private TrackyVanillaViewArea tracky$ViewArea;
 
 	@Unique
-	private static boolean OF;
-	
+	private static boolean tracky$OF;
+
 	// MIXIN
 	// WHY ARE YOU STUPID
 	// HOW IS THIS ANY DIFFERENT FROM JUST "static {"
@@ -106,19 +108,17 @@ public abstract class LevelRendererMixin {
 			if (SHADERS != null) present = true;
 		} catch (ClassNotFoundException ignored) {
 		}
-		
-		OF = present;
+
+		tracky$OF = present;
 	}
-	
+
 	@Unique
 	private VanillaChunkRenderer tracky$chunkRenderer;
 
 	@Inject(at = @At("TAIL"), method = "<init>")
 	public void postInit(Minecraft pMinecraft, EntityRenderDispatcher pEntityRenderDispatcher, BlockEntityRenderDispatcher pBlockEntityRenderDispatcher, RenderBuffers pRenderBuffers, CallbackInfo ci) {
-		tracky$chunkRenderer = OF ? new OFChunkRenderer() : new VanillaChunkRenderer();
+		this.tracky$chunkRenderer = tracky$OF ? new OFChunkRenderer() : new VanillaChunkRenderer();
 	}
-
-	// FIXME Sometimes the chunks don't seem to fully load when the level is first set. It's inconsistent, so it might be a threading issue
 
 	private void renderBlockEntity(Collection<BlockEntity> blockEntities, PoseStack poseStack, float partialTick, double cameraX, double cameraY, double cameraZ) {
 		for (BlockEntity blockEntity : blockEntities) {
@@ -164,23 +164,15 @@ public abstract class LevelRendererMixin {
 						continue;
 					}
 
-					boolean applyCamera = renderSource.applyCameraChunkOffset();
-					double x = applyCamera ? cameraPos.x : 0;
-					double y = applyCamera ? cameraPos.y : 0;
-					double z = applyCamera ? cameraPos.z : 0;
-
 					Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
 
 					matrices.pushPose();
 					matrices.mulPoseMatrix(transformation);
 
 					transformation.invert().transformPosition(cameraPosition);
-					if (applyCamera) {
-						cameraPosition.add((float) x, (float) y, (float) z);
-					}
 					((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition));
 
-					this.renderBlockEntity(blockEntities, matrices, pPartialTick, x, y, z);
+					this.renderBlockEntity(blockEntities, matrices, pPartialTick, 0, 0, 0);
 
 					matrices.popPose();
 				}
@@ -329,12 +321,7 @@ public abstract class LevelRendererMixin {
 						source.doFrustumUpdate(mainCamera, frustum);
 					}
 
-					boolean applyCamera = source.applyCameraChunkOffset();
-					double x = applyCamera ? camX : 0;
-					double y = applyCamera ? camY : 0;
-					double z = applyCamera ? camZ : 0;
-
-					this.tracky$chunkRenderer.prepare(instance, x, y, z);
+					this.tracky$chunkRenderer.prepare(instance);
 					source.draw(this.tracky$chunkRenderer, stack, this.tracky$ViewArea, renderType, camX, camY, camZ);
 					this.tracky$chunkRenderer.reset();
 				}
