@@ -15,6 +15,7 @@ import com.tracky.impl.TrackyVanillaViewArea;
 import com.tracky.impl.VanillaChunkRenderer;
 import com.tracky.util.ObjectUnionList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.client.Camera;
@@ -31,15 +32,16 @@ import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.system.NativeResource;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -82,6 +84,9 @@ public abstract class LevelRendererMixin {
 	@Final
 	private RenderBuffers renderBuffers;
 
+	@Shadow
+	@javax.annotation.Nullable
+	private ViewArea viewArea;
 	@Unique
 	private final TrackyChunkInfoMap tracky$chunkInfoMap = new TrackyChunkInfoMap();
 
@@ -89,38 +94,16 @@ public abstract class LevelRendererMixin {
 	private final Set<ChunkRenderDispatcher.RenderChunk> tracky$chunksToRender = new ObjectArraySet<>();
 
 	@Unique
-	private TrackyVanillaViewArea tracky$ViewArea;
+	private final Map<RenderSource, TrackyVanillaViewArea> tracky$ViewAreas = new Object2ObjectArrayMap<>();
 
 	@Unique
 	private static boolean tracky$OF;
 
-	// MIXIN
-	// WHY ARE YOU STUPID
-	// HOW IS THIS ANY DIFFERENT FROM JUST "static {"
-	// WHY
-	@Inject(at = @At("TAIL"), method = "<clinit>")
-	private static void postInit(CallbackInfo ci) {
-		boolean present = false;
-		try {
-			Class<?> SHADERS = Class.forName("net.optifine.shaders.Shaders");
-			// pretty sure this null check is unecessary, but I'm just trying to ensure that the class's presence is actually checked
-			//noinspection ConstantValue
-			if (SHADERS != null) present = true;
-		} catch (ClassNotFoundException ignored) {
-		}
-
-		tracky$OF = present;
-	}
-
 	@Unique
 	private VanillaChunkRenderer tracky$chunkRenderer;
 
-	@Inject(at = @At("TAIL"), method = "<init>")
-	public void postInit(Minecraft pMinecraft, EntityRenderDispatcher pEntityRenderDispatcher, BlockEntityRenderDispatcher pBlockEntityRenderDispatcher, RenderBuffers pRenderBuffers, CallbackInfo ci) {
-		this.tracky$chunkRenderer = tracky$OF ? new OFChunkRenderer() : new VanillaChunkRenderer();
-	}
-
-	private void renderBlockEntity(Collection<BlockEntity> blockEntities, PoseStack poseStack, float partialTick, double cameraX, double cameraY, double cameraZ) {
+	@Unique
+	private void tracky$renderBlockEntity(Collection<BlockEntity> blockEntities, PoseStack poseStack, float partialTick, double cameraX, double cameraY, double cameraZ) {
 		for (BlockEntity blockEntity : blockEntities) {
 //				if(!frustum.isVisible(blockentity1.getRenderBoundingBox())) continue;
 			BlockPos pos = blockEntity.getBlockPos();
@@ -143,6 +126,39 @@ public abstract class LevelRendererMixin {
 			this.blockEntityRenderDispatcher.render(blockEntity, partialTick, poseStack, source);
 			poseStack.popPose();
 		}
+	}
+
+	@Unique
+	private TrackyVanillaViewArea tracky$getViewArea(RenderSource source) {
+		TrackyVanillaViewArea viewArea = this.tracky$ViewAreas.get(source);
+		if (viewArea == null) {
+			viewArea = new TrackyVanillaViewArea(this.chunkRenderDispatcher, this.level, this.tracky$chunksToRender::add);
+			this.tracky$ViewAreas.put(source, viewArea);
+		}
+		return viewArea;
+	}
+
+	// MIXIN
+	// WHY ARE YOU STUPID
+	// HOW IS THIS ANY DIFFERENT FROM JUST "static {"
+	// WHY
+	@Inject(at = @At("TAIL"), method = "<clinit>")
+	private static void postInit(CallbackInfo ci) {
+		boolean present = false;
+		try {
+			Class<?> SHADERS = Class.forName("net.optifine.shaders.Shaders");
+			// pretty sure this null check is unecessary, but I'm just trying to ensure that the class's presence is actually checked
+			//noinspection ConstantValue
+			if (SHADERS != null) present = true;
+		} catch (ClassNotFoundException ignored) {
+		}
+
+		tracky$OF = present;
+	}
+
+	@Inject(at = @At("TAIL"), method = "<init>")
+	public void postInit(Minecraft pMinecraft, EntityRenderDispatcher pEntityRenderDispatcher, BlockEntityRenderDispatcher pBlockEntityRenderDispatcher, RenderBuffers pRenderBuffers, CallbackInfo ci) {
+		this.tracky$chunkRenderer = tracky$OF ? new OFChunkRenderer() : new VanillaChunkRenderer();
 	}
 
 	@Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
@@ -172,7 +188,7 @@ public abstract class LevelRendererMixin {
 					transformation.invert().transformPosition(cameraPosition);
 					((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition));
 
-					this.renderBlockEntity(blockEntities, matrices, pPartialTick, 0, 0, 0);
+					this.tracky$renderBlockEntity(blockEntities, matrices, pPartialTick, 0, 0, 0);
 
 					matrices.popPose();
 				}
@@ -228,7 +244,7 @@ public abstract class LevelRendererMixin {
 	private void updateRenderChunks(Camera pCamera, Frustum pFrustum, boolean pHasCapturedFrustum, boolean pIsSpectator, CallbackInfo ci) {
 		for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 			for (RenderSource source : value.get()) {
-				source.updateChunks(this.level, this.tracky$ViewArea, renderChunk -> {
+				source.updateChunks(this.level, this.tracky$getViewArea(source), renderChunk -> {
 					renderChunk.setRenderSource(source);
 					this.tracky$chunksToRender.add((ChunkRenderDispatcher.RenderChunk) renderChunk);
 				});
@@ -254,10 +270,8 @@ public abstract class LevelRendererMixin {
 		this.tracky$chunksToRender.clear();
 
 		if (this.level != null) { // level can be null here
-			if (this.tracky$ViewArea != null) {
-				this.tracky$ViewArea.free();
-			}
-			this.tracky$ViewArea = new TrackyVanillaViewArea(this.chunkRenderDispatcher, this.level, this.tracky$chunksToRender::add);
+			this.tracky$ViewAreas.values().forEach(NativeResource::free);
+			this.tracky$ViewAreas.clear();
 
 			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
 				for (RenderSource source : value.get()) {
@@ -270,9 +284,9 @@ public abstract class LevelRendererMixin {
 	/* allows sources to delete any resources they have allocated */
 	@Inject(at = @At("HEAD"), method = "setLevel")
 	public void freeSources(ClientLevel level, CallbackInfo ci) {
-		if (level == null && this.tracky$ViewArea != null) {
-			this.tracky$ViewArea.free();
-			this.tracky$ViewArea = null;
+		if (level == null) {
+			this.tracky$ViewAreas.values().forEach(NativeResource::free);
+			this.tracky$ViewAreas.clear();
 		}
 		if (this.level != null && this.level != level) { // The level is about to be changed to something else, so free render sources
 			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.level).values()) {
@@ -286,7 +300,7 @@ public abstract class LevelRendererMixin {
 	/* Updates the tracky view area */
 	@Inject(method = "setSectionDirty(IIIZ)V", at = @At("TAIL"))
 	public void setSectionDirty(int sectionX, int sectionY, int sectionZ, boolean reRenderOnMainThread, CallbackInfo ci) {
-		this.tracky$ViewArea.setDirty(sectionX, sectionY, sectionZ, reRenderOnMainThread);
+		this.tracky$ViewAreas.values().forEach(viewArea -> viewArea.setDirty(sectionX, sectionY, sectionZ, reRenderOnMainThread));
 	}
 
 	/* allows render sources to perform frustum culling when vanilla does */
@@ -322,7 +336,7 @@ public abstract class LevelRendererMixin {
 					}
 
 					this.tracky$chunkRenderer.prepare(instance);
-					source.draw(this.tracky$chunkRenderer, stack, this.tracky$ViewArea, renderType, camX, camY, camZ);
+					source.draw(this.tracky$chunkRenderer, stack, this.tracky$getViewArea(source), renderType, camX, camY, camZ);
 					this.tracky$chunkRenderer.reset();
 				}
 			}
