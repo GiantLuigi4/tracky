@@ -5,8 +5,8 @@ import com.tracky.TrackyAccessor;
 import com.tracky.access.ServerMapHolder;
 import com.tracky.api.SquareTrackingSource;
 import com.tracky.api.TrackingSource;
+import com.tracky.debug.TestSource;
 import com.tracky.util.MapWrapper;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
@@ -38,11 +38,7 @@ public abstract class LevelMixin implements ServerMapHolder {
 		if (FMLEnvironment.production)
 			return;
 
-		SquareTrackingSource source = new SquareTrackingSource(
-				new ChunkPos(new BlockPos(-656 * 1, -63, 656 * 1)),
-				new ChunkPos(new BlockPos(656 * 1, 319, 656 * 2))
-		);
-
+		SquareTrackingSource source = new SquareTrackingSource(new ChunkPos(TestSource.MIN), new ChunkPos(TestSource.MAX));
 		TrackyAccessor.getTrackingSources(((Level) (Object) this)).put(
 				Tracky.getDefaultUUID("tracky", "testing"),
 				() -> {

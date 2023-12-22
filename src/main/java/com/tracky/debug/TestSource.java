@@ -14,16 +14,16 @@ import org.joml.Quaternionf;
 
 public class TestSource extends BoxRenderSource {
 
+	public static final BlockPos MIN = new BlockPos(-656 * 1, -63, 656 * 1);
+	public static final BlockPos MAX = new BlockPos(656 * 1, 319, 656 * 2);
+
 	public TestSource() {
-		super(
-				SectionPos.of(new BlockPos(-656 * 1, -63, 656 * 1)),
-				SectionPos.of(new BlockPos(656 * 1, 319, 656 * 2))
-		);
+		super(SectionPos.of(MIN), SectionPos.of(MAX));
 	}
 
 	@Override
 	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
-//		matrixStack.translate(10000-camX, 128 - camY, -camZ);
+//		matrixStack.translate(10000 - camX, 128 - camY, -camZ);
 		matrixStack.translate(-camX, 128 - camY, -camZ);
 
 		int avgX = (this.min.minBlockX() + this.max.maxBlockX()) / 2;
