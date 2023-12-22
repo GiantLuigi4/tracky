@@ -7,8 +7,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -21,7 +21,7 @@ public class TrackyMixinPlugin implements IMixinConfigPlugin {
 		this.sodium = FMLLoader.getLoadingModList().getModFileById("rubidium") != null;
 
 		if (this.sodium) {
-			Tracky.LOGGER.info("Using Rubidium Renderer");
+			Tracky.LOGGER.info("Using Sodium Renderer");
 		} else {
 			Tracky.LOGGER.info("Using Vanilla Renderer");
 		}
@@ -51,19 +51,41 @@ public class TrackyMixinPlugin implements IMixinConfigPlugin {
 
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+		if (!FMLLoader.isProduction() || !Tracky.ENABLE_TEST) {
+			return;
+		}
+
 		try {
-			FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
+			File folder = new File("mixin-debug");
+			folder.mkdirs();
+			FileOutputStream outputStream = new FileOutputStream(new File(folder, targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class"));
 			ClassWriter writer = new ClassWriter(0);
 			targetClass.accept(writer);
 			outputStream.write(writer.toByteArray());
 			outputStream.flush();
 			outputStream.close();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+		if (!FMLLoader.isProduction() || !Tracky.ENABLE_TEST) {
+			return;
+		}
+
+		try {
+			File folder = new File("mixin-debug");
+			folder.mkdirs();
+			FileOutputStream outputStream = new FileOutputStream(new File(folder, targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class"));
+			ClassWriter writer = new ClassWriter(0);
+			targetClass.accept(writer);
+			outputStream.write(writer.toByteArray());
+			outputStream.flush();
+			outputStream.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

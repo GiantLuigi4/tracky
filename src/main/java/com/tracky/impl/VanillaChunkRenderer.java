@@ -28,9 +28,10 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	private static final int FOG_SHAPE = 0b010000;
 	private static final int FOG_COLOR = 0b10000;
 
-	final Vector3d cameraPos = new Vector3d();
-	ShaderInstance shader;
-	int modified;
+	protected final Vector3d cameraPos = new Vector3d();
+	protected ShaderInstance shader;
+
+	private int modified;
 
 	private void set(Uniform uniform, Matrix4fc value) {
 		UniformAccessor accessor = (UniformAccessor) uniform;

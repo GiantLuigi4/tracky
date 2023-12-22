@@ -16,7 +16,11 @@ import java.util.Scanner;
 
 @Mixin(Main.class)
 public class RenderDocker {
-	@Unique private static final Logger LOGGER = LoggerFactory.getLogger("Tracky::DEBUG");
+
+	@Unique
+	private static final Logger tracky$LOGGER = LoggerFactory.getLogger("Tracky::DEBUG");
+	@Unique
+	private static final int ENABLE_TIME = 4000;
 
 	@Inject(method = "main", at = @At("HEAD"), remap = false)
 	private static void preMain(String[] pArgs, CallbackInfo ci) {
@@ -28,46 +32,48 @@ public class RenderDocker {
 		for (String s : pth.split(";")) {
 			if (new File(s + "/" + name).exists()) {
 				rdDetected = true;
+				break;
 			}
 		}
 
-		if (rdDetected) {
-			boolean[] doEnable = new boolean[]{false};
+		if (!rdDetected) {
+			return;
+		}
 
-			Thread td = new Thread(() -> {
-				LOGGER.warn("Renderdoc detected, would you like to load it? y/N");
+		boolean[] doEnable = new boolean[]{false};
 
-				Scanner sc = new Scanner(System.in);
-				while (true) {
-					String ln = sc.nextLine().trim();
-					if (ln.toLowerCase(Locale.ROOT).startsWith("y")) {
+		Thread td = new Thread(() -> {
+			tracky$LOGGER.warn("Renderdoc detected, would you like to load it? Y/N");
+
+			long start = System.currentTimeMillis();
+			Scanner sc = new Scanner(System.in);
+			while (System.currentTimeMillis() - start <= ENABLE_TIME) {
+				if (sc.hasNextLine()) {
+					String ln = sc.nextLine().trim().toLowerCase(Locale.ROOT);
+					if (ln.startsWith("y")) {
 						doEnable[0] = true;
 						return;
-					} else if (ln.toLowerCase(Locale.ROOT).startsWith("n")) {
+					} else if (ln.startsWith("n")) {
 						return;
 					}
 				}
-			});
+			}
+		}, "Tracky-RenderDocker");
 
-			td.setDaemon(true);
-			td.start();
+		td.setDaemon(true);
+		td.start();
 
+		try {
 			try {
-				int tm = 0;
-				while (tm <= 4000 && !doEnable[0]) {
-					Thread.sleep(10);
-					tm += 10;
-				}
-				//@formatter:off
-				try { td.interrupt(); } catch (Throwable ignored) { }
-				try { td.stop(); } catch (Throwable ignored) { }
-				//@formatter:on
-
-				if (doEnable[0]) {
-					System.loadLibrary("renderdoc");
-				}
+				// We just need to wait for the thread to stop
+				td.join();
 			} catch (Throwable ignored) {
 			}
+
+			if (doEnable[0]) {
+				System.loadLibrary("renderdoc");
+			}
+		} catch (Throwable ignored) {
 		}
 	}
 }
