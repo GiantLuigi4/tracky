@@ -43,7 +43,7 @@ public class RenderDocker {
 		boolean[] doEnable = new boolean[]{false};
 
 		Thread td = new Thread(() -> {
-			tracky$LOGGER.warn("Renderdoc detected, would you like to load it? Y/N");
+			tracky$LOGGER.warn("Renderdoc detected, would you like to load it? y/N");
 
 			long start = System.currentTimeMillis();
 			Scanner sc = new Scanner(System.in);
