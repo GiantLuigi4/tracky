@@ -3,17 +3,17 @@ package com.tracky.impl;
 import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.tracky.access.sodium.ExtendedDefaultChunkRenderer;
 import com.tracky.access.sodium.ExtendedOcclusionCuller;
 import com.tracky.api.RenderSource;
 import com.tracky.api.TrackyChunkRenderer;
 import com.tracky.api.TrackyRenderChunk;
 import com.tracky.mixin.client.impl.sodium.RenderSectionManagerAccessor;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
@@ -36,6 +36,7 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 	private final Matrix4f modelView = new Matrix4f();
 	private final float[] fogColor = new float[4];
 
+	private CameraTransform cameraTransform;
 	private float fogStart;
 	private float fogEnd;
 	private FogShape fogShape;
@@ -83,9 +84,8 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 
 	@Override
 	public void render(Collection<TrackyRenderChunk> chunks, RenderType layer) {
-		SodiumGameOptions.PerformanceSettings config = SodiumClientMod.options().performance;
-		boolean useBlockFaceCulling = config.useBlockFaceCulling;
-		config.useBlockFaceCulling = false; // TODO make it so this can work
+		ExtendedDefaultChunkRenderer chunkRenderer = (ExtendedDefaultChunkRenderer) ((RenderSectionManagerAccessor) this).getChunkRenderer();
+		chunkRenderer.tracky$setCameraTransform(this.cameraTransform);
 
 		ChunkRenderMatrices matrices = new ChunkRenderMatrices(this.projection, this.modelView);
 		if (layer == RenderType.solid()) {
@@ -95,10 +95,10 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 			this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, 0, 0, 0);
 		}
 
-		config.useBlockFaceCulling = useBlockFaceCulling;
+		chunkRenderer.tracky$setCameraTransform(null);
 	}
 
-	public void setup(RenderSource source, PoseStack stack) {
+	public void setup(RenderSource source, PoseStack stack, double camX, double camY, double camZ) {
 		this.modelView.set(stack.last().pose());
 		this.projection.set(RenderSystem.getProjectionMatrix());
 
@@ -108,11 +108,10 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		this.fogShape = RenderSystem.getShaderFogShape();
 		System.arraycopy(RenderSystem.getShaderFogColor(), 0, this.fogColor, 0, 4);
 
-//		PoseStack poseStack = new PoseStack();
-//		poseStack.translate(-cameraX, -cameraY, -cameraZ);
-//		source.transform(poseStack, cameraX, cameraY, cameraZ);
-//		poseStack.translate(cameraX, cameraY, cameraZ);
-//		this.regionTransform = poseStack.last().pose();
+		// Update camera position
+		Vector3f pos = new Vector3f((float) camX, (float) camY, (float) camZ);
+		source.getTransformation(0, 0, 0).invert().transformPosition(pos);
+		this.cameraTransform = new CameraTransform(pos.x, pos.y, pos.z);
 	}
 
 	public void reset() {
@@ -121,7 +120,7 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		RenderSystem.setShaderFogEnd(this.fogEnd);
 		RenderSystem.setShaderFogShape(this.fogShape);
 		System.arraycopy(this.fogColor, 0, RenderSystem.getShaderFogColor(), 0, 4);
-//		this.regionTransform = null;
+		this.cameraTransform = null;
 	}
 
 	public boolean disableOcclusionCulling(ClientLevel level, Camera camera, boolean spectator) {

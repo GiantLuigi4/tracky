@@ -195,7 +195,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			for (Supplier<Collection<RenderSource>> value : TrackyAccessor.getRenderSources(this.world).values()) {
 				for (RenderSource source : value.get()) {
 					TrackyRenderSectionManager sectionManager = (TrackyRenderSectionManager) this.tracky$getRenderSectionManager(source);
-					sectionManager.setup(source, matrixStack);
+					sectionManager.setup(source, matrixStack, camX, camY, camZ);
 					source.draw(sectionManager, matrixStack, (TrackyViewArea) sectionManager, renderLayer, camX, camY, camZ);
 					sectionManager.reset();
 				}

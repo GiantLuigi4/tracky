@@ -41,6 +41,16 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 	@Shadow
 	protected abstract RenderSection getRenderSection(int x, int y, int z);
 
+	@Shadow
+	private static boolean isOutsideRenderDistance(CameraTransform camera, RenderSection section, float maxDistance) {
+		return false;
+	}
+
+	@Shadow
+	public static boolean isOutsideFrustum(Viewport viewport, RenderSection section) {
+		return false;
+	}
+
 	@ModifyVariable(method = "findVisible", at = @At("HEAD"), argsOnly = true)
 	public Viewport modifyViewport(Viewport viewport) {
 		if (this.tracky$renderSource == null) {
@@ -64,8 +74,12 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 		if (section != null) {
 			this.initWithinWorld(visitor, queue, viewport, useOcclusionCulling, frame);
 		} else {
-			// TODO
-			this.sections.values().forEach(visitor);
+			// TODO Allow occlusion culling outside the source
+			this.sections.values().forEach(renderSection -> {
+				if (!isOutsideRenderDistance(viewport.getTransform(), renderSection, searchDistance) && !isOutsideFrustum(viewport, renderSection)) {
+					visitor.accept(renderSection);
+				}
+			});
 		}
 
 		ci.cancel();
