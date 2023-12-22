@@ -25,6 +25,7 @@
     "client.impl.sodium.RenderSectionMixin",
     "client.impl.sodium.ShaderParserMixin",
     "client.impl.sodium.SodiumWorldRendererMixin",
+    "client.impl.sodium.ViewportAccessor",
     "client.impl.vanilla.LevelRendererMixin",
     "client.impl.vanilla.RebuildTaskMixin",
     "client.impl.vanilla.RenderChunkMixin",

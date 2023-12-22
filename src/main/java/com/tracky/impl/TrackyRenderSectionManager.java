@@ -14,11 +14,14 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.joml.Vector3f;
@@ -28,7 +31,7 @@ import java.util.Collection;
 @ApiStatus.Internal
 public class TrackyRenderSectionManager extends RenderSectionManager implements TrackyChunkRenderer {
 
-	private final ExtendedOcclusionCuller extendedOcclusionCuller;
+	private final RenderSource renderSource;
 	private final Matrix4f projection = new Matrix4f();
 	private final Matrix4f modelView = new Matrix4f();
 	private final float[] fogColor = new float[4];
@@ -38,15 +41,10 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 	private float fogEnd;
 	private FogShape fogShape;
 
-	public TrackyRenderSectionManager(ClientLevel world, CommandList commandList) {
-		super(world, Integer.MAX_VALUE, commandList);
-		this.extendedOcclusionCuller = (ExtendedOcclusionCuller) ((RenderSectionManagerAccessor) this).getOcclusionCuller();
-	}
-
-	@Override
-	public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
-		this.extendedOcclusionCuller.tracky$skipChecks();
-		super.update(camera, viewport, frame, spectator);
+	public TrackyRenderSectionManager(ClientLevel level, CommandList commandList, @Nullable RenderSource renderSource) {
+		super(level, Integer.MAX_VALUE, commandList);
+		this.renderSource = renderSource;
+		((ExtendedOcclusionCuller) ((RenderSectionManagerAccessor) this).getOcclusionCuller()).tracky$setRenderSource(renderSource);
 	}
 
 	@Override
@@ -126,5 +124,13 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		RenderSystem.setShaderFogShape(this.fogShape);
 		System.arraycopy(this.fogColor, 0, RenderSystem.getShaderFogColor(), 0, 4);
 //		this.regionTransform = null;
+	}
+
+	public boolean disableOcclusionCulling(ClientLevel level, Camera camera, boolean spectator) {
+		Vec3 cameraPos = camera.getPosition();
+		Vector3f pos = new Vector3f((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
+		this.renderSource.getTransformation(0, 0, 0).invert().transformPosition(pos);
+		BlockPos origin = new BlockPos(Mth.floor(pos.x), Mth.floor(pos.y), Mth.floor(pos.z));
+		return spectator && level.getBlockState(origin).isSolidRender(level, origin);
 	}
 }

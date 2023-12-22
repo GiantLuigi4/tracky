@@ -10,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.lighting.LevelLightEngine;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -270,6 +269,9 @@ public class RenderSource {
 		this.frustumUpdate = true;
 	}
 
+	/**
+	 * @return The transformation matrix of this source
+	 */
 	public final Matrix4f getTransformation(double camX, double camY, double camZ) {
 		PoseStack stack = new PoseStack();
 		this.transform(stack, camX, camY, camZ);
