@@ -5,6 +5,7 @@ import sun.misc.Unsafe;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 
 public class OFShadersAccessor {
@@ -50,8 +51,8 @@ public class OFShadersAccessor {
 			FOG_DISABLE = lookup.unreflect(cls.getMethod("disableFog"));
 			
 			// matrices
-			MODEL_VIEW = lookup.unreflect(cls.getMethod("setModelView", Matrix4f.class));
-			PROJECTION = lookup.unreflect(cls.getMethod("setProjection", Matrix4f.class));
+			MODEL_VIEW = lookup.findStatic(cls, "setModelView", MethodType.methodType(void.class, Matrix4f.class));
+			PROJECTION = lookup.findStatic(cls, "setProjection", MethodType.methodType(void.class, Matrix4f.class));
 			
 			// yipee
 			CHUNK_OFFSET = THE_UNSAFE.staticFieldOffset(cls.getField("uniform_chunkOffset"));
@@ -68,6 +69,7 @@ public class OFShadersAccessor {
 			// regular switch looks nicer here imo
 			//noinspection EnhancedSwitchMigration
 			switch (name) {
+				case "":
 				case "OFF":
 				case "(internal)": // internal shaders act the same as no shaders
 					return false;

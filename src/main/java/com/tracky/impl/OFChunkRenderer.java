@@ -114,14 +114,13 @@ public class OFChunkRenderer extends VanillaChunkRenderer {
 
 	@Override
 	public void prepare(ShaderInstance shader) {
-		super.prepare(shader);
 		this.shadersActive = OFShadersAccessor.checkShadersActive();
+		super.prepare(shader);
 	}
 
 	@Override
 	public void reset() {
 		if (this.shadersActive) {
-			this.shadersActive = false;
 			this.shader = null;
 
 			this.setModelViewMatrix(RenderSystem.getModelViewMatrix());
@@ -130,6 +129,9 @@ public class OFChunkRenderer extends VanillaChunkRenderer {
 			this.setFogEnd(RenderSystem.getShaderFogEnd());
 			this.setFogShape(RenderSystem.getShaderFogShape());
 			this.setFogColor(RenderSystem.getShaderFogColor());
+			
+			// must be set to false after resetting uniforms, elsewise the game crashes
+			this.shadersActive = false;
 		} else {
 			super.reset();
 		}

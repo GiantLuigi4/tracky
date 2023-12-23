@@ -202,6 +202,10 @@ public class RenderSource {
 	 * used to account for F3+A
 	 */
 	public void refresh() {
+//		for (TrackyRenderChunk trackyRenderChunk : chunksInFrustum) {
+//			trackyRenderChunk.free();
+//		}
+		
 		// We can't draw the chunks that were in the frustum
 		this.chunksInFrustum.clear();
 		this.frustumUpdate = true;
@@ -217,6 +221,11 @@ public class RenderSource {
 	 * Deletes any extra resources associated with this source. This is called every time the level is changed.
 	 */
 	public void free() {
+//		for (TrackyRenderChunk trackyRenderChunk : chunksInFrustum) {
+//			trackyRenderChunk.free();
+//		}
+//		chunksInFrustum.clear();
+//		newSections.addAll(sections);
 	}
 
 	/**

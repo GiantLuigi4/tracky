@@ -215,7 +215,11 @@ public abstract class LevelRendererMixin {
 		Iterator<ChunkRenderDispatcher.RenderChunk> iterator = this.tracky$chunksToRender.iterator();
 
 		// TODO Do we need to set a max limit on the number of render source chunks that can be compiled at once?
-		while (iterator.hasNext() && settedFrustum.size() < 1000) {
+		// seemingly not really
+		// unless optifine is present
+		// in which case we can only rebake like 1 at a time, lol
+		// TODO: look into work around
+		while (iterator.hasNext() && settedFrustum.size() < (tracky$OF ? 1 : 1000)) {
 			ChunkRenderDispatcher.RenderChunk renderChunk = iterator.next();
 
 			if (renderChunk.isDirty()) {
