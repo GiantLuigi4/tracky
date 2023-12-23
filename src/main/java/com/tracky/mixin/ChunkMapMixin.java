@@ -173,7 +173,7 @@ public abstract class ChunkMapMixin {
 		((ITrackChunks) p_140374_).setDoUpdate(true);
 	}
 
-	@Inject(method = "updateChunkTracking", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;untrackChunk(Lnet/minecraft/world/level/ChunkPos;)V", shift = At.Shift.BEFORE), cancellable = true)
+	@Inject(method = "updateChunkTracking", at = @At(value = "HEAD"), cancellable = true)
 	public void captureChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
 		// Prevent vanilla from unloading a tracked chunk
 		if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
