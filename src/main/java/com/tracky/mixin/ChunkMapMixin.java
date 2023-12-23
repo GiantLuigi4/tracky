@@ -1,5 +1,6 @@
 package com.tracky.mixin;
 
+import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.api.TrackingSource;
 import com.tracky.debug.ITrackChunks;
@@ -175,9 +176,31 @@ public abstract class ChunkMapMixin {
 
 	@Inject(method = "updateChunkTracking", at = @At(value = "HEAD"), cancellable = true)
 	public void captureChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
-		// Prevent vanilla from unloading a tracked chunk
-		if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
-			ci.cancel();
+		// Prevent vanilla from loading/unloading a tracked chunk
+		if (pWasLoaded != pLoad) {
+			// TODO: would it perform better without this tracking source check?
+			final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
+			for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
+				// for each render source, the following conditions must be true for this to be canceled:
+				for (TrackingSource trackingSource : collectionSupplier.get()) {
+					// it must be valid
+					if (trackingSource.check(pPlayer)) {
+						// the source must actually contain the chunk
+						if (trackingSource.containsChunk(pChunkPos)) {
+							// it must be within the sync distance
+							if (trackingSource.checkRenderDist(pPlayer, pChunkPos)) {
+								// the client must already be tracking the chunk
+								if (
+										((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)
+								) {
+									ci.cancel();
+									return;
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
