@@ -1,24 +1,26 @@
 package com.tracky.api;
 
 import net.minecraft.world.level.ChunkPos;
+import org.checkerframework.checker.units.qual.min;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class SquareTrackingSource extends TrackingSource {
-    protected ChunkPos min;
-    protected ChunkPos max;
+
+    protected final ChunkPos min;
+    protected final ChunkPos max;
 
     @Override
     public boolean containsChunk(ChunkPos pos) {
-        return pos.x >= min.x &&
-                pos.z >= min.z &&
-                pos.x <= max.x &&
-                pos.z <= max.z;
+        return pos.x >= this.min.x &&
+                pos.z >= this.min.z &&
+                pos.x <= this.max.x &&
+                pos.z <= this.max.z;
     }
 
-    protected static List<ChunkPos> createList(ChunkPos min, ChunkPos max) {
+    public static List<ChunkPos> createList(ChunkPos min, ChunkPos max) {
         List<ChunkPos> poses = new ArrayList<>((max.x - min.x) * (max.z - min.z));
 
         for (int x = min.x; x <= max.x; x++) {

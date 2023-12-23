@@ -31,7 +31,7 @@ public class TrackingSource {
      * @return if the render source has it in its list of sections
      */
     public boolean containsChunk(ChunkPos pos) {
-        return chunks.contains(pos);
+        return this.chunks.contains(pos);
     }
 
     public void addChunk(ChunkPos pos) {
@@ -78,19 +78,19 @@ public class TrackingSource {
     }
 
     public Collection<ChunkPos> getChunks() {
-        return new ReadOnlySet<>(chunks);
+        return new ReadOnlySet<>(this.chunks);
     }
 
     public void forEachValid(boolean load, ServerPlayer player, Consumer<ChunkPos> action) {
         if (load) {
-            for (ChunkPos chunk : chunks) {
-                if (checkLoadDist(player, chunk)) {
+            for (ChunkPos chunk : this.chunks) {
+                if (this.checkLoadDist(player, chunk)) {
                     action.accept(chunk);
                 }
             }
         } else {
-            for (ChunkPos chunk : chunks) {
-                if (checkRenderDist(player, chunk)) {
+            for (ChunkPos chunk : this.chunks) {
+                if (this.checkRenderDist(player, chunk)) {
                     action.accept(chunk);
                 }
             }
@@ -99,16 +99,16 @@ public class TrackingSource {
 
     public boolean forEachUntil(boolean load, ServerPlayer player, Function<ChunkPos, Boolean> action) {
         if (load) {
-            for (ChunkPos chunk : chunks) {
-                if (checkLoadDist(player, chunk)) {
+            for (ChunkPos chunk : this.chunks) {
+                if (this.checkLoadDist(player, chunk)) {
                     if (action.apply(chunk)) {
                         return true;
                     }
                 }
             }
         } else {
-            for (ChunkPos chunk : chunks) {
-                if (checkRenderDist(player, chunk)) {
+            for (ChunkPos chunk : this.chunks) {
+                if (this.checkRenderDist(player, chunk)) {
                     if (action.apply(chunk)) {
                         return true;
                     }
