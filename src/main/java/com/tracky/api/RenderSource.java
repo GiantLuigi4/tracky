@@ -253,10 +253,9 @@ public class RenderSource {
 		// run updates
 		int i = 0;
 		Iterator<SectionPos> iterator = this.newSections.iterator();
-		LevelLightEngine lightEngine = level.getLightEngine();
 		while (iterator.hasNext() && i < 1000) {
 			SectionPos newSection = iterator.next();
-			if (lightEngine.lightOnInSection(newSection) && this.handleAdd(toCompile, viewArea, newSection)) {
+			if (this.handleAdd(toCompile, viewArea, newSection)) {
 				iterator.remove();
 			}
 			i++;
