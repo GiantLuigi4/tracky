@@ -89,9 +89,6 @@ public abstract class ChunkMapMixin {
 		Set<ChunkPos> positions = new HashSet<>();
 		for (ServerPlayer player : players) {
 			
-			int pSectionX = SectionPos.blockToSectionCoord(player.getBlockX());
-			int pSectionZ = SectionPos.blockToSectionCoord(player.getBlockZ());
-			
 			boolean recognized = tracky$recognizedUUIDs.remove(player.getUUID());
 			
 			ITrackChunks tracker = (ITrackChunks) player;
@@ -136,16 +133,7 @@ public abstract class ChunkMapMixin {
 			}
 			
 			for (ChunkPos chunkPos : tracker.oldTrackedChunks()) {
-				// If a chunk is loaded due to vanilla, it should not be unloaded, but should be marked as not tracked by tracky
-				// doing so causes problems
-				boolean inVanilla = isChunkInRange(
-						chunkPos.x, chunkPos.z,
-						pSectionX, pSectionZ,
-						this.viewDistance
-				);
-				
-				if (!inVanilla)
-					this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
+				this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
 				
 				tracker.trackedChunks().remove(chunkPos);
 			}
@@ -187,14 +175,31 @@ public abstract class ChunkMapMixin {
 					ci.cancel();
 				}
 			}
-		} else if (Tracky.ENABLE_TEST) {
-			// this contains check fails 100% of the time for (!pWasLoad && pLoad), so that case shouldn't be included
-			if (pWasLoaded && !pLoad) {
-				if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
-					LOGGER.warn("[Tracky:ChunkMapMixin] A tracky chunk was dropped incorrectly.");
-					// don't cancel it, this way something happens in game, which can alert us to the problem
+		} else {
+			
+			if (Tracky.ENABLE_TEST) {
+				// this contains check fails 100% of the time for (!pWasLoad && pLoad), so that case shouldn't be included
+				if (pWasLoaded && !pLoad) {
+					if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
+						LOGGER.warn("[Tracky:ChunkMapMixin] A tracky chunk was dropped incorrectly.");
+						// don't cancel it, this way something happens in game, which can alert us to the problem
+					}
 				}
 			}
+			
+			// If a chunk is loaded/unloaded due to tracky but should already be loaded by vanilla, then tracky shouldn't update its status
+			// doing so causes problems
+			int pSectionX = SectionPos.blockToSectionCoord(pPlayer.getBlockX());
+			int pSectionZ = SectionPos.blockToSectionCoord(pPlayer.getBlockZ());
+			
+			if (isChunkInRange(
+					pChunkPos.x, pChunkPos.z,
+					pSectionX, pSectionZ,
+					this.viewDistance
+			)) {
+				ci.cancel();
+			}
+			
 		}
 	}
 }
