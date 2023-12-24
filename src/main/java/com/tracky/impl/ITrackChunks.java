@@ -1,17 +1,18 @@
 package com.tracky.impl;
 
 import net.minecraft.world.level.ChunkPos;
-import org.jetbrains.annotations.ApiStatus;
 
-import java.util.Collection;
 import java.util.Set;
 
-@ApiStatus.Internal
 public interface ITrackChunks {
 
-	void update();
+	Set<ChunkPos> trackedChunks();
 
-	Collection<ChunkPos> trackedChunks();
+	Set<ChunkPos> oldTrackedChunks();
 
-	Collection<ChunkPos> oldTrackedChunks();
+	void tickTracking();
+
+	boolean setDoUpdate(boolean val);
+
+	boolean shouldUpdate();
 }

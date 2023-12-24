@@ -12,7 +12,9 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.level.ChunkEvent;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -48,6 +50,7 @@ public abstract class ClientChunkCacheMixin implements IChunkProviderAttachments
 	@Shadow
 	@Final
 	private LevelChunk emptyChunk;
+	@Shadow @Final private static Logger LOGGER;
 	@Unique
 	private final Map<ChunkPos, LevelChunk> tracky$chunks = new HashMap<>();
 	@Unique
@@ -109,6 +112,12 @@ public abstract class ClientChunkCacheMixin implements IChunkProviderAttachments
 	public void replaceWithPacketData(int pX, int pZ, FriendlyByteBuf pBuffer, CompoundTag pTag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> pConsumer, CallbackInfoReturnable<LevelChunk> cir) {
 		ChunkPos chunkpos = new ChunkPos(pX, pZ);
 		LevelChunk chunk = this.tracky$chunks.get(chunkpos);
+		
+		if (!FMLEnvironment.production) {
+			if (tracky$chunks.containsKey(chunkpos)) {
+				LOGGER.warn("[Tracky:ClientChunkCacheMixin] A chunk has been reloaded -- this is most likely due to a bug in the server logic!");
+			}
+		}
 
 		ChunkStorageAccessor accessor = (ChunkStorageAccessor) (Object) this.storage;
 		if (accessor.invokeInRange(pX, pZ)) {

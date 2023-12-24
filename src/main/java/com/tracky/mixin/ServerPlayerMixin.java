@@ -6,7 +6,6 @@ import net.minecraft.world.level.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,23 +13,38 @@ import java.util.Set;
 public class ServerPlayerMixin implements ITrackChunks {
 
 	@Unique
-	private final Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
+	private boolean tracky$shouldUpdate = false;
 	@Unique
-	private final Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
+	private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
+	@Unique
+	private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
 
 	@Override
-	public void update() {
-		this.tracky$lastChunksBeingTracked.clear();
-		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
+	public void tickTracking() {
+		Set<ChunkPos> c = tracky$lastChunksBeingTracked;
+		tracky$lastChunksBeingTracked = tracky$chunksBeingTracked;
+		tracky$chunksBeingTracked = c;
 	}
 
 	@Override
-	public Collection<ChunkPos> oldTrackedChunks() {
+	public Set<ChunkPos> oldTrackedChunks() {
 		return this.tracky$lastChunksBeingTracked;
 	}
 
 	@Override
-	public Collection<ChunkPos> trackedChunks() {
+	public Set<ChunkPos> trackedChunks() {
 		return this.tracky$chunksBeingTracked;
+	}
+
+	@Override
+	public boolean setDoUpdate(boolean update) {
+		boolean old = this.tracky$shouldUpdate;
+		this.tracky$shouldUpdate = update;
+		return old;
+	}
+
+	@Override
+	public boolean shouldUpdate() {
+		return this.tracky$shouldUpdate;
 	}
 }

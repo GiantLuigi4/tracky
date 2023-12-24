@@ -3,11 +3,11 @@ package com.tracky.mixin;
 import com.tracky.TrackyAccessor;
 import com.tracky.api.TrackingSource;
 import com.tracky.impl.ITrackChunks;
+import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.ChunkPos;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Final;
@@ -33,72 +33,81 @@ public abstract class ChunkMapMixin {
 	@Shadow
 	protected abstract void updateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad);
 
+	@Shadow
+	public static boolean isChunkInRange(int p_200879_, int p_200880_, int p_200881_, int p_200882_, int pMaxDistance) {
+		throw new RuntimeException("Whar.");
+	}
+
+	@Shadow
+	int viewDistance;
+
 	@Unique
 	private final Set<ChunkPos> tracky$Forced = new HashSet<>();
 
 	/**
 	 * Make the chunk manager send chunk updates to clients tracking tracky-enforced chunks
 	 */
+	// I think this is the right target?
 	@Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
 	public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
-		List<ServerPlayer> vanillaPlayers = cir.getReturnValue();
-		List<ServerPlayer> players = this.level.getPlayers(player -> !vanillaPlayers.contains(player));
-		List<ServerPlayer> ret = null;
+//		if (!TrackyAccessor.isMainTracky()) return;
+		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
 
-		// Players already included don't need to be checked
-		for (ServerPlayer player : players) {
-			ITrackChunks tracker = (ITrackChunks) player;
-			if (tracker.trackedChunks().contains(chunkPos)) {
-				if (ret == null) {
-					ret = new ArrayList<>(vanillaPlayers);
+		final List<ServerPlayer> players = new ArrayList<>();
+		boolean isTrackedByAny = false;
+
+		// for all players in the level send the relevant chunks
+		// messy iteration but no way to avoid with our structure
+		loopPlayers:
+		for (ServerPlayer player : this.level.getPlayers((p) -> !cir.getReturnValue().contains(p))) {
+			for (Supplier<Collection<TrackingSource>> value : map.values()) {
+				for (TrackingSource trackingSource : value.get()) {
+					if (trackingSource.check(player)) {
+						if (trackingSource.checkRenderDist(player, chunkPos)) {
+							if (trackingSource.containsChunk(chunkPos)) {
+								// send the packet if the player is tracking it
+								players.add(player);
+								isTrackedByAny = true;
+								continue loopPlayers;
+							}
+						}
+					}
 				}
-				ret.add(player);
 			}
 		}
 
-		if (ret != null) {
-			cir.setReturnValue(ret);
+		if (isTrackedByAny) {
+			// add players that are tracking it by vanilla
+			players.addAll(cir.getReturnValue());
+
+			cir.setReturnValue(players);
 		}
 	}
 
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
-		ProfilerFiller profiler = this.level.getProfiler();
-		profiler.push("tracky_update_tracking");
+		final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
+		Set<ChunkPos> poses = new HashSet<>();
 
-		Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
-		List<ServerPlayer> players = this.level.getPlayers(player -> true);
-		Set<ChunkPos> positions = new HashSet<>();
-		for (ServerPlayer player : players) {
-			ITrackChunks tracker = (ITrackChunks) player;
-			tracker.update();
-
+		for (ServerPlayer player : this.level.getPlayers((player) -> true)) {
 			for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
 				for (TrackingSource trackingSource : collectionSupplier.get()) {
-					// No point in checking the player if they aren't valid for the chunk source
-					if (!trackingSource.check(player)) {
-						continue;
+					// no point in checking the player if they aren't valid for the chunk source
+					if (trackingSource.check(player)) {
+						// check every chunk
+						trackingSource.forEachValid(true, player, (chunkPos) -> {
+							// tracking source must be valid for the player in order to load chunks
+							if (trackingSource.check(player)) {
+								// chunk must be in loading range in order to be loaded
+								if (trackingSource.checkLoadDist(player, chunkPos)) {
+									if (!this.tracky$Forced.remove(chunkPos) && poses.add(chunkPos)) {
+										this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
+									}
+								}
+							}
+						});
 					}
-
-					trackingSource.forEachValid(true, player, (chunkPos) -> {
-						boolean wasTracked = this.tracky$Forced.remove(chunkPos);
-						if (positions.add(chunkPos)) {
-							// The chunk was not previously tracked, so we need to load the chunk and sync it to the player
-							if (!wasTracked) {
-								this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
-							}
-							tracker.oldTrackedChunks().remove(chunkPos);
-							if (tracker.trackedChunks().add(chunkPos)) {
-								this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
-							}
-						}
-					});
 				}
-			}
-
-			for (ChunkPos chunkPos : tracker.oldTrackedChunks()) {
-				this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
-				tracker.trackedChunks().remove(chunkPos);
 			}
 		}
 
@@ -106,18 +115,81 @@ public abstract class ChunkMapMixin {
 			this.level.setChunkForced(chunkPos.x, chunkPos.z, false);
 		}
 
-		// All remaining chunks have been unloaded, so we can update the current tracking set
-		this.tracky$Forced.clear();
-		this.tracky$Forced.addAll(positions);
-		profiler.pop();
+		this.tracky$Forced.addAll(poses);
+	}
+
+	/**
+	 * Tracks chunks loaded by cameras to make sure they're being sent to the client
+	 */
+	@Inject(method = "move", at = @At(value = "TAIL"))
+	private void trackCameraLoadedChunks(ServerPlayer player, CallbackInfo callback) {
+		ITrackChunks chunkTracker = (ITrackChunks) player;
+		if (!chunkTracker.shouldUpdate()) return;
+		chunkTracker.setDoUpdate(false);
+
+		chunkTracker.tickTracking();
+
+		for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(this.level).values()) {
+			for (TrackingSource trackingSource : value.get()) {
+				if (trackingSource.check(player)) {
+					trackingSource.forEachValid(false, player, (chunkPos) -> {
+						this.updateChunkTracking(player, chunkPos, new MutableObject<>(), chunkTracker.oldTrackedChunks().contains(chunkPos), true);
+						chunkTracker.trackedChunks().add(chunkPos);
+					});
+				}
+			}
+		}
+
+		int pSectionX = SectionPos.blockToSectionCoord(player.getBlockX());
+		int pSectionZ = SectionPos.blockToSectionCoord(player.getBlockZ());
+		for (ChunkPos trackedChunk : chunkTracker.oldTrackedChunks()) {
+			boolean inVanilla = isChunkInRange(
+					trackedChunk.x, trackedChunk.z,
+					pSectionX, pSectionZ,
+					this.viewDistance
+			);
+
+			if (!inVanilla) {
+				if (!chunkTracker.trackedChunks().contains(trackedChunk)) {
+					this.updateChunkTracking(player, trackedChunk, new MutableObject<>(), true, false);
+				}
+			}
+		}
+
+		chunkTracker.oldTrackedChunks().clear();
+	}
+
+	@Inject(at = @At("HEAD"), method = "updatePlayerPos")
+	public void preUpdatePos(ServerPlayer p_140374_, CallbackInfoReturnable<SectionPos> cir) {
+		((ITrackChunks) p_140374_).setDoUpdate(true);
 	}
 
 	@Inject(method = "updateChunkTracking", at = @At(value = "HEAD"), cancellable = true)
 	public void captureChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
-		// If we're trying to unload the chunk, then it should be cancelled if tracky is tracking it
-		if (pWasLoaded && !pLoad) {
-			if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
-				ci.cancel();
+		// Prevent vanilla from loading/unloading a tracked chunk
+		if (pWasLoaded != pLoad) {
+			// TODO: would it perform better without this tracking source check?
+			final Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
+			for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
+				// for each render source, the following conditions must be true for this to be canceled:
+				for (TrackingSource trackingSource : collectionSupplier.get()) {
+					// it must be valid
+					if (trackingSource.check(pPlayer)) {
+						// the source must actually contain the chunk
+						if (trackingSource.containsChunk(pChunkPos)) {
+							// it must be within the sync distance
+							if (trackingSource.checkRenderDist(pPlayer, pChunkPos)) {
+								// the client must already be tracking the chunk
+								if (
+										((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)
+								) {
+									ci.cancel();
+									return;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
