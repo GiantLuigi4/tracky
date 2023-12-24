@@ -14,14 +14,20 @@ import java.util.Set;
 public class ServerPlayerMixin implements ITrackChunks {
 
 	@Unique
-	private final Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
+	private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
 	@Unique
-	private final Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
+	private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
 
 	@Override
 	public void update() {
-		this.tracky$lastChunksBeingTracked.clear();
-		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
+//		this.tracky$lastChunksBeingTracked.clear();
+//		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
+		
+		// large memory copies are slow, and allocation is nice to avoid
+		Set<ChunkPos> s = tracky$lastChunksBeingTracked;
+		s.clear();
+		tracky$lastChunksBeingTracked = tracky$chunksBeingTracked;
+		tracky$chunksBeingTracked = s;
 	}
 
 	@Override

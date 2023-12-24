@@ -61,6 +61,8 @@ public abstract class ChunkMapMixin {
 		}
 	}
 
+	Set<UUID> recognizedUUIDs = new HashSet<>();
+	
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
 		ProfilerFiller profiler = this.level.getProfiler();
@@ -68,42 +70,75 @@ public abstract class ChunkMapMixin {
 
 		Map<UUID, Supplier<Collection<TrackingSource>>> map = TrackyAccessor.getTrackingSources(this.level);
 		List<ServerPlayer> players = this.level.getPlayers(player -> true);
+		
+		if (players.isEmpty() && tracky$Forced.isEmpty())
+			return;
+		
 		Set<ChunkPos> positions = new HashSet<>();
 		for (ServerPlayer player : players) {
+			
+			boolean recognized = recognizedUUIDs.remove(player.getUUID());
+			
 			ITrackChunks tracker = (ITrackChunks) player;
 			tracker.update();
-
+			
 			for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
 				for (TrackingSource trackingSource : collectionSupplier.get()) {
 					// No point in checking the player if they aren't valid for the chunk source
 					if (!trackingSource.check(player)) {
 						continue;
 					}
-
+					
+					boolean updateClients = !recognized || trackingSource.needsUpdate();
+					
+					// force chunks in load distance
 					trackingSource.forEachValid(true, player, (chunkPos) -> {
-						boolean wasTracked = this.tracky$Forced.remove(chunkPos);
+						boolean wasTracked = this.tracky$Forced.contains(chunkPos);
 						if (positions.add(chunkPos)) {
 							// The chunk was not previously tracked, so we need to load the chunk and sync it to the player
 							if (!wasTracked) {
 								this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
 							}
-							tracker.oldTrackedChunks().remove(chunkPos);
-							if (tracker.trackedChunks().add(chunkPos)) {
-								this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
+						}
+					});
+					
+					// sync chunks in syncing distance
+					trackingSource.forEachValid(false, player, (chunkPos) -> {
+						if (tracker.trackedChunks().add(chunkPos)) {
+							if (!tracker.oldTrackedChunks().contains(chunkPos)) {
+								if (updateClients) {
+									this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
+								}
 							}
 						}
 					});
 				}
 			}
-
+			
 			for (ChunkPos chunkPos : tracker.oldTrackedChunks()) {
-				this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
-				tracker.trackedChunks().remove(chunkPos);
+				if (!tracker.trackedChunks().contains(chunkPos)) {
+					this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
+				}
+//				tracker.trackedChunks().remove(chunkPos);
+			}
+			
+		}
+		
+		recognizedUUIDs.clear();
+		for (ServerPlayer player : players) {
+			recognizedUUIDs.add(player.getUUID());
+		}
+		
+		for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
+			for (TrackingSource trackingSource : collectionSupplier.get()) {
+				trackingSource.markUpdated();
 			}
 		}
 
 		for (ChunkPos chunkPos : this.tracky$Forced) {
-			this.level.setChunkForced(chunkPos.x, chunkPos.z, false);
+			if (!positions.contains(chunkPos)) {
+				this.level.setChunkForced(chunkPos.x, chunkPos.z, false);
+			}
 		}
 
 		// All remaining chunks have been unloaded, so we can update the current tracking set
