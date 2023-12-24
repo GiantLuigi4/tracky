@@ -15,8 +15,11 @@ import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Iterator;
+
 @ApiStatus.Internal
 public class LuigiKindaLearnedTesselator {
+	
 	public static void preRender(Minecraft minecraft, PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
 		if (FMLEnvironment.production) return;
 
@@ -34,14 +37,17 @@ public class LuigiKindaLearnedTesselator {
 		Matrix4f pose = pPoseStack.last().pose();
 
 		IChunkProviderAttachments attachments = (IChunkProviderAttachments) minecraft.level.getChunkSource();
-		for (LevelChunk chunk : attachments.forcedChunks()) {
-			boolean trackyForced = attachments.isTrackyForced(chunk);
-			float diff = Mth.clamp(time - attachments.getLastUpdate(chunk), 0, 1000) / 1000.0F;
+		Iterator<LevelChunk> iterator = attachments.loadedChunks();
+		while (iterator.hasNext()) {
+			LevelChunk chunk = iterator.next();
+			ChunkPos pos = chunk.getPos();
+			boolean trackyForced = attachments.isTrackyForced(pos);
+			float diff = Mth.clamp(time - attachments.getLastUpdate(pos), 0, 1000) / 1000.0F;
 			float red = 1.0F - diff;
 			float blue = trackyForced ? 1.0F : 0.0F;
 
-			float x = chunk.getPos().getMinBlockX() - (float) pCamX;
-			float z = chunk.getPos().getMinBlockZ() - (float) pCamZ;
+			float x = pos.getMinBlockX() - (float) pCamX;
+			float z = pos.getMinBlockZ() - (float) pCamZ;
 			float y = chunk.getMinBuildHeight() - (float) pCamY;
 			if (pCamY > chunk.getMinBuildHeight()) y += (10 * ((1 - diff) / 100));
 			else y -= (10 * ((1 - diff) / 100));

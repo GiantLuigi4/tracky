@@ -1,14 +1,17 @@
 package com.tracky.debug;
 
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
+
+import java.util.Iterator;
 
 public interface IChunkProviderAttachments {
 
-	LevelChunk[] forcedChunks();
+	Iterator<LevelChunk> loadedChunks();
 
-	void setUpdated(int x, int z);
+	void setUpdated(ChunkPos pos);
 
-	long getLastUpdate(LevelChunk chunk);
+	long getLastUpdate(ChunkPos pos);
 
-	boolean isTrackyForced(LevelChunk chunk);
+	boolean isTrackyForced(ChunkPos pos);
 }

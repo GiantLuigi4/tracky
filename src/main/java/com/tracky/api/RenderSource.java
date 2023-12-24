@@ -205,7 +205,7 @@ public class RenderSource {
 //		for (TrackyRenderChunk trackyRenderChunk : chunksInFrustum) {
 //			trackyRenderChunk.free();
 //		}
-		
+
 		// We can't draw the chunks that were in the frustum
 		this.chunksInFrustum.clear();
 		this.frustumUpdate = true;
@@ -261,20 +261,15 @@ public class RenderSource {
 
 		// run updates
 		int i = 0;
+		LevelLightEngine lightEngine = level.getLightEngine();
 		Iterator<SectionPos> iterator = this.newSections.iterator();
 		while (iterator.hasNext() && i < 1000) {
 			SectionPos newSection = iterator.next();
-			if (this.handleAdd(toCompile, viewArea, newSection)) {
+			if (lightEngine.lightOnInSection(newSection) && this.handleAdd(toCompile, viewArea, newSection)) {
 				iterator.remove();
 			}
 			i++;
 		}
-
-		// force resort
-		this.scheduleSort();
-
-		// force a culling check
-		this.frustumUpdate = true;
 	}
 
 	/**

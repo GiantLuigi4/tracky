@@ -2,6 +2,7 @@ package com.tracky.mixin.client;
 
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
@@ -18,13 +19,13 @@ public class BlockUpdatePacketMixin {
 	@Shadow
 	@Final
 	private BlockPos pos;
-	
+
 	@Inject(at = @At("HEAD"), method = "handle(Lnet/minecraft/network/protocol/game/ClientGamePacketListener;)V")
 	public void preHandle(ClientGamePacketListener pHandler, CallbackInfo ci) {
-		if (Minecraft.getInstance().level != null) {
-			IChunkProviderAttachments attachments = (IChunkProviderAttachments) Minecraft.getInstance().level.getChunkSource();
-			ChunkPos cPos = new ChunkPos(pos);
-			attachments.setUpdated(cPos.x, cPos.z);
+		ClientLevel level = Minecraft.getInstance().level;
+		if (level != null) {
+			IChunkProviderAttachments attachments = (IChunkProviderAttachments) level.getChunkSource();
+			attachments.setUpdated(new ChunkPos(this.pos));
 		}
 	}
 }

@@ -15,7 +15,7 @@
     "client.BlockUpdatePacketMixin",
     "client.ChunkBorderRendererMixin",
     "client.ChunkStorageAccessor",
-    "client.ClientChunkProviderMixin",
+    "client.ClientChunkCacheMixin",
     "client.KeyboardHandlerMixin",
     "client.RenderDocker",
     "client.SectionChangePacketMixin",

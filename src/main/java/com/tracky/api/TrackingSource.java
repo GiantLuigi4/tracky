@@ -6,9 +6,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -59,7 +56,7 @@ public class TrackingSource {
      * Checks whether or not a chunk should be synced to a player's client
      *
      * @param player the player to check the chunk for
-     * @param pos the chunk position to check; may not always be in the tracking source
+     * @param pos    the chunk position to check; may not always be in the tracking source
      * @return whether or not the chunk should be synced to the associated client
      */
     public boolean checkRenderDist(Player player, ChunkPos pos) {
@@ -70,7 +67,7 @@ public class TrackingSource {
      * Checks whether or not a chunk should be loaded by a player
      *
      * @param player the player to check the chunk for
-     * @param pos the chunk position to check; may not always be in the tracking source
+     * @param pos    the chunk position to check; may not always be in the tracking source
      * @return whether or not the chunk should be loaded due to the player
      */
     public boolean checkLoadDist(Player player, ChunkPos pos) {

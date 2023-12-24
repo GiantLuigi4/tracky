@@ -273,6 +273,10 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 		}
 	}
 
+	@Inject(method = "processChunkEvents", at = @At("TAIL"), cancellable = true)
+	public void processChunkEvents(CallbackInfo ci) {
+	}
+
 	@Override
 	public RenderSectionManager tracky$getRenderSectionManager(@Nullable RenderSource source) {
 		if (source == null) {
