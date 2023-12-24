@@ -23,14 +23,18 @@ public abstract class KeyboardHandlerMixin {
 	@Inject(method = "handleDebugKeys", at = @At("HEAD"), cancellable = true)
 	public void addDebugKeys(int pKey, CallbackInfoReturnable<Boolean> cir) {
 		if (!FMLEnvironment.production) {
-//			if (
-//					InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 292) &&
-//							pKey == GLFW.GLFW_KEY_0
-//			) {
-//				this.debugFeedback("debug.tracky_enabld");
-//				Tracky.ENABLE_TEST = true;
-//				cir.setReturnValue(true);
-//			}
+			
+			if (Tracky.ENABLE_TEST) {
+				if (
+						InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 292) &&
+								pKey == GLFW.GLFW_KEY_0
+				) {
+					Tracky.CYCLE_SOURCE = !Tracky.CYCLE_SOURCE;
+					this.debugFeedback("debug.source_toggle." + Tracky.CYCLE_SOURCE);
+					cir.setReturnValue(true);
+				}
+			}
+			
 			if (
 					InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 292) &&
 							this.handleChunkDebugKeys(pKey)

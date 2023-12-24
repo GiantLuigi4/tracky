@@ -6,6 +6,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -15,8 +16,14 @@ import java.util.function.Supplier;
 
 @Mod("tracky")
 public class Tracky {
-
-	public static boolean ENABLE_TEST = System.getProperty("tracky.debug") != null;
+	
+	// Tracky test mode's features should only be able to activate in dev
+	public static boolean ENABLE_TEST = !FMLEnvironment.production && System.getProperty("tracky.debug") != null;
+	
+	// toggled using F3+0 while ENABLE_TEST is on
+	// makes the test source toggle every 200 ticks for sake of debugging chunk unloading
+	public static boolean CYCLE_SOURCE = false;
+	
 	public static final Logger LOGGER = LogUtils.getLogger();
 
 	public Tracky() {

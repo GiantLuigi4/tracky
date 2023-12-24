@@ -51,7 +51,7 @@ public class TrackyMixinPlugin implements IMixinConfigPlugin {
 
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (!FMLLoader.isProduction() || !Tracky.ENABLE_TEST) {
+		if (!Tracky.ENABLE_TEST) {
 			return;
 		}
 
@@ -71,7 +71,7 @@ public class TrackyMixinPlugin implements IMixinConfigPlugin {
 
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (!FMLLoader.isProduction() || !Tracky.ENABLE_TEST) {
+		if (!Tracky.ENABLE_TEST) {
 			return;
 		}
 

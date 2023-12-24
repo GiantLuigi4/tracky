@@ -133,7 +133,7 @@ public class TrackingSource {
         return needsUpdate;
     }
     
-    public void markUpdated() {
-        needsUpdate = false;
+    public void markUpdate(boolean needsUpdate) {
+        this.needsUpdate = needsUpdate;
     }
 }

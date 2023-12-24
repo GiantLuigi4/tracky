@@ -1,6 +1,7 @@
 package com.tracky.mixin.client;
 
 import com.google.common.collect.Streams;
+import com.tracky.Tracky;
 import com.tracky.debug.IChunkProviderAttachments;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -12,7 +13,9 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.level.ChunkEvent;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -48,6 +51,7 @@ public abstract class ClientChunkCacheMixin implements IChunkProviderAttachments
 	@Shadow
 	@Final
 	private LevelChunk emptyChunk;
+	@Shadow @Final private static Logger LOGGER;
 	@Unique
 	private final Map<ChunkPos, LevelChunk> tracky$chunks = new HashMap<>();
 	@Unique
@@ -109,6 +113,17 @@ public abstract class ClientChunkCacheMixin implements IChunkProviderAttachments
 	public void replaceWithPacketData(int pX, int pZ, FriendlyByteBuf pBuffer, CompoundTag pTag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> pConsumer, CallbackInfoReturnable<LevelChunk> cir) {
 		ChunkPos chunkpos = new ChunkPos(pX, pZ);
 		LevelChunk chunk = this.tracky$chunks.get(chunkpos);
+		
+		if (Tracky.ENABLE_TEST) {
+			if (chunk != null) {
+				// if a chunk is received while it's already known, this causes block entity reinitialization
+				// having that happen causes noticeable amounts of lag, and causes animations to reset incorrectly
+				// may also cause larger issues with other mods, not entirely sure
+				
+				// this is caused by flaws in the server logic
+				LOGGER.warn("[Tracky:ClientChunkCacheMixin] a packet for a Tracky chunk has been received while the chunk was already known. This will likely cause unintended behavior.");
+			}
+		}
 
 		ChunkStorageAccessor accessor = (ChunkStorageAccessor) (Object) this.storage;
 		if (accessor.invokeInRange(pX, pZ)) {

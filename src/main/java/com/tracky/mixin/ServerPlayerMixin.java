@@ -14,20 +14,19 @@ import java.util.Set;
 public class ServerPlayerMixin implements ITrackChunks {
 
 	@Unique
-	private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
+	private final Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
 	@Unique
 	private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
 
 	@Override
 	public void update() {
-//		this.tracky$lastChunksBeingTracked.clear();
-//		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
-		
-		// large memory copies are slow, and allocation is nice to avoid
-		Set<ChunkPos> s = tracky$lastChunksBeingTracked;
-		s.clear();
-		tracky$lastChunksBeingTracked = tracky$chunksBeingTracked;
-		tracky$chunksBeingTracked = s;
+		// interestingly, this does perform better than swapping the lists?
+		// not actually sure how
+		// might wanna check if this is also the case for large tracking sources?
+		// personally, I'd expect that large addAll operations would get slow
+		this.tracky$lastChunksBeingTracked.clear();
+		this.tracky$lastChunksBeingTracked.addAll(this.tracky$chunksBeingTracked);
+		this.tracky$chunksBeingTracked.clear();
 	}
 
 	@Override

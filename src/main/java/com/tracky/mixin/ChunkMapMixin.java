@@ -1,8 +1,10 @@
 package com.tracky.mixin;
 
+import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
 import com.tracky.api.TrackingSource;
 import com.tracky.impl.ITrackChunks;
+import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
@@ -10,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.ChunkPos;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -32,7 +35,12 @@ public abstract class ChunkMapMixin {
 
 	@Shadow
 	protected abstract void updateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad);
-
+	
+	@Shadow @Final private static Logger LOGGER;
+	
+	@Shadow public static boolean isChunkInRange(int p_200879_, int p_200880_, int p_200881_, int p_200882_, int pMaxDistance) {throw new RuntimeException("Whar?");}
+	
+	@Shadow private int viewDistance;
 	@Unique
 	private final Set<ChunkPos> tracky$Forced = new HashSet<>();
 
@@ -60,8 +68,11 @@ public abstract class ChunkMapMixin {
 			cir.setReturnValue(ret);
 		}
 	}
-
-	Set<UUID> recognizedUUIDs = new HashSet<>();
+	
+	@Unique
+	Set<UUID> tracky$recognizedUUIDs = new HashSet<>();
+	
+	@Unique boolean tracky$ticking = false;
 	
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
@@ -74,10 +85,14 @@ public abstract class ChunkMapMixin {
 		if (players.isEmpty() && tracky$Forced.isEmpty())
 			return;
 		
+		tracky$ticking = true;
 		Set<ChunkPos> positions = new HashSet<>();
 		for (ServerPlayer player : players) {
 			
-			boolean recognized = recognizedUUIDs.remove(player.getUUID());
+			int pSectionX = SectionPos.blockToSectionCoord(player.getBlockX());
+			int pSectionZ = SectionPos.blockToSectionCoord(player.getBlockZ());
+			
+			boolean recognized = tracky$recognizedUUIDs.remove(player.getUUID());
 			
 			ITrackChunks tracker = (ITrackChunks) player;
 			tracker.update();
@@ -95,7 +110,7 @@ public abstract class ChunkMapMixin {
 					trackingSource.forEachValid(true, player, (chunkPos) -> {
 						boolean wasTracked = this.tracky$Forced.contains(chunkPos);
 						if (positions.add(chunkPos)) {
-							// The chunk was not previously tracked, so we need to load the chunk and sync it to the player
+							// The chunk was not previously tracked, so we need to load the chunk
 							if (!wasTracked) {
 								this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
 							}
@@ -103,9 +118,14 @@ public abstract class ChunkMapMixin {
 					});
 					
 					// sync chunks in syncing distance
+					// usually, the load range should be larger than the syncing range
 					trackingSource.forEachValid(false, player, (chunkPos) -> {
+						// if I'm not mistaken, putting this in the if statement for updateClients will do one of two things:
+						// - make stuff start un-syncing incorrectly when two render sources share chunks
+						// - make stuff unsync the tick after it syncs
+						// don't think there's any way around both of these without refactoring ITrackChunks
 						if (tracker.trackedChunks().add(chunkPos)) {
-							if (!tracker.oldTrackedChunks().contains(chunkPos)) {
+							if (!tracker.oldTrackedChunks().remove(chunkPos)) {
 								if (updateClients) {
 									this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
 								}
@@ -116,22 +136,31 @@ public abstract class ChunkMapMixin {
 			}
 			
 			for (ChunkPos chunkPos : tracker.oldTrackedChunks()) {
-				if (!tracker.trackedChunks().contains(chunkPos)) {
+				// If a chunk is loaded due to vanilla, it should not be unloaded, but should be marked as not tracked by tracky
+				// doing so causes problems
+				boolean inVanilla = isChunkInRange(
+						chunkPos.x, chunkPos.z,
+						pSectionX, pSectionZ,
+						this.viewDistance
+				);
+				
+				if (!inVanilla)
 					this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
-				}
-//				tracker.trackedChunks().remove(chunkPos);
+				
+				tracker.trackedChunks().remove(chunkPos);
 			}
 			
 		}
+		tracky$ticking = false;
 		
-		recognizedUUIDs.clear();
+		tracky$recognizedUUIDs.clear();
 		for (ServerPlayer player : players) {
-			recognizedUUIDs.add(player.getUUID());
+			tracky$recognizedUUIDs.add(player.getUUID());
 		}
 		
 		for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
 			for (TrackingSource trackingSource : collectionSupplier.get()) {
-				trackingSource.markUpdated();
+				trackingSource.markUpdate(false);
 			}
 		}
 
@@ -149,10 +178,22 @@ public abstract class ChunkMapMixin {
 
 	@Inject(method = "updateChunkTracking", at = @At(value = "HEAD"), cancellable = true)
 	public void captureChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad, CallbackInfo ci) {
-		// If we're trying to unload the chunk, then it should be cancelled if tracky is tracking it
-		if (pWasLoaded && !pLoad) {
-			if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
-				ci.cancel();
+		// If tracky's currently ticking, we should be able to not worry about this
+		// if we do, that's a bug!
+		if (!tracky$ticking) {
+			// If vanilla's trying to load or unload the chunk, then it should be cancelled if tracky is tracking it
+			if (pWasLoaded != pLoad) {
+				if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
+					ci.cancel();
+				}
+			}
+		} else if (Tracky.ENABLE_TEST) {
+			// this contains check fails 100% of the time for (!pWasLoad && pLoad), so that case shouldn't be included
+			if (pWasLoaded && !pLoad) {
+				if (((ITrackChunks) pPlayer).trackedChunks().contains(pChunkPos)) {
+					LOGGER.warn("[Tracky:ChunkMapMixin] A tracky chunk was dropped incorrectly.");
+					// don't cancel it, this way something happens in game, which can alert us to the problem
+				}
 			}
 		}
 	}
