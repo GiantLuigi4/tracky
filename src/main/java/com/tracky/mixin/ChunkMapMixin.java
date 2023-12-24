@@ -80,12 +80,7 @@ public abstract class ChunkMapMixin {
 						continue;
 					}
 
-					for (ChunkPos chunkPos : trackingSource.getChunks()) {
-						// Chunk must be in loading range in order to be loaded
-						if (!trackingSource.checkLoadDist(player, chunkPos)) {
-							continue;
-						}
-
+					trackingSource.forEachValid(true, player, (chunkPos) -> {
 						boolean wasTracked = this.tracky$Forced.remove(chunkPos);
 						if (positions.add(chunkPos)) {
 							// The chunk was not previously tracked, so we need to load the chunk and sync it to the player
@@ -97,7 +92,7 @@ public abstract class ChunkMapMixin {
 								this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
 							}
 						}
-					}
+					});
 				}
 			}
 

@@ -84,6 +84,8 @@ public class OFShadersAccessor {
 		return false;
 	}
 	
+	// TODO: this doesn't work and causes extreme motion blur on tracky chunks
+	//       lol
 	public static void setModelViewMatrix(Matrix4f matrix4f) {
 		try {
 //			System.out.println(matrix4f);

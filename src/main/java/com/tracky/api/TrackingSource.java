@@ -39,7 +39,7 @@ public class TrackingSource {
 
     public void removeChunk(ChunkPos pos) {
         this.chunks.remove(pos);
-        this.chunks.remove(pos);
+//        this.newChunks.remove(pos);
     }
 
     /**
@@ -73,8 +73,18 @@ public class TrackingSource {
     public boolean checkLoadDist(Player player, ChunkPos pos) {
         return true;
     }
-
-    public Collection<ChunkPos> getChunks() {
+    
+    /**
+     * For most if not all purposes, {@link TrackingSource#forEachUntil(boolean, ServerPlayer, Function)} and {@link TrackingSource#forEachValid(boolean, ServerPlayer, Consumer)} should do
+     * There is no strict expectation that this will actually return the proper list
+     * <br>
+     * This method may be removed entirely, or it may be replaced with a forEach() method
+     * Haven't decided yet what the best approach is
+     *
+     * @return a list of chunks that may or may not actually be accurate to what the source is tracking for the player, dependent on the mod implementing it
+     */
+    @Deprecated(forRemoval = true)
+    public Collection<ChunkPos> getChunks(ServerPlayer player) {
         return new ReadOnlySet<>(this.chunks);
     }
 
