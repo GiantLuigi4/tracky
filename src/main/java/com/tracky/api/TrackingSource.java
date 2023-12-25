@@ -6,6 +6,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -52,7 +54,7 @@ public class TrackingSource {
      * @param player the player in question
      * @return if the tracking source should be skipped
      */
-    public boolean check(Player player) {
+    public boolean check(IPlayerInfo player) {
         return true;
     }
 
@@ -63,7 +65,7 @@ public class TrackingSource {
      * @param pos    the chunk position to check; may not always be in the tracking source
      * @return whether or not the chunk should be synced to the associated client
      */
-    public boolean checkRenderDist(Player player, ChunkPos pos) {
+    public boolean checkRenderDist(IPlayerInfo player, ChunkPos pos) {
         return true;
     }
 
@@ -74,12 +76,12 @@ public class TrackingSource {
      * @param pos    the chunk position to check; may not always be in the tracking source
      * @return whether or not the chunk should be loaded due to the player
      */
-    public boolean checkLoadDist(Player player, ChunkPos pos) {
+    public boolean checkLoadDist(IPlayerInfo player, ChunkPos pos) {
         return true;
     }
     
     /**
-     * For most if not all purposes, {@link TrackingSource#forEachUntil(boolean, ServerPlayer, Function)} and {@link TrackingSource#forEachValid(boolean, ServerPlayer, Consumer)} should do
+     * For most if not all purposes, {@link TrackingSource#forEachUntil(boolean, IPlayerInfo, Function)} and {@link TrackingSource#forEachValid(boolean, IPlayerInfo, Consumer)} should do
      * There is no strict expectation that this will actually return the proper list
      * <br>
      * This method may be removed entirely, or it may be replaced with a forEach() method
@@ -88,11 +90,11 @@ public class TrackingSource {
      * @return a list of chunks that may or may not actually be accurate to what the source is tracking for the player, dependent on the mod implementing it
      */
     @Deprecated(forRemoval = true)
-    public Collection<ChunkPos> getChunks(ServerPlayer player) {
+    public Collection<ChunkPos> getChunks(IPlayerInfo player) {
         return new ReadOnlySet<>(this.chunks);
     }
 
-    public void forEachValid(boolean load, ServerPlayer player, Consumer<ChunkPos> action) {
+    public void forEachValid(boolean load, IPlayerInfo player, Consumer<ChunkPos> action) {
         if (load) {
             for (ChunkPos chunk : this.chunks) {
                 if (this.checkLoadDist(player, chunk)) {
@@ -108,7 +110,7 @@ public class TrackingSource {
         }
     }
 
-    public boolean forEachUntil(boolean load, ServerPlayer player, Function<ChunkPos, Boolean> action) {
+    public boolean forEachUntil(boolean load, IPlayerInfo player, Function<ChunkPos, Boolean> action) {
         if (load) {
             for (ChunkPos chunk : this.chunks) {
                 if (this.checkLoadDist(player, chunk)) {
@@ -135,5 +137,15 @@ public class TrackingSource {
     
     public void markUpdate(boolean needsUpdate) {
         this.needsUpdate = needsUpdate;
+    }
+    
+    public List<IPlayerInfo> infos(IPlayerInfo info) {
+        return Collections.singletonList(info);
+    }
+    
+    public void setupRedir(IPlayerInfo info) {
+    }
+    
+    public void endRedir(IPlayerInfo info) {
     }
 }

@@ -2,6 +2,7 @@ package com.tracky.mixin;
 
 import com.tracky.Tracky;
 import com.tracky.TrackyAccessor;
+import com.tracky.api.IPlayerInfo;
 import com.tracky.api.TrackingSource;
 import com.tracky.impl.ITrackChunks;
 import net.minecraft.core.SectionPos;
@@ -74,6 +75,56 @@ public abstract class ChunkMapMixin {
 	
 	@Unique boolean tracky$ticking = false;
 	
+	protected void update(IPlayerInfo info, Set<ChunkPos> positions, Set<IPlayerInfo> trackers, Map<UUID, Supplier<Collection<TrackingSource>>> map) {
+		ServerPlayer player = info.getPlayer();
+		
+		for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
+			for (TrackingSource trackingSource : collectionSupplier.get()) {
+				
+				for (IPlayerInfo iPlayerInfo : trackingSource.infos(info)) {
+					trackers.add(iPlayerInfo);
+					
+					iPlayerInfo.update();
+					
+					// No point in checking the player if they aren't valid for the chunk source
+					if (!trackingSource.check(iPlayerInfo)) {
+						continue;
+					}
+					
+					boolean updateClients = trackingSource.needsUpdate();
+					
+					// force chunks in load distance
+					trackingSource.forEachValid(true, iPlayerInfo, (chunkPos) -> {
+						boolean wasTracked = this.tracky$Forced.contains(chunkPos);
+						if (positions.add(chunkPos)) {
+							// The chunk was not previously tracked, so we need to load the chunk
+							if (!wasTracked) {
+								this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
+							}
+						}
+					});
+					
+					// sync chunks in syncing distance
+					// usually, the load range should be larger than the syncing range
+					trackingSource.forEachValid(false, iPlayerInfo, (chunkPos) -> {
+						// if I'm not mistaken, putting this in the if statement for updateClients will do one of two things:
+						// - make stuff start un-syncing incorrectly when two render sources share chunks
+						// - make stuff unsync the tick after it syncs
+						// don't think there's any way around both of these without refactoring ITrackChunks
+						if (iPlayerInfo.trackedChunks().add(chunkPos)) {
+							if (!iPlayerInfo.oldTrackedChunks().remove(chunkPos)) {
+								if (updateClients) {
+									this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
+								}
+							}
+						}
+					});
+				}
+				
+			}
+		}
+	}
+	
 	@Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
 	public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
 		ProfilerFiller profiler = this.level.getProfiler();
@@ -86,59 +137,32 @@ public abstract class ChunkMapMixin {
 			return;
 		
 		tracky$ticking = true;
+		
 		Set<ChunkPos> positions = new HashSet<>();
-		for (ServerPlayer player : players) {
-			
-			boolean recognized = tracky$recognizedUUIDs.remove(player.getUUID());
-			
-			ITrackChunks tracker = (ITrackChunks) player;
-			tracker.update();
-			
-			for (Supplier<Collection<TrackingSource>> collectionSupplier : map.values()) {
-				for (TrackingSource trackingSource : collectionSupplier.get()) {
-					// No point in checking the player if they aren't valid for the chunk source
-					if (!trackingSource.check(player)) {
-						continue;
-					}
+		Set<IPlayerInfo> trackers = new HashSet<>();
+		for (ServerPlayer player : players)
+			update(IPlayerInfo.of(player), positions, trackers, map);
+		
+		for (Supplier<Collection<TrackingSource>> value : map.values()) {
+			for (TrackingSource trackingSource : value.get()) {
+				for (IPlayerInfo info : trackingSource.infos(null)) {
+					if (info == null) continue;
 					
-					boolean updateClients = !recognized || trackingSource.needsUpdate();
-					
-					// force chunks in load distance
-					trackingSource.forEachValid(true, player, (chunkPos) -> {
-						boolean wasTracked = this.tracky$Forced.contains(chunkPos);
-						if (positions.add(chunkPos)) {
-							// The chunk was not previously tracked, so we need to load the chunk
-							if (!wasTracked) {
-								this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
-							}
-						}
-					});
-					
-					// sync chunks in syncing distance
-					// usually, the load range should be larger than the syncing range
-					trackingSource.forEachValid(false, player, (chunkPos) -> {
-						// if I'm not mistaken, putting this in the if statement for updateClients will do one of two things:
-						// - make stuff start un-syncing incorrectly when two render sources share chunks
-						// - make stuff unsync the tick after it syncs
-						// don't think there's any way around both of these without refactoring ITrackChunks
-						if (tracker.trackedChunks().add(chunkPos)) {
-							if (!tracker.oldTrackedChunks().remove(chunkPos)) {
-								if (updateClients) {
-									this.updateChunkTracking(player, chunkPos, new MutableObject<>(), false, true);
-								}
-							}
-						}
-					});
+					trackingSource.setupRedir(info);
+					update(info, positions, trackers, map);
+					trackingSource.endRedir(info);
 				}
 			}
-			
+		}
+		
+		for (IPlayerInfo tracker : trackers) {
 			for (ChunkPos chunkPos : tracker.oldTrackedChunks()) {
-				this.updateChunkTracking(player, chunkPos, new MutableObject<>(), true, false);
+				this.updateChunkTracking(tracker.getPlayer(), chunkPos, new MutableObject<>(), true, false);
 				
 				tracker.trackedChunks().remove(chunkPos);
 			}
-			
 		}
+		
 		tracky$ticking = false;
 		
 		tracky$recognizedUUIDs.clear();

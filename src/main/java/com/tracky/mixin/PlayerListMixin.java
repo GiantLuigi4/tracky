@@ -1,6 +1,7 @@
 package com.tracky.mixin;
 
 import com.tracky.TrackyAccessor;
+import com.tracky.api.IPlayerInfo;
 import com.tracky.api.TrackingSource;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
@@ -57,7 +58,7 @@ public abstract class PlayerListMixin {
 				for (Supplier<Collection<TrackingSource>> value : TrackyAccessor.getTrackingSources(level).values()) {
 					for (TrackingSource trackingSource : value.get()) {
 						if (trackingSource.containsChunk(ckPos)) {
-							if (trackingSource.checkRenderDist(player, ckPos)) {
+							if (trackingSource.checkRenderDist(IPlayerInfo.of(player), ckPos)) {
 								player.connection.send(pPacket);
 								ci.cancel();
 								continue loopPlayers;
