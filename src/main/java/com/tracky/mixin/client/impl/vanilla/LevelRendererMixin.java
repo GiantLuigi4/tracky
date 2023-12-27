@@ -34,6 +34,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.lwjgl.system.NativeResource;
 import org.spongepowered.asm.mixin.*;
@@ -173,6 +175,10 @@ public abstract class LevelRendererMixin {
 					continue;
 				}
 
+				Vector3dc chunkOffset = renderSource.getChunkOffset();
+				Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
+				Matrix4f inverse = transformation.invert(new Matrix4f());
+
 				for (TrackyRenderChunk chunk : renderSource.getChunksInFrustum()) {
 					ChunkRenderDispatcher.RenderChunk renderChunk = (ChunkRenderDispatcher.RenderChunk) chunk;
 					List<BlockEntity> blockEntities = renderChunk.getCompiledChunk().getRenderableBlockEntities();
@@ -180,15 +186,13 @@ public abstract class LevelRendererMixin {
 						continue;
 					}
 
-					Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
-
 					matrices.pushPose();
 					matrices.mulPoseMatrix(transformation);
 
-					transformation.invert().transformPosition(cameraPosition);
+					inverse.transformPosition(cameraPosition);
 					((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition));
 
-					this.tracky$renderBlockEntity(blockEntities, matrices, pPartialTick, 0, 0, 0);
+					this.tracky$renderBlockEntity(blockEntities, matrices, pPartialTick, -chunkOffset.x(), -chunkOffset.y(), -chunkOffset.z());
 
 					matrices.popPose();
 				}
@@ -339,7 +343,7 @@ public abstract class LevelRendererMixin {
 						source.doFrustumUpdate(mainCamera, frustum);
 					}
 
-					this.tracky$chunkRenderer.prepare(instance);
+					this.tracky$chunkRenderer.prepare(instance, source.getChunkOffset());
 					source.draw(this.tracky$chunkRenderer, stack, this.tracky$getViewArea(source), renderType, camX, camY, camZ);
 					this.tracky$chunkRenderer.reset();
 				}

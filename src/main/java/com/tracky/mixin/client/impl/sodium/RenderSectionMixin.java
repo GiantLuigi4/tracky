@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -69,7 +70,8 @@ public abstract class RenderSectionMixin implements TrackyRenderChunk {
 	public void getSquaredDistance(float x, float y, float z, CallbackInfoReturnable<Float> cir) {
 		if (this.tracky$renderSource != null) {
 			Vector3f center = new Vector3f();
-			center.set(this.tracky$origin.getX() + 8.0D - x, this.tracky$origin.getY() + 8.0D - y, this.tracky$origin.getZ() + 8.0D - z);
+			Vector3dc chunkOffset = this.tracky$renderSource.getChunkOffset();
+			center.set(this.tracky$origin.getX() + chunkOffset.x() + 8.0D - x, this.tracky$origin.getY() + chunkOffset.y() + 8.0D - y, this.tracky$origin.getZ() + chunkOffset.z() + 8.0D - z);
 			this.tracky$renderSource.getTransformation(x, y, z).transformPosition(center);
 			cir.setReturnValue(center.lengthSquared());
 		}

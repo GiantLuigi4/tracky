@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.util.collections.WriteQueue;
 import net.minecraft.core.SectionPos;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.joml.Vector3ic;
 import org.spongepowered.asm.mixin.Mixin;
@@ -50,9 +51,10 @@ public abstract class OcclusionCullerMixin implements ExtendedOcclusionCuller {
 		}
 
 		CameraTransform cameraTransform = viewport.getTransform();
+		Vector3dc chunkOffset = this.tracky$renderSource.getChunkOffset();
 		Vector3f cameraPos = new Vector3f((float) cameraTransform.x, (float) cameraTransform.y, (float) cameraTransform.z);
 		this.tracky$renderSource.getTransformation(0, 0, 0).invert().transformPosition(cameraPos);
-		return new Viewport(((ViewportAccessor) (Object) viewport).getFrustum(), new Vector3d(cameraPos));
+		return new Viewport(((ViewportAccessor) (Object) viewport).getFrustum(), new Vector3d(cameraPos).sub(chunkOffset));
 	}
 
 	@Inject(method = "init", at = @At("HEAD"), cancellable = true)

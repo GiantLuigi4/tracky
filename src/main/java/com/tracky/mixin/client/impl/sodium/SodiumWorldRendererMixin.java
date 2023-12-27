@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -224,6 +225,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			RenderSectionManager sectionManager = this.tracky$getRenderSectionManager(renderSource);
 			Iterator<ChunkRenderList> iterator = sectionManager.getRenderLists().iterator();
 
+			Vector3dc chunkOffset = renderSource.getChunkOffset();
 			Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
 
 			matrices.pushPose();
@@ -243,7 +245,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 						BlockEntity[] blockEntities = renderSection.getCulledBlockEntities();
 						if (blockEntities != null) {
 							for (BlockEntity blockEntity : blockEntities) {
-								renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, 0, 0, 0, blockEntityRenderer, blockEntity);
+								renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, -chunkOffset.x(), -chunkOffset.y(), -chunkOffset.z(), blockEntityRenderer, blockEntity);
 							}
 						}
 					}
@@ -254,7 +256,7 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 				BlockEntity[] blockEntities = renderSection.getGlobalBlockEntities();
 				if (blockEntities != null) {
 					for (BlockEntity blockEntity : blockEntities) {
-						renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, 0, 0, 0, blockEntityRenderer, blockEntity);
+						renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, -chunkOffset.x(), -chunkOffset.y(), -chunkOffset.z(), blockEntityRenderer, blockEntity);
 					}
 				}
 			}

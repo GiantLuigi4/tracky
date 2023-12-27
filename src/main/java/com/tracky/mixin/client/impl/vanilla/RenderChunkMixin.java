@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
 public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRenderChunk {
-	
+
 	@Shadow(aliases = {"this$0"})
 	@Final
 	ChunkRenderDispatcher this$0;
@@ -50,7 +51,8 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 		if (this.tracky$renderSource != null) {
 			Vec3 cameraPosition = this.this$0.getCameraPosition();
 			Vector3f center = new Vector3f();
-			center.set(this.bb.minX + 8.0D - cameraPosition.x, this.bb.minY + 8.0D - cameraPosition.y, this.bb.minZ + 8.0D - cameraPosition.z);
+			Vector3dc chunkOffset = this.tracky$renderSource.getChunkOffset();
+			center.set(this.bb.minX + chunkOffset.x() + 8.0D - cameraPosition.x, this.bb.minY + chunkOffset.y() + 8.0D - cameraPosition.y, this.bb.minZ + chunkOffset.z() + 8.0D - cameraPosition.z);
 			this.tracky$renderSource.getTransformation(cameraPosition.x, cameraPosition.y, cameraPosition.z).transformPosition(center);
 			cir.setReturnValue((double) center.lengthSquared());
 		}
@@ -79,9 +81,10 @@ public abstract class RenderChunkMixin implements TrackyRenderChunk, ExtendedRen
 	public VertexSorting createVertexSorting() {
 		Vec3 vec = this.this$0.getCameraPosition();
 		Vector3f cameraPosition = new Vector3f();
+		Vector3dc chunkOffset = this.tracky$renderSource.getChunkOffset();
 		this.tracky$renderSource.getTransformation(vec.x, vec.y, vec.z).invert().transformPosition(cameraPosition);
 		cameraPosition.add((float) vec.x, (float) vec.y, (float) vec.z);
-		return VertexSorting.byDistance(cameraPosition.sub(this.origin.getX(), this.origin.getY(), this.origin.getZ()));
+		return VertexSorting.byDistance(cameraPosition.sub((float) (this.origin.getX() + chunkOffset.x()), (float) (this.origin.getY() + chunkOffset.y()), (float) (this.origin.getZ() + chunkOffset.z())));
 	}
 
 	@Override

@@ -11,6 +11,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 public class TestSource extends BoxRenderSource {
 
@@ -26,10 +28,7 @@ public class TestSource extends BoxRenderSource {
 //		matrixStack.translate(10000 - camX, 128 - camY, -camZ);
 		matrixStack.translate(-camX, 128 - camY, -camZ);
 
-		int avgX = (this.min.minBlockX() + this.max.maxBlockX()) / 2;
-		int avgZ = (this.min.minBlockZ() + this.max.maxBlockZ()) / 2;
 		matrixStack.mulPose(new Quaternionf(new AxisAngle4f((float) Math.toRadians(Minecraft.getInstance().player.tickCount + Minecraft.getInstance().getPartialTick()), 0, 1, 0)));
-		matrixStack.translate(-avgX, -this.min.minBlockY(), -avgZ);
 	}
 
 	@Override
@@ -44,5 +43,12 @@ public class TestSource extends BoxRenderSource {
 		if (this.transparentChunksInSource.size() < 1000) {
 			this.scheduleSort();
 		}
+	}
+
+	@Override
+	public Vector3dc getChunkOffset() {
+		int avgX = (this.min.minBlockX() + this.max.maxBlockX()) / 2;
+		int avgZ = (this.min.minBlockZ() + this.max.maxBlockZ()) / 2;
+		return new Vector3d(-avgX, -this.min.minBlockY(), -avgZ);
 	}
 }

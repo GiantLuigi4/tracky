@@ -30,6 +30,7 @@ import java.util.Collection;
 public class TrackyRenderSectionManager extends RenderSectionManager implements TrackyChunkRenderer {
 
 	private final RenderSource renderSource;
+	private final Vector3d chunkOffset = new Vector3d();
 	private final Matrix4f projection = new Matrix4f();
 	private final Matrix4f modelView = new Matrix4f();
 	private final float[] fogColor = new float[4];
@@ -122,18 +123,20 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 
 		ChunkRenderMatrices matrices = new ChunkRenderMatrices(this.projection, this.modelView);
 		if (layer == RenderType.solid()) {
-			this.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, 0, 0, 0);
-			this.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, 0, 0, 0);
+			this.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, -this.chunkOffset.x, -this.chunkOffset.y, -this.chunkOffset.z);
+			this.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, -this.chunkOffset.x, -this.chunkOffset.y, -this.chunkOffset.z);
 		} else if (layer == RenderType.translucent()) {
-			this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, 0, 0, 0);
+			this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, -this.chunkOffset.x, -this.chunkOffset.y, -this.chunkOffset.z);
 		}
 
 		chunkRenderer.tracky$setCameraTransform(null);
 	}
 
+
 	public void setup(RenderSource source, PoseStack stack, double camX, double camY, double camZ) {
 		this.modelView.set(stack.last().pose());
 		this.projection.set(RenderSystem.getProjectionMatrix());
+		this.chunkOffset.set(source.getChunkOffset());
 
 		// Back up fog parameters
 		this.fogStart = RenderSystem.getShaderFogStart();
@@ -142,9 +145,10 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		System.arraycopy(RenderSystem.getShaderFogColor(), 0, this.fogColor, 0, 4);
 
 		// Update camera position
+//		Vector3f pos = new Vector3f((float) camX, (float) camY, (float) camZ);
 		Vector3f pos = new Vector3f((float) camX, (float) camY, (float) camZ);
 		source.getTransformation(0, 0, 0).invert().transformPosition(pos);
-		this.cameraTransform = new CameraTransform(pos.x, pos.y, pos.z);
+		this.cameraTransform = new CameraTransform(pos.x - this.chunkOffset.x, pos.y - this.chunkOffset.y, pos.z - this.chunkOffset.z);
 	}
 
 	public void reset() {
@@ -160,6 +164,7 @@ public class TrackyRenderSectionManager extends RenderSectionManager implements 
 		Vec3 cameraPos = camera.getPosition();
 		Vector3f pos = new Vector3f((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
 		this.renderSource.getTransformation(0, 0, 0).invert().transformPosition(pos);
+		pos.sub((float) this.chunkOffset.x, (float) this.chunkOffset.y, (float) this.chunkOffset.z);
 		BlockPos origin = new BlockPos(Mth.floor(pos.x), Mth.floor(pos.y), Mth.floor(pos.z));
 		return spectator && level.getBlockState(origin).isSolidRender(level, origin);
 	}

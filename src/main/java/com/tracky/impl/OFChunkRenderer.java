@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.joml.Vector3dc;
 
 import java.util.Collection;
 
@@ -113,9 +114,9 @@ public class OFChunkRenderer extends VanillaChunkRenderer {
 	}
 
 	@Override
-	public void prepare(ShaderInstance shader) {
+	public void prepare(ShaderInstance shader, Vector3dc chunkOffset) {
 		this.shadersActive = OFShadersAccessor.checkShadersActive();
-		super.prepare(shader);
+		super.prepare(shader, chunkOffset);
 	}
 
 	@Override
@@ -129,7 +130,7 @@ public class OFChunkRenderer extends VanillaChunkRenderer {
 			this.setFogEnd(RenderSystem.getShaderFogEnd());
 			this.setFogShape(RenderSystem.getShaderFogShape());
 			this.setFogColor(RenderSystem.getShaderFogColor());
-			
+
 			// must be set to false after resetting uniforms, elsewise the game crashes
 			this.shadersActive = false;
 		} else {

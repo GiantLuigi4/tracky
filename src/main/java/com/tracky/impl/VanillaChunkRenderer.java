@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4fc;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 import java.nio.FloatBuffer;
 import java.util.Collection;
@@ -29,6 +30,7 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	private static final int FOG_COLOR = 0b10000;
 
 	protected final Vector3d cameraPos = new Vector3d();
+	protected final Vector3d chunkOffset = new Vector3d();
 	protected ShaderInstance shader;
 
 	private int modified;
@@ -116,7 +118,7 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 
 			if (uniform != null) {
 				BlockPos pos = renderChunk.getOrigin();
-				uniform.set((float) pos.getX(), (float) pos.getY(), (float) pos.getZ());
+				uniform.set((float) (pos.getX() - this.chunkOffset.x()), (float) (pos.getY() - this.chunkOffset.y()), (float) (pos.getZ() - this.chunkOffset.z()));
 				uniform.upload();
 			}
 
@@ -130,7 +132,8 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 		}
 	}
 
-	public void prepare(ShaderInstance shader) {
+	public void prepare(ShaderInstance shader, Vector3dc chunkOffset) {
+		this.chunkOffset.set(chunkOffset);
 		this.shader = shader;
 		this.modified = 0;
 	}

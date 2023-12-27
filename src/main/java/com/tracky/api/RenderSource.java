@@ -11,9 +11,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.jetbrains.annotations.ApiStatus;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector3i;
+import org.joml.*;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -145,8 +143,9 @@ public class RenderSource {
 
 		Vector3f temp = new Vector3f();
 		Vector3f cameraPosition = new Vector3f();
+		Vector3dc chunkOffset = this.getChunkOffset();
 		this.getTransformation(camX, camY, camZ).invert().transformPosition(cameraPosition);
-		cameraPosition.add((float) camX, (float) camY, (float) camZ);
+		cameraPosition.add((float) (camX - chunkOffset.x()), (float) (camY - chunkOffset.y()), (float) (camZ - chunkOffset.z()));
 
 		this.sorted.addAll(this.transparentChunksInSource);
 		this.sorted.sort(Comparator.<TrackyRenderChunk>comparingDouble(left -> {
@@ -287,6 +286,13 @@ public class RenderSource {
 	 * @param matrixStack the matrix to transform the space
 	 */
 	public void transform(PoseStack matrixStack, double camX, double camY, double camZ) {
+	}
+
+	/**
+	 * @return An offset to apply to all chunks before rendering. This applies AFTER {@link #transform(PoseStack, double, double, double)}
+	 */
+	public Vector3dc getChunkOffset() {
+		return new Vector3d();
 	}
 
 	/**
