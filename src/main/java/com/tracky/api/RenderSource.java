@@ -184,6 +184,7 @@ public class RenderSource {
 			}
 		}
 
+		updateCompiledChunk(renderChunk);
 		dst.accept(renderChunk);
 		return true;
 	}
@@ -201,9 +202,9 @@ public class RenderSource {
 	 * used to account for F3+A
 	 */
 	public void refresh() {
-//		for (TrackyRenderChunk trackyRenderChunk : chunksInFrustum) {
-//			trackyRenderChunk.free();
-//		}
+		for (TrackyRenderChunk trackyRenderChunk : chunksInFrustum) {
+			trackyRenderChunk.free();
+		}
 
 		// We can't draw the chunks that were in the frustum
 		this.chunksInFrustum.clear();

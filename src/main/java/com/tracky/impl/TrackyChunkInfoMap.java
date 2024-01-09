@@ -1,5 +1,6 @@
 package com.tracky.impl;
 
+import com.mojang.logging.LogUtils;
 import com.tracky.mixin.client.render.RenderChunkInfoMixin;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 import org.joml.Vector3ic;
+import org.slf4j.Logger;
 
 import java.util.HashMap;
 
@@ -36,7 +38,9 @@ public class TrackyChunkInfoMap {
 	public @Nullable LevelRenderer.RenderChunkInfo get(ChunkRenderDispatcher.RenderChunk renderChunk) {
 		return this.tracky$map.get(this.getKey(renderChunk));
 	}
-
+	
+	static final Logger LOGGER = LogUtils.getLogger();
+	
 	public LevelRenderer.RenderChunkInfo getOrCreate(ChunkRenderDispatcher.RenderChunk renderChunk) {
 		Vector3ic key = this.getKey(renderChunk);
 		LevelRenderer.RenderChunkInfo info = this.tracky$map.get(key);
@@ -44,6 +48,13 @@ public class TrackyChunkInfoMap {
 		if (info == null) {
 			info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
 			this.tracky$map.put(new Vector3i(key), info);
+		} else {
+			if (info.chunk != renderChunk) {
+				// TODO: fix this
+				LOGGER.warn("Updating old chunk info");
+				info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
+				this.tracky$map.put(new Vector3i(key), info);
+			}
 		}
 
 		return info;

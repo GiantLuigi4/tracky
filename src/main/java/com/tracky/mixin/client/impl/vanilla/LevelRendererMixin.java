@@ -230,11 +230,11 @@ public abstract class LevelRendererMixin {
 				LevelRenderer.RenderChunkInfo info = this.tracky$chunkInfoMap.getOrCreate(renderChunk);
 				if (settedFrustum.add(info)) {
 					this.renderChunksInFrustum.add(info);
+					
+					// We successfully processed the chunk, so we don't have to check it anymore
+					iterator.remove();
 				}
 			}
-
-			// We successfully processed the chunk, so we don't have to check it anymore
-			iterator.remove();
 		}
 	}
 

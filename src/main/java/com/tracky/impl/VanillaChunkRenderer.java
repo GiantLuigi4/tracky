@@ -133,7 +133,11 @@ public class VanillaChunkRenderer implements TrackyChunkRenderer {
 	}
 
 	public void prepare(ShaderInstance shader, Vector3dc chunkOffset) {
-		this.chunkOffset.set(chunkOffset);
+		this.chunkOffset.set(
+				-chunkOffset.x(),
+				-chunkOffset.y(),
+				-chunkOffset.z()
+		);
 		this.shader = shader;
 		this.modified = 0;
 	}
