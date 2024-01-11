@@ -177,7 +177,9 @@ public abstract class LevelRendererMixin {
 
 				Vector3dc chunkOffset = renderSource.getChunkOffset();
 				Matrix4f transformation = renderSource.getTransformation(cameraPos.x, cameraPos.y, cameraPos.z);
-				Matrix4f inverse = transformation.invert(new Matrix4f());
+
+				transformation.invert(new Matrix4f()).transformPosition(cameraPosition.set(0));
+				((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition.x - chunkOffset.x(), cameraPosition.y - chunkOffset.y(), cameraPosition.z - chunkOffset.z()));
 
 				for (TrackyRenderChunk chunk : renderSource.getChunksInFrustum()) {
 					ChunkRenderDispatcher.RenderChunk renderChunk = (ChunkRenderDispatcher.RenderChunk) chunk;
@@ -188,9 +190,6 @@ public abstract class LevelRendererMixin {
 
 					matrices.pushPose();
 					matrices.mulPoseMatrix(transformation);
-
-					inverse.transformPosition(cameraPosition);
-					((ExtendedBlockEntityRenderDispatcher) this.blockEntityRenderDispatcher).tracky$setCameraPosition(new Vec3(cameraPosition));
 
 					this.tracky$renderBlockEntity(blockEntities, matrices, pPartialTick, -chunkOffset.x(), -chunkOffset.y(), -chunkOffset.z());
 

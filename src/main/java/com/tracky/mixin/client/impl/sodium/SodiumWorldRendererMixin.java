@@ -231,8 +231,8 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 			matrices.pushPose();
 			matrices.mulPoseMatrix(transformation);
 
-			transformation.invert().transformPosition(cameraPosition);
-			((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(new Vec3(cameraPosition));
+			transformation.invert().transformPosition(cameraPosition.set(0));
+			((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(new Vec3(cameraPosition.x - chunkOffset.x(), cameraPosition.y - chunkOffset.y(), cameraPosition.z - chunkOffset.z()));
 
 			while (iterator.hasNext()) {
 				ChunkRenderList renderList = iterator.next();
@@ -261,8 +261,6 @@ public abstract class SodiumWorldRendererMixin implements ExtendedSodiumWorldRen
 				}
 			}
 			matrices.popPose();
-
-			cameraPosition.set(0, 0, 0);
 		}
 
 		((ExtendedBlockEntityRenderDispatcher) blockEntityRenderer).tracky$setCameraPosition(null);
