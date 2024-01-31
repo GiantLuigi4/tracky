@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+// TODO: Fix tracky chunks constantly being unloaded/saved? Ask ryan for more info
 @Mod("tracky")
 public class Tracky {
 
