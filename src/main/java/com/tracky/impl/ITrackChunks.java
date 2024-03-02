@@ -7,15 +7,15 @@ import java.util.Set;
 
 public interface ITrackChunks {
 
-	Set<TrackingSource> trackedSources();
+    Set<TrackingSource> trackedSources();
 
-	Set<ChunkPos> trackedChunks();
+    Set<ChunkPos> trackedChunks();
 
-	Set<ChunkPos> oldTrackedChunks();
+    Set<ChunkPos> oldTrackedChunks();
 
-	void tickTracking();
+    void tickTracking();
 
-	boolean setDoUpdate(boolean val);
+    boolean setDoUpdate(boolean val);
 
-	boolean shouldUpdate();
+    boolean shouldUpdate();
 }

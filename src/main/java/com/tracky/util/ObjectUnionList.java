@@ -18,107 +18,107 @@ import java.util.List;
  */
 @ApiStatus.Internal
 public class ObjectUnionList<T> extends ObjectArrayList<T> {
-	ArrayList<List<T>> lists;
-	
-	public ObjectUnionList(List<T>... lists) {
-		this.lists = new ArrayList<>(Arrays.asList(lists));
-	}
-	
-	public void addList(List<T> list) {
-		lists.add(list);
-	}
-	
-	public List<T> getList(int index) {
-		return lists.get(index);
-	}
+    ArrayList<List<T>> lists;
 
-	public int listSize() {
-		return this.lists.size();
-	}
-	
-	@Override
-	public T get(int index) {
-		int idx = 0;
-		for (List<T> list : lists) {
-			int sz = list.size();
-			if (index >= idx && index < sz + idx)
-				return list.get(index - idx);
-			
-			idx += sz;
-		}
-		return super.get(index - idx);
-	}
-	
-	@Override
-	public int size() {
-		int sz = 0;
-		for (List<T> list : lists)
-			sz += list.size();
-		return sz + super.size();
-	}
-	
-	@Override
-	public void size(int size) {
-		super.size(size);
-	}
+    public ObjectUnionList(List<T>... lists) {
+        this.lists = new ArrayList<>(Arrays.asList(lists));
+    }
 
-	@Override
-	public ObjectListIterator<T> listIterator(int index) {
-		return new ObjectListIterator<T>() {
-			int index = 0;
-			int endIndex = lists.get(0).size();
-			int lindex = 0;
-			Iterator<T> current = lists.get(0).iterator();
-			final int sz = size();
-			
-			@Override
-			public T previous() {
-				throw new RuntimeException("NYI");
-			}
-			
-			@Override
-			public boolean hasPrevious() {
-				return false;
-			}
-			
-			@Override
-			public int nextIndex() {
-				return index + 1;
-			}
-			
-			@Override
-			public int previousIndex() {
-				return index - 1;
-			}
-			
-			@Override
-			public boolean hasNext() {
-				if (sz == 0) return false;
-				if (index >= sz) return false;
-				if (lindex < lists.size()) return true;
-				return index < endIndex;
-			}
-			
-			@Override
-			public T next() {
-				index++;
-				while (index > endIndex) {
-					lindex++;
-					if (lindex >= lists.size()) {
-						current = ObjectUnionList.super.listIterator(0);
-						endIndex = sz;
-					} else {
-						current = lists.get(lindex).iterator();
-						endIndex = lists.get(lindex).size() + index - 1;
-					}
-				}
-				return current.next();
-			}
-		};
-	}
-	
-	@Override
-	public ObjectSpliterator<T> spliterator() {
-		throw new RuntimeException("NYI");
-	}
+    public void addList(List<T> list) {
+        this.lists.add(list);
+    }
+
+    public List<T> getList(int index) {
+        return this.lists.get(index);
+    }
+
+    public int listSize() {
+        return this.lists.size();
+    }
+
+    @Override
+    public T get(int index) {
+        int idx = 0;
+        for (List<T> list : this.lists) {
+            int sz = list.size();
+            if (index >= idx && index < sz + idx)
+                return list.get(index - idx);
+
+            idx += sz;
+        }
+        return super.get(index - idx);
+    }
+
+    @Override
+    public int size() {
+        int sz = 0;
+        for (List<T> list : this.lists)
+            sz += list.size();
+        return sz + super.size();
+    }
+
+    @Override
+    public void size(int size) {
+        super.size(size);
+    }
+
+    @Override
+    public ObjectListIterator<T> listIterator(int index) {
+        return new ObjectListIterator<T>() {
+            int index = 0;
+            int endIndex = ObjectUnionList.this.lists.get(0).size();
+            int lindex = 0;
+            Iterator<T> current = ObjectUnionList.this.lists.get(0).iterator();
+            final int sz = ObjectUnionList.this.size();
+
+            @Override
+            public T previous() {
+                throw new RuntimeException("NYI");
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                return false;
+            }
+
+            @Override
+            public int nextIndex() {
+                return this.index + 1;
+            }
+
+            @Override
+            public int previousIndex() {
+                return this.index - 1;
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (this.sz == 0) return false;
+                if (this.index >= this.sz) return false;
+                if (this.lindex < ObjectUnionList.this.lists.size()) return true;
+                return this.index < this.endIndex;
+            }
+
+            @Override
+            public T next() {
+                this.index++;
+                while (this.index > this.endIndex) {
+                    this.lindex++;
+                    if (this.lindex >= ObjectUnionList.this.lists.size()) {
+                        this.current = ObjectUnionList.super.listIterator(0);
+                        this.endIndex = this.sz;
+                    } else {
+                        this.current = ObjectUnionList.this.lists.get(this.lindex).iterator();
+                        this.endIndex = ObjectUnionList.this.lists.get(this.lindex).size() + this.index - 1;
+                    }
+                }
+                return this.current.next();
+            }
+        };
+    }
+
+    @Override
+    public ObjectSpliterator<T> spliterator() {
+        throw new RuntimeException("NYI");
+    }
 }

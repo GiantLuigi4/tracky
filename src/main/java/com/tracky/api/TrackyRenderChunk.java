@@ -15,38 +15,38 @@ import org.lwjgl.system.NativeResource;
  */
 public interface TrackyRenderChunk extends NativeResource {
 
-	/**
-	 * @return Whether this chunk has transparency that needs to be sorted
-	 */
-	boolean needsSorting();
+    /**
+     * @return Whether this chunk has transparency that needs to be sorted
+     */
+    boolean needsSorting();
 
-	/**
-	 * Queues the specified layer to be resorted.
-	 *
-	 * @param layer The layer to sort
-	 * @return Whether the layer was queued top be sorted
-	 */
-	boolean resort(RenderType layer);
+    /**
+     * Queues the specified layer to be resorted.
+     *
+     * @param layer The layer to sort
+     * @return Whether the layer was queued top be sorted
+     */
+    boolean resort(RenderType layer);
 
-	/**
-	 * @return The block pos origin of this chunk
-	 */
-	BlockPos getChunkOrigin();
+    /**
+     * @return The block pos origin of this chunk
+     */
+    BlockPos getChunkOrigin();
 
-	/**
-	 * @return The position of this section
-	 */
-	default SectionPos getSectionPos() {
-		return SectionPos.of(this.getChunkOrigin());
-	}
+    /**
+     * @return The position of this section
+     */
+    default SectionPos getSectionPos() {
+        return SectionPos.of(this.getChunkOrigin());
+    }
 
-	AABB getAABB();
+    AABB getAABB();
 
-	/**
-	 * @return The render source this chunk is part of
-	 */
-	@Nullable RenderSource getRenderSource();
+    /**
+     * @return The render source this chunk is part of
+     */
+    @Nullable RenderSource getRenderSource();
 
-	@ApiStatus.Internal
-	void setRenderSource(@Nullable RenderSource renderSource);
+    @ApiStatus.Internal
+    void setRenderSource(@Nullable RenderSource renderSource);
 }

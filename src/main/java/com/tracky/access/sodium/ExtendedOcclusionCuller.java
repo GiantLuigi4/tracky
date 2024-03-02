@@ -6,7 +6,7 @@ import org.joml.Vector3ic;
 
 public interface ExtendedOcclusionCuller {
 
-	void tracky$setRenderSource(@Nullable RenderSource source);
+    void tracky$setRenderSource(@Nullable RenderSource source);
 
-	void tracky$setBounds(Vector3ic minSection, Vector3ic maxSection);
+    void tracky$setBounds(Vector3ic minSection, Vector3ic maxSection);
 }

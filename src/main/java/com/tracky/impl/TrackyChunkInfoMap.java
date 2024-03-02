@@ -20,47 +20,47 @@ import java.util.HashMap;
 @ApiStatus.Internal
 public class TrackyChunkInfoMap {
 
-	private final HashMap<Vector3ic, LevelRenderer.RenderChunkInfo> tracky$map = new HashMap<>();
-	private final Vector3i pos = new Vector3i();
+    private final HashMap<Vector3ic, LevelRenderer.RenderChunkInfo> tracky$map = new HashMap<>();
+    private final Vector3i pos = new Vector3i();
 
-	private Vector3ic getKey(ChunkRenderDispatcher.RenderChunk renderChunk) {
-		Vec3i vec = renderChunk.getOrigin();
-		int x = Mth.floorDiv(vec.getX(), 16);
-		int y = Mth.floorDiv(vec.getY(), 16);
-		int z = Mth.floorDiv(vec.getZ(), 16);
-		return this.pos.set(x, y, z);
-	}
+    private Vector3ic getKey(ChunkRenderDispatcher.RenderChunk renderChunk) {
+        Vec3i vec = renderChunk.getOrigin();
+        int x = Mth.floorDiv(vec.getX(), 16);
+        int y = Mth.floorDiv(vec.getY(), 16);
+        int z = Mth.floorDiv(vec.getZ(), 16);
+        return this.pos.set(x, y, z);
+    }
 
-	public void put(ChunkRenderDispatcher.RenderChunk renderChunk) {
-		this.tracky$map.put(new Vector3i(this.getKey(renderChunk)), RenderChunkInfoMixin.invokeInit(renderChunk, null, 0));
-	}
+    public void put(ChunkRenderDispatcher.RenderChunk renderChunk) {
+        this.tracky$map.put(new Vector3i(this.getKey(renderChunk)), RenderChunkInfoMixin.invokeInit(renderChunk, null, 0));
+    }
 
-	public @Nullable LevelRenderer.RenderChunkInfo get(ChunkRenderDispatcher.RenderChunk renderChunk) {
-		return this.tracky$map.get(this.getKey(renderChunk));
-	}
-	
-	static final Logger LOGGER = LogUtils.getLogger();
-	
-	public LevelRenderer.RenderChunkInfo getOrCreate(ChunkRenderDispatcher.RenderChunk renderChunk) {
-		Vector3ic key = this.getKey(renderChunk);
-		LevelRenderer.RenderChunkInfo info = this.tracky$map.get(key);
+    public @Nullable LevelRenderer.RenderChunkInfo get(ChunkRenderDispatcher.RenderChunk renderChunk) {
+        return this.tracky$map.get(this.getKey(renderChunk));
+    }
 
-		if (info == null) {
-			info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
-			this.tracky$map.put(new Vector3i(key), info);
-		} else {
-			if (info.chunk != renderChunk) {
-				// TODO: fix this
-				LOGGER.warn("Updating old chunk info");
-				info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
-				this.tracky$map.put(new Vector3i(key), info);
-			}
-		}
+    static final Logger LOGGER = LogUtils.getLogger();
 
-		return info;
-	}
+    public LevelRenderer.RenderChunkInfo getOrCreate(ChunkRenderDispatcher.RenderChunk renderChunk) {
+        Vector3ic key = this.getKey(renderChunk);
+        LevelRenderer.RenderChunkInfo info = this.tracky$map.get(key);
 
-	public void clear() {
-		this.tracky$map.clear();
-	}
+        if (info == null) {
+            info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
+            this.tracky$map.put(new Vector3i(key), info);
+        } else {
+            if (info.chunk != renderChunk) {
+                // TODO: fix this
+                LOGGER.warn("Updating old chunk info");
+                info = RenderChunkInfoMixin.invokeInit(renderChunk, null, 0);
+                this.tracky$map.put(new Vector3i(key), info);
+            }
+        }
+
+        return info;
+    }
+
+    public void clear() {
+        this.tracky$map.clear();
+    }
 }

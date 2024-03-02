@@ -13,13 +13,13 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 @Mixin(targets = "net.minecraft.client.renderer.chunk.ChunkRenderDispatcher$RenderChunk$RebuildTask")
 public class RebuildTaskMixin {
 
-	@Shadow(aliases = {"this$1"})
-	@Final
-	ChunkRenderDispatcher.RenderChunk this$1;
+    @Shadow(aliases = {"this$1"})
+    @Final
+    ChunkRenderDispatcher.RenderChunk this$1;
 
-	@ModifyArg(method = "compile", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;setQuadSorting(Lcom/mojang/blaze3d/vertex/VertexSorting;)V"))
-	public VertexSorting editSorting(VertexSorting sorting) {
-		TrackyRenderChunk ext = (TrackyRenderChunk) this.this$1;
-		return ext.getRenderSource() != null ? ((ExtendedRenderChunk) ext).createVertexSorting() : sorting;
-	}
+    @ModifyArg(method = "compile", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;setQuadSorting(Lcom/mojang/blaze3d/vertex/VertexSorting;)V"))
+    public VertexSorting editSorting(VertexSorting sorting) {
+        TrackyRenderChunk ext = (TrackyRenderChunk) this.this$1;
+        return ext.getRenderSource() != null ? ((ExtendedRenderChunk) ext).createVertexSorting() : sorting;
+    }
 }

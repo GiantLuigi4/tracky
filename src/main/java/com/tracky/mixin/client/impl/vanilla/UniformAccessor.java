@@ -10,9 +10,9 @@ import java.nio.FloatBuffer;
 @Mixin(Uniform.class)
 public interface UniformAccessor {
 
-	@Accessor
-	FloatBuffer getFloatValues();
+    @Accessor
+    FloatBuffer getFloatValues();
 
-	@Invoker
-	void invokeMarkDirty();
+    @Invoker
+    void invokeMarkDirty();
 }

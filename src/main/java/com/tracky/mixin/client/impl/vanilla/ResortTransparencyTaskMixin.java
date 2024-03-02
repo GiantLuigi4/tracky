@@ -12,14 +12,14 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(targets = "net.minecraft.client.renderer.chunk.ChunkRenderDispatcher$RenderChunk$ResortTransparencyTask")
 public class ResortTransparencyTaskMixin {
-	
-	@Shadow(aliases = {"this$1"})
-	@Final
-	ChunkRenderDispatcher.RenderChunk this$1;
 
-	@ModifyArg(method = "doTask", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;setQuadSorting(Lcom/mojang/blaze3d/vertex/VertexSorting;)V"))
-	public VertexSorting editSorting(VertexSorting sorting) {
-		TrackyRenderChunk ext = (TrackyRenderChunk) this.this$1;
-		return ext.getRenderSource() != null ? ((ExtendedRenderChunk) ext).createVertexSorting() : sorting;
-	}
+    @Shadow(aliases = {"this$1"})
+    @Final
+    ChunkRenderDispatcher.RenderChunk this$1;
+
+    @ModifyArg(method = "doTask", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;setQuadSorting(Lcom/mojang/blaze3d/vertex/VertexSorting;)V"))
+    public VertexSorting editSorting(VertexSorting sorting) {
+        TrackyRenderChunk ext = (TrackyRenderChunk) this.this$1;
+        return ext.getRenderSource() != null ? ((ExtendedRenderChunk) ext).createVertexSorting() : sorting;
+    }
 }

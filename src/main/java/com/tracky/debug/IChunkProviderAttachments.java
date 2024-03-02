@@ -7,11 +7,11 @@ import java.util.Iterator;
 
 public interface IChunkProviderAttachments {
 
-	Iterator<LevelChunk> loadedChunks();
+    Iterator<LevelChunk> loadedChunks();
 
-	void setUpdated(ChunkPos pos);
+    void setUpdated(ChunkPos pos);
 
-	long getLastUpdate(ChunkPos pos);
+    long getLastUpdate(ChunkPos pos);
 
-	boolean isTrackyForced(ChunkPos pos);
+    boolean isTrackyForced(ChunkPos pos);
 }

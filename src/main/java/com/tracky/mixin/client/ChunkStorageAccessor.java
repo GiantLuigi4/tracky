@@ -11,18 +11,18 @@ import javax.annotation.Nullable;
 @Mixin(ClientChunkCache.Storage.class)
 public interface ChunkStorageAccessor {
 
-	@Accessor
-	int getChunkRadius();
+    @Accessor
+    int getChunkRadius();
 
-	@Accessor("viewRange")
-	int getViewRange();
+    @Accessor("viewRange")
+    int getViewRange();
 
-	@Invoker
-	void invokeReplace(int pChunkIndex, @Nullable LevelChunk pChunk);
+    @Invoker
+    void invokeReplace(int pChunkIndex, @Nullable LevelChunk pChunk);
 
-	@Invoker
-	boolean invokeInRange(int pX, int pZ);
+    @Invoker
+    boolean invokeInRange(int pX, int pZ);
 
-	@Invoker
-	LevelChunk invokeGetChunk(int index);
+    @Invoker
+    LevelChunk invokeGetChunk(int index);
 }

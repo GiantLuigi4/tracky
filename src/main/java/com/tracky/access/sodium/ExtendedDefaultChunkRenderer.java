@@ -5,5 +5,5 @@ import org.jetbrains.annotations.Nullable;
 
 public interface ExtendedDefaultChunkRenderer {
 
-	void tracky$setCameraTransform(@Nullable CameraTransform transform);
+    void tracky$setCameraTransform(@Nullable CameraTransform transform);
 }

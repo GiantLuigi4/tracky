@@ -16,16 +16,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientboundBlockUpdatePacket.class)
 public class BlockUpdatePacketMixin {
-	@Shadow
-	@Final
-	private BlockPos pos;
+    @Shadow
+    @Final
+    private BlockPos pos;
 
-	@Inject(at = @At("HEAD"), method = "handle(Lnet/minecraft/network/protocol/game/ClientGamePacketListener;)V")
-	public void preHandle(ClientGamePacketListener pHandler, CallbackInfo ci) {
-		ClientLevel level = Minecraft.getInstance().level;
-		if (level != null) {
-			IChunkProviderAttachments attachments = (IChunkProviderAttachments) level.getChunkSource();
-			attachments.setUpdated(new ChunkPos(this.pos));
-		}
-	}
+    @Inject(at = @At("HEAD"), method = "handle(Lnet/minecraft/network/protocol/game/ClientGamePacketListener;)V")
+    public void preHandle(ClientGamePacketListener pHandler, CallbackInfo ci) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != null) {
+            IChunkProviderAttachments attachments = (IChunkProviderAttachments) level.getChunkSource();
+            attachments.setUpdated(new ChunkPos(this.pos));
+        }
+    }
 }

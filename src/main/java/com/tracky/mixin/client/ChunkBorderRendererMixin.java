@@ -14,12 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChunkBorderRenderer.class)
 public class ChunkBorderRendererMixin {
-	@Shadow
-	@Final
-	private Minecraft minecraft;
+    @Shadow
+    @Final
+    private Minecraft minecraft;
 
-	@Inject(at = @At("HEAD"), method = "render", cancellable = true)
-	public void preRender(PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
-		LuigiKindaLearnedTesselator.preRender(this.minecraft, pPoseStack, pBufferSource, pCamX, pCamY, pCamZ, ci);
-	}
+    @Inject(at = @At("HEAD"), method = "render", cancellable = true)
+    public void preRender(PoseStack pPoseStack, MultiBufferSource pBufferSource, double pCamX, double pCamY, double pCamZ, CallbackInfo ci) {
+        LuigiKindaLearnedTesselator.preRender(this.minecraft, pPoseStack, pBufferSource, pCamX, pCamY, pCamZ, ci);
+    }
 }

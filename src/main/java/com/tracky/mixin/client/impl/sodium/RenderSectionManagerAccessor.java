@@ -9,9 +9,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(value = RenderSectionManager.class, remap = false)
 public interface RenderSectionManagerAccessor {
 
-	@Accessor
-	OcclusionCuller getOcclusionCuller();
+    @Accessor
+    OcclusionCuller getOcclusionCuller();
 
-	@Accessor
-	ChunkRenderer getChunkRenderer();
+    @Accessor
+    ChunkRenderer getChunkRenderer();
 }
