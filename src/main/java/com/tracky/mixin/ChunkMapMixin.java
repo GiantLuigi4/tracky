@@ -78,11 +78,22 @@ public abstract class ChunkMapMixin {
 
     @Inject(at = @At("HEAD"), method = "tick(Ljava/util/function/BooleanSupplier;)V")
     public void preTick(BooleanSupplier pHasMoreTime, CallbackInfo ci) {
-//        Set<ChunkPos> poses = new HashSet<>();
+        List<TrackingSource> sources = TrackyAccessor.getTrackingSources(this.level);
+
+        // Remove sources that are no longer tracked
+        for (ServerPlayer player : this.level.getPlayers((player) -> true)) {
+            ITrackChunks tracker = (ITrackChunks) player;
+            Set<TrackingSource> trackedSources = tracker.trackedSources();
+
+            // If any sources no longer exist, then force a retrack
+            if(trackedSources.removeIf(source -> !sources.contains(source))){
+                tracker.setDoUpdate(true);
+            }
+        }
 
         // This loop loads the sources/chunks around players server-side
         // trackCameraLoadedChunks actually updates the client tracking
-        for (TrackingSource trackingSource : TrackyAccessor.getTrackingSources(this.level)) {
+        for (TrackingSource trackingSource : sources) {
             for (ServerPlayer player : this.level.getPlayers((player) -> true)) {
                 ITrackChunks tracker = (ITrackChunks) player;
                 Set<TrackingSource> trackedSources = tracker.trackedSources();

@@ -4,14 +4,9 @@ import com.tracky.api.RenderSource;
 import net.minecraft.core.SectionPos;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface ClientMapHolder {
 
-//	Map<UUID, Supplier<Collection<SectionPos>>> trackyHeldMapC();
-
-    Collection<SectionPos> trackyGetRenderChunksC();
-
-//	void trackySetRenderChunksC(ClientLevel level);
-
-    Collection<RenderSource> trackyRenderSources();
+	List<RenderSource> trackyRenderSources();
 }

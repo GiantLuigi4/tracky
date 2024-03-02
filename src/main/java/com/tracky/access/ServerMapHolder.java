@@ -3,8 +3,9 @@ package com.tracky.access;
 import com.tracky.api.TrackingSource;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface ServerMapHolder {
 
-    Collection<TrackingSource> trackyTrackingSources();
+    List<TrackingSource> trackyTrackingSources();
 }

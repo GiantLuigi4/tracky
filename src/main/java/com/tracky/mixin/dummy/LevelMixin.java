@@ -16,8 +16,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -25,20 +23,17 @@ import java.util.function.Supplier;
 public class LevelMixin implements ServerMapHolder {
 
     @Unique
-    private Collection<TrackingSource> tracky$TrackingSources;
+    private List<TrackingSource> tracky$TrackingSources;
 
     @Inject(at = @At("TAIL"), method = "<init>")
-    public void postInit(WritableLevelData pLevelData, ResourceKey pDimension, RegistryAccess pRegistryAccess,
-                         Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug,
-                         long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
-        List<TrackingSource> sources = new ArrayList<>();
-        this.tracky$TrackingSources = Collections.unmodifiableCollection(sources);
-        RegisterTrackyTrackingSourceEvent event = new RegisterTrackyTrackingSourceEvent((Level) (Object) this, sources);
+    public void postInit(WritableLevelData pLevelData, ResourceKey pDimension, RegistryAccess pRegistryAccess, Holder pDimensionTypeRegistration, Supplier pProfiler, boolean pIsClientSide, boolean pIsDebug, long pBiomeZoomSeed, int pMaxChainedNeighborUpdates, CallbackInfo ci) {
+        this.tracky$TrackingSources = new ArrayList<>();
+        RegisterTrackyTrackingSourceEvent event = new RegisterTrackyTrackingSourceEvent((Level) (Object) this, this.tracky$TrackingSources);
         MinecraftForge.EVENT_BUS.post(event);
     }
 
     @Override
-    public Collection<TrackingSource> trackyTrackingSources() {
+    public List<TrackingSource> trackyTrackingSources() {
         return this.tracky$TrackingSources;
     }
 }

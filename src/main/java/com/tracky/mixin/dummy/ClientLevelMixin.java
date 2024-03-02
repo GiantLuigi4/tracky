@@ -23,25 +23,17 @@ import java.util.function.Supplier;
 public class ClientLevelMixin implements ClientMapHolder {
 
     @Unique
-    private Collection<RenderSource> tracky$trackyRenderSources;
-    @Unique
-    private final Set<SectionPos> tracky$sectionPosSet = new HashSet<>();
+    private List<RenderSource> tracky$trackyRenderSources;
 
     @Inject(at = @At("TAIL"), method = "<init>")
     public void postInit(ClientPacketListener p_205505_, ClientLevel.ClientLevelData p_205506_, ResourceKey p_205507_, Holder p_205508_, int p_205509_, int p_205510_, Supplier p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, CallbackInfo ci) {
-        List<RenderSource> sources = new ArrayList<>();
-        this.tracky$trackyRenderSources = Collections.unmodifiableCollection(sources);
-        RegisterTrackyRenderSourceEvent event = new RegisterTrackyRenderSourceEvent((ClientLevel) (Object) this, sources);
+        this.tracky$trackyRenderSources = new ArrayList<>();
+        RegisterTrackyRenderSourceEvent event = new RegisterTrackyRenderSourceEvent((ClientLevel) (Object) this, this.tracky$trackyRenderSources);
         MinecraftForge.EVENT_BUS.post(event);
     }
 
     @Override
-    public Collection<SectionPos> trackyGetRenderChunksC() {
-        return this.tracky$sectionPosSet;
-    }
-
-    @Override
-    public Collection<RenderSource> trackyRenderSources() {
+    public List<RenderSource> trackyRenderSources() {
         return this.tracky$trackyRenderSources;
     }
 }
