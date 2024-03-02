@@ -34,7 +34,7 @@
     "client.impl.vanilla.UniformAccessor",
     "client.render.LevelRendererAccessor",
     "client.render.RenderChunkInfoMixin",
-    "dummy.ClientWorldMixin"
+    "dummy.ClientLevelMixin"
   ],
   "plugin": "com.tracky.mixin.TrackyMixinPlugin",
   "injectors": {

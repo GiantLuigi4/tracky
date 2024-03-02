@@ -1,5 +1,6 @@
 package com.tracky.mixin;
 
+import com.tracky.api.TrackingSource;
 import com.tracky.impl.ITrackChunks;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
@@ -12,39 +13,46 @@ import java.util.Set;
 @Mixin(ServerPlayer.class)
 public class ServerPlayerMixin implements ITrackChunks {
 
-	@Unique
-	private boolean tracky$shouldUpdate = false;
-	@Unique
-	private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
-	@Unique
-	private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
+    @Unique
+    private boolean tracky$shouldUpdate = false;
+    @Unique
+    private final Set<TrackingSource> tracky$trackedSources = new HashSet<>();
+    @Unique
+    private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
+    @Unique
+    private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
 
-	@Override
-	public void tickTracking() {
-		Set<ChunkPos> c = tracky$lastChunksBeingTracked;
-		tracky$lastChunksBeingTracked = tracky$chunksBeingTracked;
-		tracky$chunksBeingTracked = c;
-	}
+    @Override
+    public void tickTracking() {
+        Set<ChunkPos> c = this.tracky$lastChunksBeingTracked;
+        this.tracky$lastChunksBeingTracked = this.tracky$chunksBeingTracked;
+        this.tracky$chunksBeingTracked = c;
+    }
 
-	@Override
-	public Set<ChunkPos> oldTrackedChunks() {
-		return this.tracky$lastChunksBeingTracked;
-	}
+    @Override
+    public Set<ChunkPos> oldTrackedChunks() {
+        return this.tracky$lastChunksBeingTracked;
+    }
 
-	@Override
-	public Set<ChunkPos> trackedChunks() {
-		return this.tracky$chunksBeingTracked;
-	}
+    @Override
+    public Set<TrackingSource> trackedSources() {
+        return this.tracky$trackedSources;
+    }
 
-	@Override
-	public boolean setDoUpdate(boolean update) {
-		boolean old = this.tracky$shouldUpdate;
-		this.tracky$shouldUpdate = update;
-		return old;
-	}
+    @Override
+    public Set<ChunkPos> trackedChunks() {
+        return this.tracky$chunksBeingTracked;
+    }
 
-	@Override
-	public boolean shouldUpdate() {
-		return this.tracky$shouldUpdate;
-	}
+    @Override
+    public boolean setDoUpdate(boolean update) {
+        boolean old = this.tracky$shouldUpdate;
+        this.tracky$shouldUpdate = update;
+        return old;
+    }
+
+    @Override
+    public boolean shouldUpdate() {
+        return this.tracky$shouldUpdate;
+    }
 }

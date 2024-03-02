@@ -17,5 +17,5 @@ public interface ClientMapHolder {
 
 //	void trackySetRenderChunksC(ClientLevel level);
 
-	Map<UUID, Supplier<Collection<RenderSource>>> trackyRenderSources();
+	Collection<RenderSource> trackyRenderSources();
 }

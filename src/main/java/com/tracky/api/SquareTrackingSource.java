@@ -1,11 +1,11 @@
 package com.tracky.api;
 
 import net.minecraft.world.level.ChunkPos;
-import org.checkerframework.checker.units.qual.min;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SquareTrackingSource extends TrackingSource {
 
@@ -20,8 +20,8 @@ public class SquareTrackingSource extends TrackingSource {
                 pos.z <= this.max.z;
     }
 
-    public static List<ChunkPos> createList(ChunkPos min, ChunkPos max) {
-        List<ChunkPos> poses = new ArrayList<>((max.x - min.x) * (max.z - min.z));
+    public static Collection<ChunkPos> createList(ChunkPos min, ChunkPos max) {
+        Set<ChunkPos> poses = new HashSet<>((max.x - min.x) * (max.z - min.z));
 
         for (int x = min.x; x <= max.x; x++) {
             for (int z = min.z; z <= max.z; z++) {
@@ -29,7 +29,7 @@ public class SquareTrackingSource extends TrackingSource {
             }
         }
 
-        return Collections.unmodifiableList(poses);
+        return Collections.unmodifiableSet(poses);
     }
 
     public SquareTrackingSource(ChunkPos min, ChunkPos max) {

@@ -1,21 +1,25 @@
 package com.tracky.api;
 
-import com.tracky.util.ReadOnlySet;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TrackingSource {
+
     protected Collection<ChunkPos> chunks;
+    private final Collection<ChunkPos> chunksView;
+    protected boolean dirty;
     // TODO: use this in the chunk provider tick method instead of iterating over every single chunk in the render source?
 //    protected Set<ChunkPos> newChunks = new HashSet<>();
 
     public TrackingSource(Collection<ChunkPos> chunks) {
         this.chunks = chunks;
+        this.chunksView = Collections.unmodifiableCollection(this.chunks);
 //        newChunks.addAll(chunks);
     }
 
@@ -33,17 +37,24 @@ public class TrackingSource {
 
     public void addChunk(ChunkPos pos) {
         if (this.chunks.add(pos)) {
+            this.markDirty();
 //            this.newChunks.add(pos);
         }
     }
 
     public void removeChunk(ChunkPos pos) {
-        this.chunks.remove(pos);
+        if (this.chunks.remove(pos)) {
+            this.markDirty();
+        }
 //        this.newChunks.remove(pos);
     }
 
+    public void markDirty() {
+        this.dirty = true;
+    }
+
     /**
-     * Checks whether or not the tracking source should be considered for the provided player
+     * Checks whether the tracking source should be considered for the provided player
      *
      * @param player the player in question
      * @return if the tracking source should be skipped
@@ -53,27 +64,27 @@ public class TrackingSource {
     }
 
     /**
-     * Checks whether or not a chunk should be synced to a player's client
+     * Checks whether a chunk should be synced to a player's client
      *
      * @param player the player to check the chunk for
      * @param pos    the chunk position to check; may not always be in the tracking source
-     * @return whether or not the chunk should be synced to the associated client
+     * @return whether the chunk should be synced to the associated client
      */
     public boolean checkRenderDist(Player player, ChunkPos pos) {
         return true;
     }
 
     /**
-     * Checks whether or not a chunk should be loaded by a player
+     * Checks whether a chunk should be loaded by a player
      *
      * @param player the player to check the chunk for
      * @param pos    the chunk position to check; may not always be in the tracking source
-     * @return whether or not the chunk should be loaded due to the player
+     * @return whether the chunk should be loaded due to the player
      */
     public boolean checkLoadDist(Player player, ChunkPos pos) {
         return true;
     }
-    
+
     /**
      * For most if not all purposes, {@link TrackingSource#forEachUntil(boolean, ServerPlayer, Function)} and {@link TrackingSource#forEachValid(boolean, ServerPlayer, Consumer)} should do
      * There is no strict expectation that this will actually return the proper list
@@ -85,7 +96,14 @@ public class TrackingSource {
      */
     @Deprecated(forRemoval = true)
     public Collection<ChunkPos> getChunks(ServerPlayer player) {
-        return new ReadOnlySet<>(this.chunks);
+        return this.chunksView;
+    }
+
+    /**
+     * @return Whether any chunks have changed and tracking needs to be updated for all players
+     */
+    public boolean isDirty() {
+        return this.dirty;
     }
 
     public void forEachValid(boolean load, ServerPlayer player, Consumer<ChunkPos> action) {
@@ -123,5 +141,9 @@ public class TrackingSource {
             }
         }
         return false;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
     }
 }

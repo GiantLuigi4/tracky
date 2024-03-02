@@ -16,7 +16,7 @@ public class TrackyAccessor {
 	 * <p>Client-only is a function as QOL.</p>
 	 * <p>Render sources have a method for determining if they can render, so a supplier is unnecessary here.</p>
 	 */
-	public static Map<UUID, Supplier<Collection<TrackingSource>>> getTrackingSources(Level level) {
+	public static Collection<TrackingSource> getTrackingSources(Level level) {
 		return ((ServerMapHolder) level).trackyTrackingSources();
 	}
 
@@ -24,7 +24,7 @@ public class TrackyAccessor {
 	 * <p>Client-only is a function as QOL.</p>
 	 * <p>Render sources have a method for determining if they can render, so a supplier is unnecessary here.</p>
 	 */
-	public static Map<UUID, Supplier<Collection<RenderSource>>> getRenderSources(ClientLevel level) {
+	public static Collection<RenderSource> getRenderSources(ClientLevel level) {
 		return ((ClientMapHolder) level).trackyRenderSources();
 	}
 }
