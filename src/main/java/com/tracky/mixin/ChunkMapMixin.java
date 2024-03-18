@@ -19,8 +19,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -51,27 +51,28 @@ public abstract class ChunkMapMixin {
      */
     @Inject(method = "getPlayers", at = @At("RETURN"), cancellable = true)
     public void getTrackingPlayers(ChunkPos chunkPos, boolean boundaryOnly, CallbackInfoReturnable<List<ServerPlayer>> cir) {
-        List<ServerPlayer> players = new ArrayList<>();
+        List<ServerPlayer> players = null;
         List<ServerPlayer> vanillaPlayers = cir.getReturnValue();
+        List<ServerPlayer> otherPlayers = this.level.getPlayers((p) -> !vanillaPlayers.contains(p));
 
         // for all players in the level send the relevant chunks
         loopPlayers:
-        for (ServerPlayer player : this.level.getPlayers((p) -> !vanillaPlayers.contains(p))) {
-            for (TrackingSource trackingSource : ((ITrackChunks) player).trackedSources()) {
-                if (trackingSource.checkRenderDist(player, chunkPos)) {
-                    if (trackingSource.containsChunk(chunkPos)) {
-                        // send the packet if the player is tracking it
-                        players.add(player);
-                        continue loopPlayers;
+        for (ServerPlayer player : otherPlayers) {
+            Set<TrackingSource> trackedSources = ((ITrackChunks) player).trackedSources();
+            for (TrackingSource trackingSource : trackedSources) {
+                if (trackingSource.containsChunk(chunkPos) && trackingSource.checkRenderDist(player, chunkPos)) {
+                    if (players == null) {
+                        players = new LinkedList<>(vanillaPlayers);
                     }
+
+                    // send the packet if the player is tracking it
+                    players.add(player);
+                    continue loopPlayers;
                 }
             }
         }
 
-        if (!players.isEmpty()) {
-            // add players that are tracking it by vanilla
-            players.addAll(vanillaPlayers);
-
+        if (players != null) {
             cir.setReturnValue(players);
         }
     }
@@ -86,7 +87,7 @@ public abstract class ChunkMapMixin {
             Set<TrackingSource> trackedSources = tracker.trackedSources();
 
             // If any sources no longer exist, then force a retrack
-            if(trackedSources.removeIf(source -> !sources.contains(source))){
+            if (trackedSources.removeIf(source -> !sources.contains(source))) {
                 tracker.setDoUpdate(true);
             }
         }
@@ -99,41 +100,23 @@ public abstract class ChunkMapMixin {
                 Set<TrackingSource> trackedSources = tracker.trackedSources();
 
                 // If the source hasn't updated, and the player is already tracking the source, then there's no need to update the player sources
-                if (!trackingSource.isDirty() && trackingSource.check(player) == trackedSources.contains(trackingSource)) {
+                boolean playerTracking = trackingSource.check(player);
+                if (!trackingSource.isDirty() && playerTracking == trackedSources.contains(trackingSource)) {
                     continue;
                 }
 
                 // no point in checking the player if they aren't valid for the chunk source
-                if (!trackingSource.check(player)) {
+                if (!playerTracking) {
                     trackedSources.remove(trackingSource);
                     continue;
                 }
 
                 trackedSources.add(trackingSource);
-                // The source updated, so each player needs to recheck what chunks they are tracking
+                // The source/player updated, so the player needs to recheck what chunks they are tracking
                 tracker.setDoUpdate(true);
-
-                // check every chunk
-//                trackingSource.forEachValid(true, player, (chunkPos) -> {
-//                    // chunk must be in loading range in order to be loaded
-//                    if (trackingSource.checkLoadDist(player, chunkPos)) {
-//                        if (!this.tracky$Forced.remove(chunkPos) && poses.add(chunkPos)) {
-//                            // This won't try to save the forced chunk to disc
-//                            this.level.getChunkSource().updateChunkForced(chunkPos, true);
-////										this.level.setChunkForced(chunkPos.x, chunkPos.z, true);
-//                        }
-//                    }
-//                });
             }
             trackingSource.setDirty(false);
         }
-
-//        for (ChunkPos chunkPos : this.tracky$Forced) {
-//            this.level.getChunkSource().updateChunkForced(chunkPos, false);
-////			this.level.setChunkForced(chunkPos.x, chunkPos.z, false);
-//        }
-//
-//        this.tracky$Forced.addAll(poses);
     }
 
     /**
@@ -147,7 +130,7 @@ public abstract class ChunkMapMixin {
         }
 
         tracker.setDoUpdate(false);
-        tracker.tickTracking();
+        tracker.startTrackingTick();
 
         for (TrackingSource trackingSource : tracker.trackedSources()) {
             trackingSource.forEachValid(false, player, (chunkPos) -> {
@@ -188,7 +171,7 @@ public abstract class ChunkMapMixin {
             }
         }
 
-        tracker.oldTrackedChunks().clear();
+        tracker.endTrackingTick();
     }
 
     @Inject(at = @At("HEAD"), method = "updatePlayerPos")
@@ -205,6 +188,10 @@ public abstract class ChunkMapMixin {
         }
 
         ITrackChunks tracker = (ITrackChunks) player;
+        // This was called by tracky, so we never want to cancel it
+        if (tracker.isUpdating()) {
+            return;
+        }
 
         // for each render source, the following conditions must be true for this to be canceled:
         for (TrackingSource trackingSource : tracker.trackedSources()) {

@@ -14,13 +14,10 @@ public class TrackingSource {
     protected Collection<ChunkPos> chunks;
     private final Collection<ChunkPos> chunksView;
     protected boolean dirty;
-    // TODO: use this in the chunk provider tick method instead of iterating over every single chunk in the render source?
-//    protected Set<ChunkPos> newChunks = new HashSet<>();
 
     public TrackingSource(Collection<ChunkPos> chunks) {
         this.chunks = chunks;
         this.chunksView = Collections.unmodifiableCollection(this.chunks);
-//        newChunks.addAll(chunks);
     }
 
     /**
@@ -38,7 +35,6 @@ public class TrackingSource {
     public void addChunk(ChunkPos pos) {
         if (this.chunks.add(pos)) {
             this.markDirty();
-//            this.newChunks.add(pos);
         }
     }
 
@@ -46,7 +42,6 @@ public class TrackingSource {
         if (this.chunks.remove(pos)) {
             this.markDirty();
         }
-//        this.newChunks.remove(pos);
     }
 
     public void markDirty() {

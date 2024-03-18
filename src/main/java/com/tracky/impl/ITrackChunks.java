@@ -13,9 +13,13 @@ public interface ITrackChunks {
 
     Set<ChunkPos> oldTrackedChunks();
 
-    void tickTracking();
+    void startTrackingTick();
+
+    void endTrackingTick();
 
     boolean setDoUpdate(boolean val);
 
     boolean shouldUpdate();
+
+    boolean isUpdating();
 }

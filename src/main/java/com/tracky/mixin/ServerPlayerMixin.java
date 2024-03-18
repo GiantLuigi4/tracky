@@ -16,6 +16,8 @@ public class ServerPlayerMixin implements ITrackChunks {
     @Unique
     private boolean tracky$shouldUpdate = false;
     @Unique
+    private boolean tracky$update = false;
+    @Unique
     private final Set<TrackingSource> tracky$trackedSources = new HashSet<>();
     @Unique
     private Set<ChunkPos> tracky$chunksBeingTracked = new HashSet<>();
@@ -23,10 +25,17 @@ public class ServerPlayerMixin implements ITrackChunks {
     private Set<ChunkPos> tracky$lastChunksBeingTracked = new HashSet<>();
 
     @Override
-    public void tickTracking() {
+    public void startTrackingTick() {
         Set<ChunkPos> c = this.tracky$lastChunksBeingTracked;
         this.tracky$lastChunksBeingTracked = this.tracky$chunksBeingTracked;
         this.tracky$chunksBeingTracked = c;
+        this.tracky$update = true;
+    }
+
+    @Override
+    public void endTrackingTick() {
+        this.tracky$lastChunksBeingTracked.clear();
+        this.tracky$update = false;
     }
 
     @Override
@@ -54,5 +63,10 @@ public class ServerPlayerMixin implements ITrackChunks {
     @Override
     public boolean shouldUpdate() {
         return this.tracky$shouldUpdate;
+    }
+
+    @Override
+    public boolean isUpdating() {
+        return this.tracky$update;
     }
 }
